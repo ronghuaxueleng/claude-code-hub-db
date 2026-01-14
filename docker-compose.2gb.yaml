@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: claude-code-hub-db
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-claude_code_hub}
+      PGDATA: /data/pgdata
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
+    volumes:
+      - ./data/postgres:/data
+    # 资源限制：2GB 内存服务器优化配置
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # PostgreSQL 性能优化参数（针对 512MB 内存）
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=2MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_connections=50
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: claude-code-hub-redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    # Redis 优化配置（限制最大内存 200MB）
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 200mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    container_name: claude-code-hub-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+      REDIS_URL: redis://redis:6379
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
+      SESSION_TTL: ${SESSION_TTL:-300}
+      TZ: Asia/Shanghai
+      # 优化配置（针对 2GB 内存服务器）
+      DB_POOL_MAX: 10
+      MESSAGE_REQUEST_WRITE_MODE: async
+      STORE_SESSION_MESSAGES: false
+      ENABLE_PROVIDER_CACHE: true
+    ports:
+      - "${APP_PORT:-23000}:3000"
+    restart: unless-stopped
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/actions/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
