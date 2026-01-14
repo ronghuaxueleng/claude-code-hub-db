@@ -77,12 +77,9 @@ services:
       start_period: 10s
 
   app:
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile
-      args:
-        APP_VERSION: ${APP_VERSION:-dev}
+    image: oven/bun:debian
     container_name: claude-code-hub-app
+    working_dir: /app
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,7 +88,7 @@ services:
     env_file:
       - ./.env
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
       REDIS_URL: redis://redis:6379
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
@@ -103,8 +100,14 @@ services:
       MESSAGE_REQUEST_WRITE_MODE: async
       STORE_SESSION_MESSAGES: false
       ENABLE_PROVIDER_CACHE: true
+    volumes:
+      # 挂载本地代码目录
+      - .:/app
+      # 排除 node_modules，使用容器内的依赖
+      - /app/node_modules
     ports:
-      - "${APP_PORT:-23000}:3000"
+      - "${APP_PORT:-23000}:13500"
+    command: sh -c "bun install && bun run dev"
     restart: unless-stopped
     # 资源限制
     deploy:
