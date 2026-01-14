@@ -77,7 +77,7 @@ services:
       start_period: 10s
 
   app:
-    image: ghcr.io/ding113/claude-code-hub:latest
+    image: crpi-cnazxqmg4avmg4fq.cn-beijing.personal.cr.aliyuncs.com/ronghuaxueleng/claude-code-hub:latest
     container_name: claude-code-hub-app
     depends_on:
       postgres:
