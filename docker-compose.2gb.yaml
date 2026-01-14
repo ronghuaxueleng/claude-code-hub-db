@@ -106,8 +106,8 @@ services:
       # 排除 node_modules，使用容器内的依赖
       - /app/node_modules
     ports:
-      - "${APP_PORT:-23000}:13500"
-    command: sh -c "bun install && bun run dev"
+      - "0.0.0.0:23000:23000"
+    command: sh -c "bun install && bun run dev -- --port 23000"
     restart: unless-stopped
     # 资源限制
     deploy:
