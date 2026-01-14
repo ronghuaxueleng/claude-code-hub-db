@@ -14,6 +14,8 @@ services:
       PGTZ: Asia/Shanghai
     volumes:
       - ./data/postgres:/data
+    ports:
+      - "0.0.0.0:5432:5432"
     # 资源限制：2GB 内存服务器优化配置
     deploy:
       resources:
@@ -49,8 +51,12 @@ services:
     image: redis:7-alpine
     container_name: claude-code-hub-redis
     restart: unless-stopped
+    env_file:
+      - ./.env
     volumes:
       - ./data/redis:/data
+    ports:
+      - "0.0.0.0:6379:6379"
     # 资源限制
     deploy:
       resources:
@@ -60,7 +66,7 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
-    # Redis 优化配置（限制最大内存 200MB）
+    # Redis 优化配置（限制最大内存 200MB，启用密码保护）
     command: >
       redis-server
       --appendonly yes
@@ -69,8 +75,9 @@ services:
       --save 900 1
       --save 300 10
       --save 60 10000
+      --requirepass ${REDIS_PASSWORD:-redis_password_change_me}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $${REDIS_PASSWORD:-redis_password_change_me} ping || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -89,7 +96,7 @@ services:
     environment:
       NODE_ENV: production
       DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
       SESSION_TTL: ${SESSION_TTL:-300}
