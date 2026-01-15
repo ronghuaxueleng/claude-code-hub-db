@@ -94,9 +94,7 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-domain">
-                {t("fields.domain.label")} *
-              </Label>
+              <Label htmlFor="edit-domain">{t("fields.domain.label")} *</Label>
               <Input
                 id="edit-domain"
                 value={domainValue}
@@ -106,9 +104,7 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-ips">
-                {t("fields.ips.label")} *
-              </Label>
+              <Label htmlFor="edit-ips">{t("fields.ips.label")} *</Label>
               <Textarea
                 id="edit-ips"
                 placeholder={t("fields.ips.placeholder")}
@@ -120,9 +116,7 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">
-                {t("fields.description.label")}
-              </Label>
+              <Label htmlFor="edit-description">{t("fields.description.label")}</Label>
               <Input
                 id="edit-description"
                 placeholder={t("fields.description.placeholder")}

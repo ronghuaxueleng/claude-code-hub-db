@@ -83,9 +83,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="domain">
-                {t("fields.domain.label")} *
-              </Label>
+              <Label htmlFor="domain">{t("fields.domain.label")} *</Label>
               <Input
                 id="domain"
                 placeholder={t("fields.domain.placeholder")}
@@ -96,9 +94,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="ips">
-                {t("fields.ips.label")} *
-              </Label>
+              <Label htmlFor="ips">{t("fields.ips.label")} *</Label>
               <Textarea
                 id="ips"
                 placeholder={t("fields.ips.placeholder")}
@@ -110,9 +106,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">
-                {t("fields.description.label")}
-              </Label>
+              <Label htmlFor="description">{t("fields.description.label")}</Label>
               <Input
                 id="description"
                 placeholder={t("fields.description.placeholder")}
