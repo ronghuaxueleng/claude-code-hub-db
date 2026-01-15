@@ -15,7 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Loader2, Zap } from "lucide-react";
 import { updateCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
+import { testCfOptimizedIps } from "@/actions/cf-ip-test";
 import type { CfOptimizedDomain } from "@/repository/cf-optimized-domains";
 import { toast } from "sonner";
 
@@ -29,6 +31,7 @@ interface EditDomainDialogProps {
 export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: EditDomainDialogProps) {
   const t = useTranslations("cfOptimizedDomains.editDialog");
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [domainValue, setDomainValue] = useState("");
   const [ips, setIps] = useState("");
   const [description, setDescription] = useState("");
@@ -43,6 +46,34 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
     }
   }, [domain]);
 
+  async function handleTestSpeed() {
+    if (!domainValue.trim()) {
+      toast.error("请先输入域名");
+      return;
+    }
+
+    setTesting(true);
+    try {
+      toast.info("正在测试 Cloudflare IP 速度，请稍候...");
+      const results = await testCfOptimizedIps(domainValue.trim(), 3);
+
+      if (results.length === 0) {
+        toast.error("未找到可用的优选 IP");
+        return;
+      }
+
+      // 将测试结果填入文本框
+      const ipList = results.map((r) => `${r.ip} # ${r.avgLatency.toFixed(0)}ms`).join("\n");
+      setIps(ipList);
+      toast.success(`找到 ${results.length} 个优选 IP`);
+    } catch (error) {
+      console.error("Speed test failed:", error);
+      toast.error("测速失败，请稍后重试");
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!domain) return;
@@ -52,18 +83,12 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
     try {
       const ipList = ips
         .split(/[,\s\n]+/)
-        .map((ip) => ip.trim())
+        .map((ip) => ip.split("#")[0].trim())
         .filter((ip) => ip.length > 0);
-
-      if (ipList.length === 0) {
-        toast.error(t("fields.ips.placeholder"));
-        setLoading(false);
-        return;
-      }
 
       const result = await updateCfOptimizedDomainAction(domain.id, {
         domain: domainValue.trim(),
-        optimizedIps: ipList,
+        optimizedIps: ipList.length > 0 ? ipList : [],
         description: description.trim() || undefined,
         isEnabled,
       });
@@ -104,15 +129,38 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-ips">{t("fields.ips.label")} *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-ips">{t("fields.ips.label")}</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestSpeed}
+                  disabled={testing || !domainValue.trim()}
+                >
+                  {testing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      测速中...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      自动测速
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 id="edit-ips"
                 placeholder={t("fields.ips.placeholder")}
                 value={ips}
                 onChange={(e) => setIps(e.target.value)}
                 rows={4}
-                required
               />
+              <p className="text-xs text-muted-foreground">
+                可选填。支持多个 IP，用逗号、空格或换行分隔。点击「自动测速」按钮可自动获取最优 IP。
+              </p>
             </div>
 
             <div className="grid gap-2">

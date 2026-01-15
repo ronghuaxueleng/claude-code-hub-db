@@ -14,7 +14,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Zap } from "lucide-react";
 import { createCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
+import { testCfOptimizedIps } from "@/actions/cf-ip-test";
 import { toast } from "sonner";
 
 interface AddDomainDialogProps {
@@ -26,30 +28,53 @@ interface AddDomainDialogProps {
 export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDialogProps) {
   const t = useTranslations("cfOptimizedDomains.addDialog");
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [domain, setDomain] = useState("");
   const [ips, setIps] = useState("");
   const [description, setDescription] = useState("");
+
+  async function handleTestSpeed() {
+    if (!domain.trim()) {
+      toast.error("请先输入域名");
+      return;
+    }
+
+    setTesting(true);
+    try {
+      toast.info("正在测试 Cloudflare IP 速度，请稍候...");
+      const results = await testCfOptimizedIps(domain.trim(), 3);
+
+      if (results.length === 0) {
+        toast.error("未找到可用的优选 IP");
+        return;
+      }
+
+      // 将测试结果填入文本框
+      const ipList = results.map((r) => `${r.ip} # ${r.avgLatency.toFixed(0)}ms`).join("\n");
+      setIps(ipList);
+      toast.success(`找到 ${results.length} 个优选 IP`);
+    } catch (error) {
+      console.error("Speed test failed:", error);
+      toast.error("测速失败，请稍后重试");
+    } finally {
+      setTesting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 解析 IP 列表（支持逗号、空格、换行分隔）
+      // 解析 IP 列表（支持逗号、空格、换行分隔，忽略注释）
       const ipList = ips
         .split(/[,\s\n]+/)
-        .map((ip) => ip.trim())
+        .map((ip) => ip.split("#")[0].trim()) // 移除注释
         .filter((ip) => ip.length > 0);
-
-      if (ipList.length === 0) {
-        toast.error(t("fields.ips.placeholder"));
-        setLoading(false);
-        return;
-      }
 
       const result = await createCfOptimizedDomainAction({
         domain: domain.trim(),
-        optimizedIps: ipList,
+        optimizedIps: ipList.length > 0 ? ipList : [],
         description: description.trim() || undefined,
       });
 
@@ -94,15 +119,38 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="ips">{t("fields.ips.label")} *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ips">{t("fields.ips.label")}</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestSpeed}
+                  disabled={testing || !domain.trim()}
+                >
+                  {testing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      测速中...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      自动测速
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 id="ips"
                 placeholder={t("fields.ips.placeholder")}
                 value={ips}
                 onChange={(e) => setIps(e.target.value)}
                 rows={4}
-                required
               />
+              <p className="text-xs text-muted-foreground">
+                可选填。支持多个 IP，用逗号、空格或换行分隔。点击「自动测速」按钮可自动获取最优 IP。
+              </p>
             </div>
 
             <div className="grid gap-2">
