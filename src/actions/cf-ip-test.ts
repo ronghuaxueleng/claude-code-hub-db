@@ -37,7 +37,7 @@ function createTestAgent(domain: string, ip: string): Agent {
 async function testSingleIp(
   domain: string,
   ip: string,
-  timeout = 5000,
+  timeout = 5000
 ): Promise<{ success: boolean; latency: number }> {
   const startTime = Date.now();
 
@@ -81,10 +81,7 @@ async function testSingleIp(
  * @param testCount 每个 IP 测试次数
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(
-  domain: string,
-  testCount = 3,
-): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
   // Cloudflare 常用 Anycast IP 列表
   const commonCfIps = [
     "104.16.132.229",
