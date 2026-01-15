@@ -49,21 +49,17 @@ export async function createCfOptimizedDomainAction(data: {
       };
     }
 
-    if (!data.optimizedIps || data.optimizedIps.length === 0) {
-      return {
-        ok: false,
-        error: "优选 IP 列表不能为空",
-      };
-    }
-
-    // 验证 IP 格式
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    for (const ip of data.optimizedIps) {
-      if (!ipRegex.test(ip)) {
-        return {
-          ok: false,
-          error: `无效的 IP 地址: ${ip}`,
-        };
+    // 验证 IP 格式（如果提供了 IP 列表）
+    if (data.optimizedIps && data.optimizedIps.length > 0) {
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      for (const ip of data.optimizedIps) {
+        const trimmedIp = ip.trim();
+        if (trimmedIp && !ipRegex.test(trimmedIp)) {
+          return {
+            ok: false,
+            error: `无效的 IP 地址: ${trimmedIp}`,
+          };
+        }
       }
     }
 
@@ -112,20 +108,14 @@ export async function updateCfOptimizedDomainAction(
     }
 
     // 验证 IP 格式（如果更新了 IP 列表）
-    if (updates.optimizedIps) {
-      if (updates.optimizedIps.length === 0) {
-        return {
-          ok: false,
-          error: "优选 IP 列表不能为空",
-        };
-      }
-
+    if (updates.optimizedIps && updates.optimizedIps.length > 0) {
       const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
       for (const ip of updates.optimizedIps) {
-        if (!ipRegex.test(ip)) {
+        const trimmedIp = ip.trim();
+        if (trimmedIp && !ipRegex.test(trimmedIp)) {
           return {
             ok: false,
-            error: `无效的 IP 地址: ${ip}`,
+            error: `无效的 IP 地址: ${trimmedIp}`,
           };
         }
       }
