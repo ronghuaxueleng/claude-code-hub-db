@@ -878,13 +878,10 @@ export class ProxyForwarder {
             }
 
             // 如果是 403 错误且使用了 CF 优选 IP，记录到黑名单
-            if (
-              statusCode === 403 &&
-              (init as any).__cfOptimizedIp &&
-              (init as any).__cfOptimizedDomain
-            ) {
-              const cfIp = (init as any).__cfOptimizedIp;
-              const cfDomain = (init as any).__cfOptimizedDomain;
+            const cfOptimizedInfo = session.getCfOptimizedInfo();
+            if (statusCode === 403 && cfOptimizedInfo) {
+              const cfIp = cfOptimizedInfo.ip;
+              const cfDomain = cfOptimizedInfo.domain;
               try {
                 await recordIpFailure(cfDomain, cfIp, "HTTP_403", errorMessage);
                 // 立即刷新缓存，确保黑名单 IP 不再被使用
@@ -1473,6 +1470,8 @@ export class ProxyForwarder {
         // 保存 CF 优选 IP 信息，用于错误处理时记录黑名单
         (init as any).__cfOptimizedIp = cfOptimizedResult.ip;
         (init as any).__cfOptimizedDomain = cfOptimizedResult.domain;
+        // 同时保存到 session，以便外层方法访问
+        session.setCfOptimizedIp(cfOptimizedResult.ip, cfOptimizedResult.domain);
         logger.info("ProxyForwarder: Using CF optimized IP", {
           providerId: provider.id,
           providerName: provider.name,

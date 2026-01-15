@@ -99,6 +99,10 @@ export class ProxySession {
   // 特殊设置（用于审计/展示，可扩展）
   private specialSettings: SpecialSetting[] = [];
 
+  // CF 优选 IP 信息（用于错误处理时记录黑名单）
+  private cfOptimizedIp: string | null = null;
+  private cfOptimizedDomain: string | null = null;
+
   // Cached price data (lazy loaded: undefined=not loaded, null=no data)
   private cachedPriceData?: ModelPriceData | null;
 
@@ -275,6 +279,24 @@ export class ProxySession {
 
   getSpecialSettings(): SpecialSetting[] | null {
     return this.specialSettings.length > 0 ? this.specialSettings : null;
+  }
+
+  /**
+   * 设置 CF 优选 IP 信息（用于错误处理时记录黑名单）
+   */
+  setCfOptimizedIp(ip: string | null, domain: string | null): void {
+    this.cfOptimizedIp = ip;
+    this.cfOptimizedDomain = domain;
+  }
+
+  /**
+   * 获取 CF 优选 IP 信息
+   */
+  getCfOptimizedInfo(): { ip: string; domain: string } | null {
+    if (this.cfOptimizedIp && this.cfOptimizedDomain) {
+      return { ip: this.cfOptimizedIp, domain: this.cfOptimizedDomain };
+    }
+    return null;
   }
 
   /**
