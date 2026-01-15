@@ -631,6 +631,27 @@ export const cfOptimizedDomains = pgTable(
   })
 );
 
+// Cloudflare IP Blacklist table
+export const cfIpBlacklist = pgTable(
+  'cf_ip_blacklist',
+  {
+    id: serial('id').primaryKey(),
+    domain: varchar('domain', { length: 255 }).notNull(),
+    ip: varchar('ip', { length: 45 }).notNull(),
+    failureCount: integer('failure_count').notNull().default(1),
+    lastErrorType: varchar('last_error_type', { length: 100 }),
+    lastErrorMessage: text('last_error_message'),
+    lastFailureAt: timestamp('last_failure_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    domainIpUniqueIdx: uniqueIndex('idx_cf_ip_blacklist_domain_ip').on(table.domain, table.ip),
+    domainIdx: index('idx_cf_ip_blacklist_domain').on(table.domain),
+    failureCountIdx: index('idx_cf_ip_blacklist_failure_count').on(table.failureCount),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   keys: many(keys),

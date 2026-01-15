@@ -2,6 +2,7 @@
 
 import { Agent, request } from "undici";
 import { connect as tlsConnect } from "node:tls";
+import { getBlacklistedIps, recordIpFailure } from "@/repository/cf-ip-blacklist";
 
 export interface CfIpTestResult {
   ip: string;
@@ -68,7 +69,7 @@ async function testSingleIp(
   domain: string,
   ip: string,
   timeout = 5000
-): Promise<{ success: boolean; latency: number }> {
+): Promise<{ success: boolean; latency: number; error?: Error }> {
   const startTime = Date.now();
 
   try {
@@ -103,10 +104,12 @@ async function testSingleIp(
     };
   } catch (error) {
     const latency = Date.now() - startTime;
+    const err = error instanceof Error ? error : new Error(String(error));
     console.error(`[CF IP Test] ${ip} -> ${domain}: ERROR`, error);
     return {
       success: false,
       latency: latency > timeout ? timeout : latency,
+      error: err,
     };
   }
 }
@@ -119,6 +122,12 @@ async function testSingleIp(
  */
 export async function testCfOptimizedIps(domain: string, testCount = 1): Promise<CfIpTestResult[]> {
   console.log(`[CF IP Test] Starting test for domain: ${domain}, testCount: ${testCount}`);
+
+  // 查询黑名单 IP（失败次数 >= 3）
+  const blacklistedIps = await getBlacklistedIps(domain, 3);
+  if (blacklistedIps.length > 0) {
+    console.log(`[CF IP Test] Found ${blacklistedIps.length} blacklisted IPs, will skip them`);
+  }
 
   // Cloudflare 常用 Anycast IP 列表
   const commonCfIps = [
@@ -149,10 +158,18 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
   // 串行测试每个 IP（避免并发过多）
   for (let ipIndex = 0; ipIndex < commonCfIps.length; ipIndex++) {
     const ip = commonCfIps[ipIndex];
+
+    // 跳过黑名单中的 IP
+    if (blacklistedIps.includes(ip)) {
+      console.log(`[CF IP Test] Skipping blacklisted IP: ${ip}`);
+      continue;
+    }
+
     console.log(`[CF IP Test] Testing ${ipIndex + 1}/${commonCfIps.length}: ${ip}`);
 
     const testResults: boolean[] = [];
     const latencies: number[] = [];
+    let lastError: Error | null = null;
 
     // 对每个 IP 进行测试
     for (let i = 0; i < testCount; i++) {
@@ -160,6 +177,8 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
       testResults.push(result.success);
       if (result.success) {
         latencies.push(result.latency);
+      } else if (result.error) {
+        lastError = result.error;
       }
     }
 
@@ -172,6 +191,14 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
     console.log(
       `[CF IP Test] ${ip}: ${successCount > 0 ? "SUCCESS" : "FAIL"}, avgLatency=${avgLatency}ms`
     );
+
+    // 如果测试失败，记录到黑名单数据库
+    if (successRate === 0 && lastError) {
+      const errorType = lastError.name || "UNKNOWN_ERROR";
+      const errorMessage = lastError.message || String(lastError);
+      await recordIpFailure(domain, ip, errorType, errorMessage);
+      console.log(`[CF IP Test] Recorded failure for ${ip}: ${errorType}`);
+    }
 
     if (successRate > 0) {
       results.push({
