@@ -42,7 +42,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
     setTesting(true);
     try {
       toast.info("正在测试 Cloudflare IP 速度，请稍候...");
-      const results = await testCfOptimizedIps(domain.trim(), 3);
+      const results = await testCfOptimizedIps(domain.trim(), 1);
 
       if (results.length === 0) {
         toast.error("未找到可用的优选 IP");

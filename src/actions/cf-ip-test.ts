@@ -1,6 +1,7 @@
 "use server";
 
 import { Agent, request } from "undici";
+import { connect as tlsConnect } from "node:tls";
 
 export interface CfIpTestResult {
   ip: string;
@@ -13,17 +14,46 @@ export interface CfIpTestResult {
  */
 function createTestAgent(domain: string, ip: string): Agent {
   // 创建自定义 connect 函数，将域名解析到指定 IP
-  const customConnect = (opts: any, callback: any) => {
+  const customConnect = function (opts: any, callback: any) {
     // 如果是目标域名，使用指定 IP
     if (opts.hostname === domain || opts.servername === domain) {
-      const modifiedOpts = {
-        ...opts,
-        hostname: ip, // 连接到指定 IP
-        servername: domain, // 保持 SNI 为原域名（用于 TLS）
-      };
-      return Agent.prototype.connect.call(this, modifiedOpts, callback);
+      // 使用 Node.js 原生 tls 模块创建连接
+      const socket = tlsConnect({
+        host: ip, // 连接到指定 IP
+        port: opts.port || 443,
+        servername: domain, // SNI 使用原域名
+        rejectUnauthorized: true,
+      });
+
+      // 处理连接事件
+      socket.once("secureConnect", () => {
+        callback(null, socket);
+      });
+
+      socket.once("error", (err) => {
+        callback(err, null);
+      });
+
+      return socket;
     }
-    return Agent.prototype.connect.call(this, opts, callback);
+
+    // 其他域名使用默认连接（不应该发生）
+    const socket = tlsConnect({
+      host: opts.hostname,
+      port: opts.port || 443,
+      servername: opts.servername || opts.hostname,
+      rejectUnauthorized: true,
+    });
+
+    socket.once("secureConnect", () => {
+      callback(null, socket);
+    });
+
+    socket.once("error", (err) => {
+      callback(err, null);
+    });
+
+    return socket;
   };
 
   return new Agent({
@@ -62,12 +92,16 @@ async function testSingleIp(
     await agent.close();
 
     // 只要能连接就算成功（即使返回 4xx/5xx）
+    const success = response.statusCode < 600;
+    console.log(`[CF IP Test] ${ip} -> ${domain}: ${success ? "SUCCESS" : "FAIL"} (${response.statusCode}, ${latency}ms)`);
+
     return {
-      success: response.statusCode < 600,
+      success,
       latency,
     };
   } catch (error) {
     const latency = Date.now() - startTime;
+    console.error(`[CF IP Test] ${ip} -> ${domain}: ERROR`, error);
     return {
       success: false,
       latency: latency > timeout ? timeout : latency,
@@ -78,10 +112,15 @@ async function testSingleIp(
 /**
  * 测试 Cloudflare IP 访问指定域名的速度
  * @param domain 要测试的域名（如 api.anthropic.com）
- * @param testCount 每个 IP 测试次数
+ * @param testCount 每个 IP 测试次数（默认 1 次）
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(
+  domain: string,
+  testCount = 1,
+): Promise<CfIpTestResult[]> {
+  console.log(`[CF IP Test] Starting test for domain: ${domain}, testCount: ${testCount}`);
+
   // Cloudflare 常用 Anycast IP 列表
   const commonCfIps = [
     "104.16.132.229",
@@ -109,13 +148,16 @@ export async function testCfOptimizedIps(domain: string, testCount = 3): Promise
   const results: CfIpTestResult[] = [];
 
   // 串行测试每个 IP（避免并发过多）
-  for (const ip of commonCfIps) {
+  for (let ipIndex = 0; ipIndex < commonCfIps.length; ipIndex++) {
+    const ip = commonCfIps[ipIndex];
+    console.log(`[CF IP Test] Testing ${ipIndex + 1}/${commonCfIps.length}: ${ip}`);
+
     const testResults: boolean[] = [];
     const latencies: number[] = [];
 
-    // 对每个 IP 进行多次测试
+    // 对每个 IP 进行测试
     for (let i = 0; i < testCount; i++) {
-      const result = await testSingleIp(domain, ip, 5000);
+      const result = await testSingleIp(domain, ip, 3000);
       testResults.push(result.success);
       if (result.success) {
         latencies.push(result.latency);
@@ -123,9 +165,14 @@ export async function testCfOptimizedIps(domain: string, testCount = 3): Promise
     }
 
     // 计算成功率和平均延迟
-    const successRate = testResults.filter((r) => r).length / testCount;
+    const successCount = testResults.filter((r) => r).length;
+    const successRate = successCount / testCount;
     const avgLatency =
       latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 9999;
+
+    console.log(
+      `[CF IP Test] ${ip}: ${successCount > 0 ? "SUCCESS" : "FAIL"}, avgLatency=${avgLatency}ms`
+    );
 
     if (successRate > 0) {
       results.push({
@@ -136,9 +183,12 @@ export async function testCfOptimizedIps(domain: string, testCount = 3): Promise
     }
   }
 
-  // 按平均延迟排序，只返回成功率 > 50% 的 IP
-  return results
-    .filter((r) => r.successRate > 0.5)
-    .sort((a, b) => a.avgLatency - b.avgLatency)
-    .slice(0, 5); // 只返回前 5 个最快的
+  console.log(`[CF IP Test] Total successful IPs: ${results.length}`);
+
+  // 按平均延迟排序
+  const sorted = results.sort((a, b) => a.avgLatency - b.avgLatency).slice(0, 5);
+
+  console.log(`[CF IP Test] Returning top ${sorted.length} IPs`);
+
+  return sorted;
 }

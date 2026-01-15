@@ -55,7 +55,7 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
     setTesting(true);
     try {
       toast.info("正在测试 Cloudflare IP 速度，请稍候...");
-      const results = await testCfOptimizedIps(domainValue.trim(), 3);
+      const results = await testCfOptimizedIps(domainValue.trim(), 1);
 
       if (results.length === 0) {
         toast.error("未找到可用的优选 IP");
