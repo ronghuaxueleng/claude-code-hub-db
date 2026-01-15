@@ -16,7 +16,7 @@ import { logger } from "@/lib/logger";
  */
 export async function createCfOptimizedAgent(
   targetUrl: string,
-  options: { allowH2?: boolean } = {},
+  options: { allowH2?: boolean } = {}
 ): Promise<Agent | null> {
   try {
     const url = new URL(targetUrl);
