@@ -19,15 +19,9 @@ export interface CfIpBlacklistEntry {
 /**
  * 获取某个域名的黑名单 IP 列表（失败次数 >= 阈值）
  */
-export async function getBlacklistedIps(
-  domain: string,
-  failureThreshold = 3
-): Promise<string[]> {
+export async function getBlacklistedIps(domain: string, failureThreshold = 3): Promise<string[]> {
   const results = await db.query.cfIpBlacklist.findMany({
-    where: and(
-      eq(cfIpBlacklist.domain, domain),
-      gte(cfIpBlacklist.failureCount, failureThreshold)
-    ),
+    where: and(eq(cfIpBlacklist.domain, domain), gte(cfIpBlacklist.failureCount, failureThreshold)),
     columns: {
       ip: true,
     },
