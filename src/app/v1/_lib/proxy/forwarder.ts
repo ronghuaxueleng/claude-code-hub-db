@@ -14,6 +14,7 @@ import { getCachedSystemSettings, isHttp2Enabled } from "@/lib/config";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { PROVIDER_DEFAULTS, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { createCfOptimizedAgent } from "@/lib/cf-optimized-agent";
+import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
 import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
@@ -886,6 +887,8 @@ export class ProxyForwarder {
               const cfDomain = (init as any).__cfOptimizedDomain;
               try {
                 await recordIpFailure(cfDomain, cfIp, "HTTP_403", errorMessage);
+                // 立即刷新缓存，确保黑名单 IP 不再被使用
+                await refreshCfOptimizedCache();
                 logger.warn("ProxyForwarder: CF IP added to blacklist due to 403 error", {
                   domain: cfDomain,
                   ip: cfIp,

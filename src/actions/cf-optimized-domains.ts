@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
 import * as repo from "@/repository/cf-optimized-domains";
 import type { ActionResult } from "./types";
 
@@ -66,6 +67,9 @@ export async function createCfOptimizedDomainAction(data: {
     const result = await repo.createCfOptimizedDomain(data);
 
     revalidatePath("/settings/cf-optimized-domains");
+
+    // 立即刷新缓存，确保新配置生效
+    await refreshCfOptimizedCache();
 
     logger.info("[CfOptimizedDomainsAction] Created domain", {
       domain: data.domain,
@@ -132,6 +136,9 @@ export async function updateCfOptimizedDomainAction(
 
     revalidatePath("/settings/cf-optimized-domains");
 
+    // 立即刷新缓存，确保更新后的配置生效
+    await refreshCfOptimizedCache();
+
     logger.info("[CfOptimizedDomainsAction] Updated domain", {
       id,
       updates,
@@ -174,6 +181,9 @@ export async function deleteCfOptimizedDomainAction(id: number): Promise<ActionR
     }
 
     revalidatePath("/settings/cf-optimized-domains");
+
+    // 立即刷新缓存，确保删除后的配置生效
+    await refreshCfOptimizedCache();
 
     logger.info("[CfOptimizedDomainsAction] Deleted domain", {
       id,

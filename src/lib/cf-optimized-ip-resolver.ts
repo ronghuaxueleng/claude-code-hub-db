@@ -4,6 +4,7 @@
  */
 
 import { getActiveCfOptimizedDomains } from "@/repository/cf-optimized-domains";
+import { getBlacklistedIps } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
 
 // 优选 IP 缓存（域名 -> IP 列表）
@@ -50,9 +51,24 @@ export async function getOptimizedIp(domain: string): Promise<string | null> {
     return null;
   }
 
-  // 随机选择一个 IP（负载均衡）
-  const randomIndex = Math.floor(Math.random() * ips.length);
-  return ips[randomIndex];
+  // 获取黑名单 IP（失败次数 >= 3）
+  const blacklistedIps = await getBlacklistedIps(domain, 3);
+
+  // 过滤掉黑名单中的 IP
+  const availableIps = ips.filter((ip) => !blacklistedIps.includes(ip));
+
+  if (availableIps.length === 0) {
+    logger.warn("[CfOptimizedIpResolver] All IPs are blacklisted", {
+      domain,
+      totalIps: ips.length,
+      blacklistedCount: blacklistedIps.length,
+    });
+    return null;
+  }
+
+  // 随机选择一个可用 IP（负载均衡）
+  const randomIndex = Math.floor(Math.random() * availableIps.length);
+  return availableIps[randomIndex];
 }
 
 /**
