@@ -12,16 +12,22 @@ import { logger } from "@/lib/logger";
 
 const lookupAsync = promisify(dnsLookup);
 
+export interface CfOptimizedAgentResult {
+  agent: Agent;
+  domain: string;
+  ip: string;
+}
+
 /**
  * 创建支持 CF 优选 IP 的 Agent
  * @param targetUrl 目标 URL
  * @param options Agent 选项
- * @returns 配置了优选 IP 的 Agent，如果没有优选 IP 则返回 null
+ * @returns 配置了优选 IP 的 Agent 和 IP 信息，如果没有优选 IP 则返回 null
  */
 export async function createCfOptimizedAgent(
   targetUrl: string,
   options: { allowH2?: boolean } = {}
-): Promise<Agent | null> {
+): Promise<CfOptimizedAgentResult | null> {
   try {
     const url = new URL(targetUrl);
     const domain = url.hostname;
@@ -89,10 +95,16 @@ export async function createCfOptimizedAgent(
     };
 
     // 创建带自定义 connect 的 Agent
-    return new Agent({
+    const agent = new Agent({
       ...options,
       connect: customConnect,
     });
+
+    return {
+      agent,
+      domain,
+      ip: optimizedIp,
+    };
   } catch (error) {
     logger.error("[CfOptimizedAgent] Failed to create optimized agent:", error);
     return null;

@@ -14,6 +14,7 @@ import { getCachedSystemSettings, isHttp2Enabled } from "@/lib/config";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { PROVIDER_DEFAULTS, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { createCfOptimizedAgent } from "@/lib/cf-optimized-agent";
+import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
 import { SessionManager } from "@/lib/session-manager";
@@ -875,6 +876,23 @@ export class ProxyForwarder {
               await recordFailure(currentProvider.id, lastError);
             }
 
+            // 如果是 403 错误且使用了 CF 优选 IP，记录到黑名单
+            if (statusCode === 403 && (init as any).__cfOptimizedIp && (init as any).__cfOptimizedDomain) {
+              const cfIp = (init as any).__cfOptimizedIp;
+              const cfDomain = (init as any).__cfOptimizedDomain;
+              try {
+                await recordIpFailure(cfDomain, cfIp, "HTTP_403", errorMessage);
+                logger.warn("ProxyForwarder: CF IP added to blacklist due to 403 error", {
+                  domain: cfDomain,
+                  ip: cfIp,
+                  providerId: currentProvider.id,
+                  providerName: currentProvider.name,
+                });
+              } catch (error) {
+                logger.error("ProxyForwarder: Failed to record CF IP failure", { error });
+              }
+            }
+
             // 加入失败列表并切换供应商
             failedProviderIds.push(currentProvider.id);
             break; // ⭐ 跳出内层循环，进入供应商切换逻辑
@@ -1442,9 +1460,12 @@ export class ProxyForwarder {
       });
     } else {
       // 尝试使用 CF 优选 IP（仅在直连场景）
-      const cfOptimizedAgent = await createCfOptimizedAgent(proxyUrl, { allowH2: enableHttp2 });
-      if (cfOptimizedAgent) {
-        init.dispatcher = cfOptimizedAgent;
+      const cfOptimizedResult = await createCfOptimizedAgent(proxyUrl, { allowH2: enableHttp2 });
+      if (cfOptimizedResult) {
+        init.dispatcher = cfOptimizedResult.agent;
+        // 保存 CF 优选 IP 信息，用于错误处理时记录黑名单
+        (init as any).__cfOptimizedIp = cfOptimizedResult.ip;
+        (init as any).__cfOptimizedDomain = cfOptimizedResult.domain;
         logger.info("ProxyForwarder: Using CF optimized IP", {
           providerId: provider.id,
           providerName: provider.name,
