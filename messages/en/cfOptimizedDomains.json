@@ -5,7 +5,7 @@
     "title": "Optimized Domains List",
     "addButton": "Add Domain",
     "loading": "Loading...",
-    "empty": "No data yet, click \"Add Domain\" to start configuration",
+    "empty": "No data yet, click 'Add Domain' to start configuration",
     "columns": {
       "domain": "Domain",
       "optimizedIps": "Optimized IPs",

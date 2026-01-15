@@ -5,7 +5,7 @@
     "title": "优选域名列表",
     "addButton": "添加域名",
     "loading": "加载中...",
-    "empty": "暂无数据，点击"添加域名"开始配置",
+    "empty": "暂无数据，点击「添加域名」开始配置",
     "columns": {
       "domain": "域名",
       "optimizedIps": "优选 IP",
