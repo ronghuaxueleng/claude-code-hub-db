@@ -93,7 +93,9 @@ async function testSingleIp(
 
     // 只要能连接就算成功（即使返回 4xx/5xx）
     const success = response.statusCode < 600;
-    console.log(`[CF IP Test] ${ip} -> ${domain}: ${success ? "SUCCESS" : "FAIL"} (${response.statusCode}, ${latency}ms)`);
+    console.log(
+      `[CF IP Test] ${ip} -> ${domain}: ${success ? "SUCCESS" : "FAIL"} (${response.statusCode}, ${latency}ms)`
+    );
 
     return {
       success,
@@ -115,10 +117,7 @@ async function testSingleIp(
  * @param testCount 每个 IP 测试次数（默认 1 次）
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(
-  domain: string,
-  testCount = 1,
-): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(domain: string, testCount = 1): Promise<CfIpTestResult[]> {
   console.log(`[CF IP Test] Starting test for domain: ${domain}, testCount: ${testCount}`);
 
   // Cloudflare 常用 Anycast IP 列表
