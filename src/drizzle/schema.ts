@@ -613,6 +613,24 @@ export const notificationTargetBindings = pgTable(
   })
 );
 
+// Cloudflare Optimized Domains table
+export const cfOptimizedDomains = pgTable(
+  'cf_optimized_domains',
+  {
+    id: serial('id').primaryKey(),
+    domain: varchar('domain', { length: 255 }).notNull(),
+    optimizedIps: jsonb('optimized_ips').$type<string[]>().notNull(),
+    isEnabled: boolean('is_enabled').notNull().default(true),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    domainUniqueIdx: uniqueIndex('idx_cf_optimized_domains_domain').on(table.domain),
+    isEnabledIdx: index('idx_cf_optimized_domains_enabled').on(table.isEnabled),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   keys: many(keys),

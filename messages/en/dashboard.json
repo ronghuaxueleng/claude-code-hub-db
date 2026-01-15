@@ -541,6 +541,7 @@
     "quotasManagement": "Quotas",
     "userManagement": "Users",
     "providers": "Providers",
+    "cfOptimized": "CF Optimized",
     "documentation": "Docs",
     "systemSettings": "Settings",
     "feedback": "Feedback",

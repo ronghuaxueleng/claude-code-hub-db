@@ -23,6 +23,7 @@ export function DashboardHeader({ session }: DashboardHeaderProps) {
     { href: "/dashboard/leaderboard", label: t("leaderboard") },
     { href: "/dashboard/availability", label: t("availability"), adminOnly: true },
     { href: "/dashboard/providers", label: t("providers"), adminOnly: true },
+    { href: "/dashboard/cf-optimized", label: t("cfOptimized"), adminOnly: true },
     ...(isAdmin
       ? [{ href: "/dashboard/quotas", label: t("quotasManagement") }]
       : [{ href: "/dashboard/my-quota", label: t("myQuota") }]),
