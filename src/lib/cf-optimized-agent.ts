@@ -4,9 +4,12 @@
  */
 
 import { Agent } from "undici";
-import type { Connector } from "undici";
+import { lookup as dnsLookup } from "node:dns";
+import { promisify } from "node:util";
 import { getOptimizedIp } from "./cf-optimized-ip-resolver";
 import { logger } from "@/lib/logger";
+
+const lookupAsync = promisify(dnsLookup);
 
 /**
  * 创建支持 CF 优选 IP 的 Agent
@@ -35,23 +38,35 @@ export async function createCfOptimizedAgent(
       ip: optimizedIp,
     });
 
-    // 创建自定义 connector，将域名解析到优选 IP
-    const customConnector: Connector = (options, callback) => {
-      // 替换 hostname 为优选 IP
-      const modifiedOptions = {
-        ...options,
-        hostname: optimizedIp,
-        servername: domain, // 保持 SNI 为原域名
-      };
+    // 创建自定义 connect 函数，将域名解析到优选 IP
+    const customConnect = (opts: any, callback: any) => {
+      // 如果是目标域名，使用优选 IP
+      if (opts.hostname === domain || opts.servername === domain) {
+        // 修改连接选项：使用优选 IP 作为连接地址
+        const modifiedOpts = {
+          ...opts,
+          hostname: optimizedIp, // 连接到优选 IP
+          servername: domain, // 保持 SNI 为原域名（用于 TLS）
+        };
 
-      // 使用默认 connector
-      return Agent.prototype.connect.call(this, modifiedOptions, callback);
+        logger.debug("[CfOptimizedAgent] Connecting to optimized IP", {
+          originalHost: opts.hostname,
+          optimizedIp,
+          servername: domain,
+        });
+
+        // 使用默认的 connect 逻辑
+        return Agent.prototype.connect.call(this, modifiedOpts, callback);
+      }
+
+      // 其他域名使用默认连接
+      return Agent.prototype.connect.call(this, opts, callback);
     };
 
-    // 创建带自定义 connector 的 Agent
+    // 创建带自定义 connect 的 Agent
     return new Agent({
       ...options,
-      connect: customConnector,
+      connect: customConnect,
     });
   } catch (error) {
     logger.error("[CfOptimizedAgent] Failed to create optimized agent:", error);
