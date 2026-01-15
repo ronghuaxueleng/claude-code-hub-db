@@ -12,7 +12,7 @@ export interface CfIpTestResult {
 async function testSingleIp(
   domain: string,
   ip: string,
-  timeout = 5000,
+  timeout = 5000
 ): Promise<{ success: boolean; latency: number }> {
   const startTime = Date.now();
 
@@ -56,10 +56,7 @@ async function testSingleIp(
  * @param testCount 每个 IP 测试次数
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(
-  domain: string,
-  testCount = 3,
-): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
   // Cloudflare 常用 IP 列表（这些是已知的 Cloudflare Anycast IP）
   const commonCfIps = [
     "104.16.132.229",
@@ -98,7 +95,8 @@ export async function testCfOptimizedIps(
 
     // 计算成功率和平均延迟
     const successRate = testResults.filter((r) => r).length / testCount;
-    const avgLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 9999;
+    const avgLatency =
+      latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 9999;
 
     if (successRate > 0) {
       results.push({
