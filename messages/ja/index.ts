@@ -1,5 +1,6 @@
 import auth from "./auth.json";
 import bigScreen from "./bigScreen.json";
+import cfOptimizedDomains from "./cfOptimizedDomains.json";
 import common from "./common.json";
 import customs from "./customs.json";
 import dashboard from "./dashboard.json";
@@ -20,6 +21,7 @@ import validation from "./validation.json";
 export default {
   auth,
   bigScreen,
+  cfOptimizedDomains,
   common,
   customs,
   dashboard,
