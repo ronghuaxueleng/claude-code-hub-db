@@ -4,7 +4,10 @@
  */
 
 import { logger } from "@/lib/logger";
-import { getAllCfOptimizedDomains, updateCfOptimizedDomain } from "@/repository/cf-optimized-domains";
+import {
+  getAllCfOptimizedDomains,
+  updateCfOptimizedDomain,
+} from "@/repository/cf-optimized-domains";
 import { testCfOptimizedIps } from "@/actions/cf-ip-test";
 import { refreshCache } from "@/lib/cf-optimized-ip-resolver";
 
