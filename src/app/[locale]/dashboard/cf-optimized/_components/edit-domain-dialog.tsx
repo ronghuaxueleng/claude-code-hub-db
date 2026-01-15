@@ -81,10 +81,11 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
     setLoading(true);
 
     try {
+      // 解析 IP 列表（支持逗号、换行分隔，忽略 # 后的注释）
       const ipList = ips
-        .split(/[,\s\n]+/)
-        .map((ip) => ip.split("#")[0].trim())
-        .filter((ip) => ip.length > 0);
+        .split(/[\n,]+/) // 先按换行或逗号分割
+        .map((line) => line.split("#")[0].trim()) // 移除 # 及其后面的注释
+        .filter((ip) => ip.length > 0 && /^(\d{1,3}\.){3}\d{1,3}$/.test(ip)); // 只保留有效的 IP 地址
 
       const result = await updateCfOptimizedDomainAction(domain.id, {
         domain: domainValue.trim(),
