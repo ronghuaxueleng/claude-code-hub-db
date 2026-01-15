@@ -14,10 +14,7 @@ export interface CfIpTestResult {
  * @param testCount 每个 IP 测试次数
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(
-  domain: string,
-  testCount = 3,
-): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
   // Cloudflare 常用 IP 段
   const cfIpRanges = [
     "104.16.0.0/13",
