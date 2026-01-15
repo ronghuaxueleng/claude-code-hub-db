@@ -1,6 +1,6 @@
 "use server";
 
-import { request } from "undici";
+import { Agent, request } from "undici";
 
 export interface CfIpTestResult {
   ip: string;
@@ -9,34 +9,57 @@ export interface CfIpTestResult {
 }
 
 /**
+ * 创建用于测试特定 IP 的 Agent
+ */
+function createTestAgent(domain: string, ip: string): Agent {
+  // 创建自定义 connect 函数，将域名解析到指定 IP
+  const customConnect = (opts: any, callback: any) => {
+    // 如果是目标域名，使用指定 IP
+    if (opts.hostname === domain || opts.servername === domain) {
+      const modifiedOpts = {
+        ...opts,
+        hostname: ip, // 连接到指定 IP
+        servername: domain, // 保持 SNI 为原域名（用于 TLS）
+      };
+      return Agent.prototype.connect.call(this, modifiedOpts, callback);
+    }
+    return Agent.prototype.connect.call(this, opts, callback);
+  };
+
+  return new Agent({
+    connect: customConnect,
+  });
+}
+
+/**
  * 测试单个 IP 访问指定域名的延迟
  */
 async function testSingleIp(
   domain: string,
   ip: string,
-  timeout = 5000
+  timeout = 5000,
 ): Promise<{ success: boolean; latency: number }> {
   const startTime = Date.now();
 
   try {
-    // 使用 undici 的 request，可以指定连接到特定 IP
-    const url = new URL(`https://${domain}/`);
+    // 创建专门用于测试这个 IP 的 Agent
+    const agent = createTestAgent(domain, ip);
 
-    // 使用 IP 作为连接地址，但保持 Host 头为域名
-    const response = await request(`https://${ip}/`, {
+    // 使用域名作为 URL，但通过 Agent 连接到指定 IP
+    const response = await request(`https://${domain}/`, {
       method: "HEAD",
       headers: {
-        Host: domain,
+        "User-Agent": "Mozilla/5.0",
       },
       headersTimeout: timeout,
       bodyTimeout: timeout,
-      // 忽略 SSL 证书验证（因为 IP 和域名不匹配）
-      connect: {
-        rejectUnauthorized: false,
-      },
+      dispatcher: agent,
     });
 
     const latency = Date.now() - startTime;
+
+    // 关闭 Agent
+    await agent.close();
 
     // 只要能连接就算成功（即使返回 4xx/5xx）
     return {
@@ -58,7 +81,10 @@ async function testSingleIp(
  * @param testCount 每个 IP 测试次数
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
+export async function testCfOptimizedIps(
+  domain: string,
+  testCount = 3,
+): Promise<CfIpTestResult[]> {
   // Cloudflare 常用 Anycast IP 列表
   const commonCfIps = [
     "104.16.132.229",
@@ -85,8 +111,8 @@ export async function testCfOptimizedIps(domain: string, testCount = 3): Promise
 
   const results: CfIpTestResult[] = [];
 
-  // 并发测试所有 IP（每个 IP 测试一次）
-  const testPromises = commonCfIps.map(async (ip) => {
+  // 串行测试每个 IP（避免并发过多）
+  for (const ip of commonCfIps) {
     const testResults: boolean[] = [];
     const latencies: number[] = [];
 
@@ -105,18 +131,13 @@ export async function testCfOptimizedIps(domain: string, testCount = 3): Promise
       latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 9999;
 
     if (successRate > 0) {
-      return {
+      results.push({
         ip,
         avgLatency,
         successRate,
-      };
+      });
     }
-    return null;
-  });
-
-  // 等待所有测试完成
-  const allResults = await Promise.all(testPromises);
-  results.push(...allResults.filter((r): r is CfIpTestResult => r !== null));
+  }
 
   // 按平均延迟排序，只返回成功率 > 50% 的 IP
   return results
