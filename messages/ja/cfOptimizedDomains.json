@@ -1,0 +1,101 @@
+{
+  "title": "CF 最適化ドメイン管理",
+  "description": "Cloudflare 最適化ドメインと対応する IP アドレスを管理し、アクセス速度を向上させます",
+  "table": {
+    "title": "最適化ドメインリスト",
+    "addButton": "ドメインを追加",
+    "loading": "読み込み中...",
+    "empty": "データがありません。「ドメインを追加」をクリックして設定を開始してください",
+    "columns": {
+      "domain": "ドメイン",
+      "optimizedIps": "最適化 IP",
+      "status": "ステータス",
+      "description": "説明",
+      "actions": "操作"
+    },
+    "status": {
+      "enabled": "有効",
+      "disabled": "無効"
+    },
+    "actions": {
+      "edit": "編集",
+      "delete": "削除"
+    }
+  },
+  "addDialog": {
+    "title": "最適化ドメインを追加",
+    "description": "ドメインと対応する Cloudflare 最適化 IP アドレスを設定します",
+    "fields": {
+      "domain": {
+        "label": "ドメイン",
+        "placeholder": "例: api.anthropic.com",
+        "required": true
+      },
+      "ips": {
+        "label": "最適化 IP アドレス",
+        "placeholder": "IP アドレスを入力してください（カンマ、スペース、または改行で区切る）\n例: 1.1.1.1, 8.8.8.8",
+        "required": true
+      },
+      "description": {
+        "label": "説明",
+        "placeholder": "例: Claude API 最適化 IP",
+        "required": false
+      }
+    },
+    "buttons": {
+      "cancel": "キャンセル",
+      "submit": "追加",
+      "submitting": "追加中..."
+    },
+    "toast": {
+      "success": "追加しました",
+      "error": "追加に失敗しました"
+    }
+  },
+  "editDialog": {
+    "title": "最適化ドメインを編集",
+    "description": "ドメイン設定と最適化 IP アドレスを変更します",
+    "fields": {
+      "domain": {
+        "label": "ドメイン",
+        "required": true
+      },
+      "ips": {
+        "label": "最適化 IP アドレス",
+        "placeholder": "IP アドレスを入力してください（カンマ、スペース、または改行で区切る）",
+        "required": true
+      },
+      "description": {
+        "label": "説明",
+        "placeholder": "例: Claude API 最適化 IP",
+        "required": false
+      },
+      "enabled": {
+        "label": "有効状態"
+      }
+    },
+    "buttons": {
+      "cancel": "キャンセル",
+      "submit": "保存",
+      "submitting": "保存中..."
+    },
+    "toast": {
+      "success": "更新しました",
+      "error": "更新に失敗しました"
+    }
+  },
+  "deleteDialog": {
+    "title": "削除の確認",
+    "description": "本当にドメインを削除しますか",
+    "warning": "この操作は元に戻せません。",
+    "buttons": {
+      "cancel": "キャンセル",
+      "submit": "削除",
+      "submitting": "削除中..."
+    },
+    "toast": {
+      "success": "削除しました",
+      "error": "削除に失敗しました"
+    }
+  }
+}

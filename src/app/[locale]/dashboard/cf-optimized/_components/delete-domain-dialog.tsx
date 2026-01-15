@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -27,6 +28,7 @@ export function DeleteDomainDialog({
   onSuccess,
   domain,
 }: DeleteDomainDialogProps) {
+  const t = useTranslations("cfOptimizedDomains.deleteDialog");
   const [loading, setLoading] = useState(false);
 
   async function handleDelete() {
@@ -38,14 +40,14 @@ export function DeleteDomainDialog({
       const result = await deleteCfOptimizedDomainAction(domain.id);
 
       if (result.ok) {
-        toast.success("删除成功");
+        toast.success(t("toast.success"));
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(result.error || "删除失败");
+        toast.error(result.error || t("toast.error"));
       }
     } catch (error) {
-      toast.error("删除失败");
+      toast.error(t("toast.error"));
       console.error(error);
     } finally {
       setLoading(false);
@@ -56,20 +58,19 @@ export function DeleteDomainDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogTitle>{t("title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除域名 <span className="font-mono font-semibold">{domain?.domain}</span>{" "}
-            的优选配置吗？
+            {t("description")} <span className="font-mono font-semibold">{domain?.domain}</span>?
             <br />
-            此操作无法撤销。
+            {t("warning")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            取消
+            {t("buttons.cancel")}
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-            {loading ? "删除中..." : "删除"}
+            {loading ? t("buttons.submitting") : t("buttons.submit")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

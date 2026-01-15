@@ -1,0 +1,101 @@
+{
+  "title": "CF 優選域名管理",
+  "description": "管理 Cloudflare 優選域名和對應的 IP 地址，提升訪問速度",
+  "table": {
+    "title": "優選域名列表",
+    "addButton": "添加域名",
+    "loading": "加載中...",
+    "empty": "暫無數據，點擊「添加域名」開始配置",
+    "columns": {
+      "domain": "域名",
+      "optimizedIps": "優選 IP",
+      "status": "狀態",
+      "description": "描述",
+      "actions": "操作"
+    },
+    "status": {
+      "enabled": "啟用",
+      "disabled": "禁用"
+    },
+    "actions": {
+      "edit": "編輯",
+      "delete": "刪除"
+    }
+  },
+  "addDialog": {
+    "title": "添加優選域名",
+    "description": "配置域名和對應的 Cloudflare 優選 IP 地址",
+    "fields": {
+      "domain": {
+        "label": "域名",
+        "placeholder": "例如: api.anthropic.com",
+        "required": true
+      },
+      "ips": {
+        "label": "優選 IP 地址",
+        "placeholder": "輸入 IP 地址，多個 IP 用逗號、空格或換行分隔\n例如: 1.1.1.1, 8.8.8.8",
+        "required": true
+      },
+      "description": {
+        "label": "描述",
+        "placeholder": "例如: Claude API 優選 IP",
+        "required": false
+      }
+    },
+    "buttons": {
+      "cancel": "取消",
+      "submit": "添加",
+      "submitting": "添加中..."
+    },
+    "toast": {
+      "success": "添加成功",
+      "error": "添加失敗"
+    }
+  },
+  "editDialog": {
+    "title": "編輯優選域名",
+    "description": "修改域名配置和優選 IP 地址",
+    "fields": {
+      "domain": {
+        "label": "域名",
+        "required": true
+      },
+      "ips": {
+        "label": "優選 IP 地址",
+        "placeholder": "輸入 IP 地址，多個 IP 用逗號、空格或換行分隔",
+        "required": true
+      },
+      "description": {
+        "label": "描述",
+        "placeholder": "例如: Claude API 優選 IP",
+        "required": false
+      },
+      "enabled": {
+        "label": "啟用狀態"
+      }
+    },
+    "buttons": {
+      "cancel": "取消",
+      "submit": "保存",
+      "submitting": "保存中..."
+    },
+    "toast": {
+      "success": "更新成功",
+      "error": "更新失敗"
+    }
+  },
+  "deleteDialog": {
+    "title": "確認刪除",
+    "description": "確定要刪除域名",
+    "warning": "此操作無法撤銷。",
+    "buttons": {
+      "cancel": "取消",
+      "submit": "刪除",
+      "submitting": "刪除中..."
+    },
+    "toast": {
+      "success": "刪除成功",
+      "error": "刪除失敗"
+    }
+  }
+}

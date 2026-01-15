@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +24,7 @@ interface AddDomainDialogProps {
 }
 
 export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDialogProps) {
+  const t = useTranslations("cfOptimizedDomains.addDialog");
   const [loading, setLoading] = useState(false);
   const [domain, setDomain] = useState("");
   const [ips, setIps] = useState("");
@@ -40,7 +42,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
         .filter((ip) => ip.length > 0);
 
       if (ipList.length === 0) {
-        toast.error("请至少输入一个 IP 地址");
+        toast.error(t("fields.ips.placeholder"));
         setLoading(false);
         return;
       }
@@ -52,7 +54,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
       });
 
       if (result.ok) {
-        toast.success("添加成功");
+        toast.success(t("toast.success"));
         onSuccess();
         onOpenChange(false);
         // 重置表单
@@ -60,10 +62,10 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
         setIps("");
         setDescription("");
       } else {
-        toast.error(result.error || "添加失败");
+        toast.error(result.error || t("toast.error"));
       }
     } catch (error) {
-      toast.error("添加失败");
+      toast.error(t("toast.error"));
       console.error(error);
     } finally {
       setLoading(false);
@@ -75,16 +77,18 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>添加优选域名</DialogTitle>
-            <DialogDescription>配置域名和对应的 Cloudflare 优选 IP 地址</DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="domain">域名 *</Label>
+              <Label htmlFor="domain">
+                {t("fields.domain.label")} *
+              </Label>
               <Input
                 id="domain"
-                placeholder="例如: api.anthropic.com"
+                placeholder={t("fields.domain.placeholder")}
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 required
@@ -92,23 +96,26 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="ips">优选 IP 地址 *</Label>
+              <Label htmlFor="ips">
+                {t("fields.ips.label")} *
+              </Label>
               <Textarea
                 id="ips"
-                placeholder="输入一个或多个 IP 地址，用逗号、空格或换行分隔&#10;例如:&#10;104.21.48.123&#10;172.67.189.45"
+                placeholder={t("fields.ips.placeholder")}
                 value={ips}
                 onChange={(e) => setIps(e.target.value)}
                 rows={4}
                 required
               />
-              <p className="text-xs text-muted-foreground">支持多个 IP，用逗号、空格或换行分隔</p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">描述（可选）</Label>
+              <Label htmlFor="description">
+                {t("fields.description.label")}
+              </Label>
               <Input
                 id="description"
-                placeholder="例如: Claude API 优选 IP"
+                placeholder={t("fields.description.placeholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -122,10 +129,10 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              取消
+              {t("buttons.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "添加中..." : "添加"}
+              {loading ? t("buttons.submitting") : t("buttons.submit")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,0 +1,101 @@
+{
+  "title": "CF Optimized Domains",
+  "description": "Manage Cloudflare optimized domains and their corresponding IP addresses to improve access speed",
+  "table": {
+    "title": "Optimized Domains List",
+    "addButton": "Add Domain",
+    "loading": "Loading...",
+    "empty": "No data yet, click \"Add Domain\" to start configuration",
+    "columns": {
+      "domain": "Domain",
+      "optimizedIps": "Optimized IPs",
+      "status": "Status",
+      "description": "Description",
+      "actions": "Actions"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "addDialog": {
+    "title": "Add Optimized Domain",
+    "description": "Configure domain and corresponding Cloudflare optimized IP addresses",
+    "fields": {
+      "domain": {
+        "label": "Domain",
+        "placeholder": "e.g., api.anthropic.com",
+        "required": true
+      },
+      "ips": {
+        "label": "Optimized IP Addresses",
+        "placeholder": "Enter IP addresses, separated by comma, space or newline\ne.g., 1.1.1.1, 8.8.8.8",
+        "required": true
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "e.g., Claude API Optimized IPs",
+        "required": false
+      }
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Add",
+      "submitting": "Adding..."
+    },
+    "toast": {
+      "success": "Added successfully",
+      "error": "Failed to add"
+    }
+  },
+  "editDialog": {
+    "title": "Edit Optimized Domain",
+    "description": "Modify domain configuration and optimized IP addresses",
+    "fields": {
+      "domain": {
+        "label": "Domain",
+        "required": true
+      },
+      "ips": {
+        "label": "Optimized IP Addresses",
+        "placeholder": "Enter IP addresses, separated by comma, space or newline",
+        "required": true
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "e.g., Claude API Optimized IPs",
+        "required": false
+      },
+      "enabled": {
+        "label": "Enable Status"
+      }
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Save",
+      "submitting": "Saving..."
+    },
+    "toast": {
+      "success": "Updated successfully",
+      "error": "Failed to update"
+    }
+  },
+  "deleteDialog": {
+    "title": "Confirm Deletion",
+    "description": "Are you sure you want to delete domain",
+    "warning": "This action cannot be undone.",
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Delete",
+      "submitting": "Deleting..."
+    },
+    "toast": {
+      "success": "Deleted successfully",
+      "error": "Failed to delete"
+    }
+  }
+}

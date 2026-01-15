@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ interface EditDomainDialogProps {
 }
 
 export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: EditDomainDialogProps) {
+  const t = useTranslations("cfOptimizedDomains.editDialog");
   const [loading, setLoading] = useState(false);
   const [domainValue, setDomainValue] = useState("");
   const [ips, setIps] = useState("");
@@ -54,7 +56,7 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
         .filter((ip) => ip.length > 0);
 
       if (ipList.length === 0) {
-        toast.error("请至少输入一个 IP 地址");
+        toast.error(t("fields.ips.placeholder"));
         setLoading(false);
         return;
       }
@@ -67,14 +69,14 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
       });
 
       if (result.ok) {
-        toast.success("更新成功");
+        toast.success(t("toast.success"));
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(result.error || "更新失败");
+        toast.error(result.error || t("toast.error"));
       }
     } catch (error) {
-      toast.error("更新失败");
+      toast.error(t("toast.error"));
       console.error(error);
     } finally {
       setLoading(false);
@@ -86,16 +88,17 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>编辑优选域名</DialogTitle>
-            <DialogDescription>修改域名配置和优选 IP 地址</DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-domain">域名 *</Label>
+              <Label htmlFor="edit-domain">
+                {t("fields.domain.label")} *
+              </Label>
               <Input
                 id="edit-domain"
-                placeholder="例如: api.anthropic.com"
                 value={domainValue}
                 onChange={(e) => setDomainValue(e.target.value)}
                 required
@@ -103,10 +106,12 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-ips">优选 IP 地址 *</Label>
+              <Label htmlFor="edit-ips">
+                {t("fields.ips.label")} *
+              </Label>
               <Textarea
                 id="edit-ips"
-                placeholder="输入一个或多个 IP 地址"
+                placeholder={t("fields.ips.placeholder")}
                 value={ips}
                 onChange={(e) => setIps(e.target.value)}
                 rows={4}
@@ -115,17 +120,19 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">描述（可选）</Label>
+              <Label htmlFor="edit-description">
+                {t("fields.description.label")}
+              </Label>
               <Input
                 id="edit-description"
-                placeholder="例如: Claude API 优选 IP"
+                placeholder={t("fields.description.placeholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="edit-enabled">启用状态</Label>
+              <Label htmlFor="edit-enabled">{t("fields.enabled.label")}</Label>
               <Switch id="edit-enabled" checked={isEnabled} onCheckedChange={setIsEnabled} />
             </div>
           </div>
@@ -137,10 +144,10 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              取消
+              {t("buttons.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "保存中..." : "保存"}
+              {loading ? t("buttons.submitting") : t("buttons.submit")}
             </Button>
           </DialogFooter>
         </form>

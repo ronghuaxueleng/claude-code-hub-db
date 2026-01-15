@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { CfOptimizedDomainsTable } from "./_components/cf-optimized-domains-table";
 
 export default async function CfOptimizedDomainsPage() {
-  const t = await getTranslations("CfOptimizedDomains");
+  const t = await getTranslations("cfOptimizedDomains");
 
   return (
     <div className="space-y-6">

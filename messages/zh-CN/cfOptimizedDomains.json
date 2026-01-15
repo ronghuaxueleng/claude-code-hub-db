@@ -1,0 +1,101 @@
+{
+  "title": "CF 优选域名管理",
+  "description": "管理 Cloudflare 优选域名和对应的 IP 地址，提升访问速度",
+  "table": {
+    "title": "优选域名列表",
+    "addButton": "添加域名",
+    "loading": "加载中...",
+    "empty": "暂无数据，点击"添加域名"开始配置",
+    "columns": {
+      "domain": "域名",
+      "optimizedIps": "优选 IP",
+      "status": "状态",
+      "description": "描述",
+      "actions": "操作"
+    },
+    "status": {
+      "enabled": "启用",
+      "disabled": "禁用"
+    },
+    "actions": {
+      "edit": "编辑",
+      "delete": "删除"
+    }
+  },
+  "addDialog": {
+    "title": "添加优选域名",
+    "description": "配置域名和对应的 Cloudflare 优选 IP 地址",
+    "fields": {
+      "domain": {
+        "label": "域名",
+        "placeholder": "例如: api.anthropic.com",
+        "required": true
+      },
+      "ips": {
+        "label": "优选 IP 地址",
+        "placeholder": "输入 IP 地址，多个 IP 用逗号、空格或换行分隔\n例如: 1.1.1.1, 8.8.8.8",
+        "required": true
+      },
+      "description": {
+        "label": "描述",
+        "placeholder": "例如: Claude API 优选 IP",
+        "required": false
+      }
+    },
+    "buttons": {
+      "cancel": "取消",
+      "submit": "添加",
+      "submitting": "添加中..."
+    },
+    "toast": {
+      "success": "添加成功",
+      "error": "添加失败"
+    }
+  },
+  "editDialog": {
+    "title": "编辑优选域名",
+    "description": "修改域名配置和优选 IP 地址",
+    "fields": {
+      "domain": {
+        "label": "域名",
+        "required": true
+      },
+      "ips": {
+        "label": "优选 IP 地址",
+        "placeholder": "输入 IP 地址，多个 IP 用逗号、空格或换行分隔",
+        "required": true
+      },
+      "description": {
+        "label": "描述",
+        "placeholder": "例如: Claude API 优选 IP",
+        "required": false
+      },
+      "enabled": {
+        "label": "启用状态"
+      }
+    },
+    "buttons": {
+      "cancel": "取消",
+      "submit": "保存",
+      "submitting": "保存中..."
+    },
+    "toast": {
+      "success": "更新成功",
+      "error": "更新失败"
+    }
+  },
+  "deleteDialog": {
+    "title": "确认删除",
+    "description": "确定要删除域名",
+    "warning": "此操作无法撤销。",
+    "buttons": {
+      "cancel": "取消",
+      "submit": "删除",
+      "submitting": "删除中..."
+    },
+    "toast": {
+      "success": "删除成功",
+      "error": "删除失败"
+    }
+  }
+}

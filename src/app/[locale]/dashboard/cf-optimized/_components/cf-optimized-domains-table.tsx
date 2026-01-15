@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { listCfOptimizedDomains } from "@/actions/cf-optimized-domains";
@@ -10,6 +11,7 @@ import { EditDomainDialog } from "./edit-domain-dialog";
 import { DeleteDomainDialog } from "./delete-domain-dialog";
 
 export function CfOptimizedDomainsTable() {
+  const t = useTranslations("cfOptimizedDomains.table");
   const [domains, setDomains] = useState<CfOptimizedDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -44,17 +46,17 @@ export function CfOptimizedDomainsTable() {
   }
 
   if (loading) {
-    return <div>加载中...</div>;
+    return <div>{t("loading")}</div>;
   }
 
   return (
     <>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">优选域名列表</h2>
+          <h2 className="text-xl font-semibold">{t("title")}</h2>
           <Button onClick={() => setAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            添加域名
+            {t("addButton")}
           </Button>
         </div>
 
@@ -62,18 +64,18 @@ export function CfOptimizedDomainsTable() {
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="px-4 py-3 text-left">域名</th>
-                <th className="px-4 py-3 text-left">优选 IP</th>
-                <th className="px-4 py-3 text-left">状态</th>
-                <th className="px-4 py-3 text-left">描述</th>
-                <th className="px-4 py-3 text-right">操作</th>
+                <th className="px-4 py-3 text-left">{t("columns.domain")}</th>
+                <th className="px-4 py-3 text-left">{t("columns.optimizedIps")}</th>
+                <th className="px-4 py-3 text-left">{t("columns.status")}</th>
+                <th className="px-4 py-3 text-left">{t("columns.description")}</th>
+                <th className="px-4 py-3 text-right">{t("columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {domains.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    暂无数据，点击"添加域名"开始配置
+                    {t("empty")}
                   </td>
                 </tr>
               ) : (
@@ -94,9 +96,9 @@ export function CfOptimizedDomainsTable() {
                     </td>
                     <td className="px-4 py-3">
                       {domain.isEnabled ? (
-                        <span className="text-green-600">启用</span>
+                        <span className="text-green-600">{t("status.enabled")}</span>
                       ) : (
-                        <span className="text-gray-400">禁用</span>
+                        <span className="text-gray-400">{t("status.disabled")}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -104,10 +106,10 @@ export function CfOptimizedDomainsTable() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(domain)}>
-                        编辑
+                        {t("actions.edit")}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(domain)}>
-                        删除
+                        {t("actions.delete")}
                       </Button>
                     </td>
                   </tr>
