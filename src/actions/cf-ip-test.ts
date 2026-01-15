@@ -1,11 +1,53 @@
 "use server";
 
-import { testProviderSpeed } from "@/lib/provider-speed-test";
-
 export interface CfIpTestResult {
   ip: string;
   avgLatency: number;
   successRate: number;
+}
+
+/**
+ * 测试单个 IP 的连通性和延迟
+ */
+async function testSingleIp(
+  domain: string,
+  ip: string,
+  timeout = 5000,
+): Promise<{ success: boolean; latency: number }> {
+  const startTime = Date.now();
+
+  try {
+    // 使用简单的 HTTPS 请求测试连通性
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    // 测试 HTTPS 连接
+    const response = await fetch(`https://${domain}/`, {
+      method: "HEAD",
+      headers: {
+        Host: domain,
+      },
+      signal: controller.signal,
+      // @ts-ignore - Node.js fetch 支持自定义 DNS
+      dispatcher: undefined, // 在浏览器环境中会被忽略
+    });
+
+    clearTimeout(timeoutId);
+
+    const latency = Date.now() - startTime;
+
+    // 只要能连接就算成功（即使返回 4xx/5xx）
+    return {
+      success: response.status < 600,
+      latency,
+    };
+  } catch (error) {
+    const latency = Date.now() - startTime;
+    return {
+      success: false,
+      latency: latency > timeout ? timeout : latency,
+    };
+  }
 }
 
 /**
@@ -14,65 +56,56 @@ export interface CfIpTestResult {
  * @param testCount 每个 IP 测试次数
  * @returns 测试结果，按平均延迟排序
  */
-export async function testCfOptimizedIps(domain: string, testCount = 3): Promise<CfIpTestResult[]> {
-  // Cloudflare 常用 IP 段
-  const cfIpRanges = [
-    "104.16.0.0/13",
-    "104.24.0.0/14",
-    "172.64.0.0/13",
-    "173.245.48.0/20",
-    "103.21.244.0/22",
-    "103.22.200.0/22",
-    "103.31.4.0/22",
-    "141.101.64.0/18",
-    "108.162.192.0/18",
-    "190.93.240.0/20",
-    "188.114.96.0/20",
-    "197.234.240.0/22",
-    "198.41.128.0/17",
-    "162.158.0.0/15",
-    "104.16.0.0/12",
+export async function testCfOptimizedIps(
+  domain: string,
+  testCount = 3,
+): Promise<CfIpTestResult[]> {
+  // Cloudflare 常用 IP 列表（这些是已知的 Cloudflare Anycast IP）
+  const commonCfIps = [
+    "104.16.132.229",
+    "104.16.133.229",
+    "172.67.177.54",
+    "172.67.178.54",
+    "104.21.48.200",
+    "104.21.49.200",
+    "172.64.155.89",
+    "172.64.156.89",
+    "104.18.32.167",
+    "104.18.33.167",
+    "104.22.64.196",
+    "104.22.65.196",
+    "172.66.40.112",
+    "172.66.41.112",
+    "104.17.96.13",
+    "104.17.97.13",
   ];
 
-  // 从每个 IP 段随机选择一些 IP 进行测试
-  const testIps: string[] = [];
-  for (const range of cfIpRanges.slice(0, 5)) {
-    // 只测试前 5 个段
-    const [baseIp, cidr] = range.split("/");
-    const [a, b, c, d] = baseIp.split(".").map(Number);
-
-    // 从每个段随机选择 2 个 IP
-    for (let i = 0; i < 2; i++) {
-      const randomOffset = Math.floor(Math.random() * 256);
-      const testIp = `${a}.${b}.${c}.${(d + randomOffset) % 256}`;
-      testIps.push(testIp);
-    }
-  }
-
-  // 测试每个 IP
   const results: CfIpTestResult[] = [];
 
-  for (const ip of testIps) {
-    try {
-      const result = await testProviderSpeed({
-        baseURL: `https://${domain}`,
-        headers: {
-          Host: domain,
-        },
-        timeout: 5000,
-        testCount,
-        customIp: ip,
-      });
+  // 测试每个 IP
+  for (const ip of commonCfIps) {
+    const testResults: boolean[] = [];
+    const latencies: number[] = [];
 
-      if (result.avgLatency > 0) {
-        results.push({
-          ip,
-          avgLatency: result.avgLatency,
-          successRate: result.successRate,
-        });
+    // 对每个 IP 进行多次测试
+    for (let i = 0; i < testCount; i++) {
+      const result = await testSingleIp(domain, ip, 5000);
+      testResults.push(result.success);
+      if (result.success) {
+        latencies.push(result.latency);
       }
-    } catch (error) {
-      console.error(`Failed to test IP ${ip}:`, error);
+    }
+
+    // 计算成功率和平均延迟
+    const successRate = testResults.filter((r) => r).length / testCount;
+    const avgLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 9999;
+
+    if (successRate > 0) {
+      results.push({
+        ip,
+        avgLatency,
+        successRate,
+      });
     }
   }
 
