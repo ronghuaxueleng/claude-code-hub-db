@@ -877,7 +877,11 @@ export class ProxyForwarder {
             }
 
             // 如果是 403 错误且使用了 CF 优选 IP，记录到黑名单
-            if (statusCode === 403 && (init as any).__cfOptimizedIp && (init as any).__cfOptimizedDomain) {
+            if (
+              statusCode === 403 &&
+              (init as any).__cfOptimizedIp &&
+              (init as any).__cfOptimizedDomain
+            ) {
               const cfIp = (init as any).__cfOptimizedIp;
               const cfDomain = (init as any).__cfOptimizedDomain;
               try {
