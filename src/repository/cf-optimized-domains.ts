@@ -136,7 +136,10 @@ export async function updateCfOptimizedDomain(
  * 删除优选域名
  */
 export async function deleteCfOptimizedDomain(id: number): Promise<boolean> {
-  const result = await db.delete(cfOptimizedDomains).where(eq(cfOptimizedDomains.id, id)).returning();
+  const result = await db
+    .delete(cfOptimizedDomains)
+    .where(eq(cfOptimizedDomains.id, id))
+    .returning();
 
   return result.length > 0;
 }

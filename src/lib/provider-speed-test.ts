@@ -3,7 +3,7 @@
  * 用于测试 Provider 的响应速度和可用性
  */
 
-import type { Provider } from '@/types/provider';
+import type { Provider } from "@/types/provider";
 
 export interface SpeedTestResult {
   providerId: number;
@@ -46,7 +46,7 @@ export async function testProviderSpeed(
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const response = await fetch(testRequest.url, {
-      method: 'POST',
+      method: "POST",
       headers: testRequest.headers,
       body: JSON.stringify(testRequest.body),
       signal: controller.signal,
@@ -99,68 +99,68 @@ function buildTestRequest(provider: Provider): {
   headers: Record<string, string>;
   body: unknown;
 } {
-  const baseUrl = provider.url.replace(/\/$/, '');
+  const baseUrl = provider.url.replace(/\/$/, "");
 
   // Claude 类型 Provider
-  if (provider.providerType === 'claude' || provider.providerType === 'claude-auth') {
+  if (provider.providerType === "claude" || provider.providerType === "claude-auth") {
     return {
       url: `${baseUrl}/v1/messages`,
       headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        ...(provider.providerType === 'claude'
-          ? { 'x-api-key': provider.key }
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+        ...(provider.providerType === "claude"
+          ? { "x-api-key": provider.key }
           : { Authorization: `Bearer ${provider.key}` }),
       },
       body: {
-        model: 'claude-3-haiku-20240307',
+        model: "claude-3-haiku-20240307",
         max_tokens: 10,
-        messages: [{ role: 'user', content: 'Hi' }],
+        messages: [{ role: "user", content: "Hi" }],
       },
     };
   }
 
   // OpenAI 兼容类型
-  if (provider.providerType === 'openai-compatible') {
+  if (provider.providerType === "openai-compatible") {
     return {
       url: `${baseUrl}/v1/chat/completions`,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${provider.key}`,
       },
       body: {
-        model: 'gpt-3.5-turbo',
+        model: "gpt-3.5-turbo",
         max_tokens: 10,
-        messages: [{ role: 'user', content: 'Hi' }],
+        messages: [{ role: "user", content: "Hi" }],
       },
     };
   }
 
   // Gemini 类型
-  if (provider.providerType === 'gemini' || provider.providerType === 'gemini-cli') {
+  if (provider.providerType === "gemini" || provider.providerType === "gemini-cli") {
     return {
       url: `${baseUrl}/v1beta/models/gemini-pro:generateContent?key=${provider.key}`,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: {
-        contents: [{ parts: [{ text: 'Hi' }] }],
+        contents: [{ parts: [{ text: "Hi" }] }],
       },
     };
   }
 
   // Codex 类型
-  if (provider.providerType === 'codex') {
+  if (provider.providerType === "codex") {
     return {
       url: `${baseUrl}/v1/responses`,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${provider.key}`,
       },
       body: {
-        model: 'claude-3-haiku-20240307',
+        model: "claude-3-haiku-20240307",
         max_tokens: 10,
-        prompt: 'Hi',
+        prompt: "Hi",
       },
     };
   }
@@ -169,14 +169,14 @@ function buildTestRequest(provider: Provider): {
   return {
     url: `${baseUrl}/v1/messages`,
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': provider.key,
-      'anthropic-version': '2023-06-01',
+      "Content-Type": "application/json",
+      "x-api-key": provider.key,
+      "anthropic-version": "2023-06-01",
     },
     body: {
-      model: 'claude-3-haiku-20240307',
+      model: "claude-3-haiku-20240307",
       max_tokens: 10,
-      messages: [{ role: 'user', content: 'Hi' }],
+      messages: [{ role: "user", content: "Hi" }],
     },
   };
 }
@@ -193,9 +193,7 @@ export async function testMultipleProviders(
   // 分批并发测试
   for (let i = 0; i < providers.length; i += concurrency) {
     const batch = providers.slice(i, i + concurrency);
-    const batchResults = await Promise.all(
-      batch.map((provider) => testProviderSpeed(provider))
-    );
+    const batchResults = await Promise.all(batch.map((provider) => testProviderSpeed(provider)));
     results.push(...batchResults);
   }
 
@@ -208,8 +206,8 @@ export async function testMultipleProviders(
 export function generateOptimizationRecommendations(
   providers: Provider[],
   testResults: SpeedTestResult[]
-): OptimizationResult['recommendations'] {
-  const recommendations: OptimizationResult['recommendations'] = [];
+): OptimizationResult["recommendations"] {
+  const recommendations: OptimizationResult["recommendations"] = [];
 
   // 按响应时间排序（成功的在前）
   const sortedResults = [...testResults].sort((a, b) => {
@@ -265,9 +263,7 @@ export function generateOptimizationRecommendations(
 /**
  * 执行完整的优化流程
  */
-export async function optimizeProviders(
-  providers: Provider[]
-): Promise<OptimizationResult> {
+export async function optimizeProviders(providers: Provider[]): Promise<OptimizationResult> {
   // 只测试启用的 Provider
   const enabledProviders = providers.filter((p) => p.isEnabled);
 
@@ -275,10 +271,7 @@ export async function optimizeProviders(
   const results = await testMultipleProviders(enabledProviders);
 
   // 生成优化建议
-  const recommendations = generateOptimizationRecommendations(
-    enabledProviders,
-    results
-  );
+  const recommendations = generateOptimizationRecommendations(enabledProviders, results);
 
   // 统计结果
   const successCount = results.filter((r) => r.success).length;

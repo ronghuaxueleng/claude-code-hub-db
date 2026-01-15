@@ -58,17 +58,14 @@ export function DeleteDomainDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除域名 <span className="font-mono font-semibold">{domain?.domain}</span> 的优选配置吗？
+            确定要删除域名 <span className="font-mono font-semibold">{domain?.domain}</span>{" "}
+            的优选配置吗？
             <br />
             此操作无法撤销。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             取消
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={loading}>

@@ -25,12 +25,7 @@ interface EditDomainDialogProps {
   domain: CfOptimizedDomain | null;
 }
 
-export function EditDomainDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-  domain,
-}: EditDomainDialogProps) {
+export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: EditDomainDialogProps) {
   const [loading, setLoading] = useState(false);
   const [domainValue, setDomainValue] = useState("");
   const [ips, setIps] = useState("");
@@ -131,11 +126,7 @@ export function EditDomainDialog({
 
             <div className="flex items-center justify-between">
               <Label htmlFor="edit-enabled">启用状态</Label>
-              <Switch
-                id="edit-enabled"
-                checked={isEnabled}
-                onCheckedChange={setIsEnabled}
-              />
+              <Switch id="edit-enabled" checked={isEnabled} onCheckedChange={setIsEnabled} />
             </div>
           </div>
 

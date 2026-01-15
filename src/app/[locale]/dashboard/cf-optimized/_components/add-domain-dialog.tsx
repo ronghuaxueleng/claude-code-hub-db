@@ -76,9 +76,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>添加优选域名</DialogTitle>
-            <DialogDescription>
-              配置域名和对应的 Cloudflare 优选 IP 地址
-            </DialogDescription>
+            <DialogDescription>配置域名和对应的 Cloudflare 优选 IP 地址</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -103,9 +101,7 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
                 rows={4}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                支持多个 IP，用逗号、空格或换行分隔
-              </p>
+              <p className="text-xs text-muted-foreground">支持多个 IP，用逗号、空格或换行分隔</p>
             </div>
 
             <div className="grid gap-2">
