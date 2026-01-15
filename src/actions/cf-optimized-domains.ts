@@ -32,6 +32,8 @@ export async function createCfOptimizedDomainAction(data: {
   domain: string;
   optimizedIps: string[];
   description?: string;
+  autoTestEnabled?: boolean;
+  autoTestInterval?: number;
 }): Promise<ActionResult<repo.CfOptimizedDomain>> {
   try {
     const session = await getSession();
@@ -100,6 +102,8 @@ export async function updateCfOptimizedDomainAction(
     optimizedIps: string[];
     description: string;
     isEnabled: boolean;
+    autoTestEnabled: boolean;
+    autoTestInterval: number;
   }>
 ): Promise<ActionResult<repo.CfOptimizedDomain>> {
   try {

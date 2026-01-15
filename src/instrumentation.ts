@@ -15,6 +15,7 @@ const instrumentationState = globalThis as unknown as {
   __CCH_SHUTDOWN_IN_PROGRESS__?: boolean;
   __CCH_CLOUD_PRICE_SYNC_STARTED__?: boolean;
   __CCH_CLOUD_PRICE_SYNC_INTERVAL_ID__?: ReturnType<typeof setInterval>;
+  __CCH_CF_IP_AUTO_TEST_STARTED__?: boolean;
 };
 
 /**
@@ -153,6 +154,15 @@ export async function register() {
             error: error instanceof Error ? error.message : String(error),
           });
         }
+
+        try {
+          const { stopCfIpAutoTestScheduler } = await import("@/lib/cf-ip-auto-test-scheduler");
+          stopCfIpAutoTestScheduler();
+        } catch (error) {
+          logger.warn("[Instrumentation] Failed to stop CF IP auto test scheduler", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       };
 
       process.once("SIGTERM", () => {
@@ -215,6 +225,10 @@ export async function register() {
         logger.info("Smart probing scheduler started");
       }
 
+      // 初始化 CF IP 自动测速调度器
+      const { startCfIpAutoTestScheduler } = await import("@/lib/cf-ip-auto-test-scheduler");
+      await startCfIpAutoTestScheduler();
+
       logger.info("Application ready");
     }
     // 开发环境: 执行迁移 + 初始化价格表（禁用 Bull Queue 避免 Turbopack 冲突）
@@ -264,6 +278,12 @@ export async function register() {
       if (isSmartProbingEnabled()) {
         startProbeScheduler();
         logger.info("Smart probing scheduler started (development mode)");
+      }
+
+      // 初始化 CF IP 自动测速调度器（开发环境也支持）
+      if (isConnected) {
+        const { startCfIpAutoTestScheduler } = await import("@/lib/cf-ip-auto-test-scheduler");
+        await startCfIpAutoTestScheduler();
       }
 
       logger.info("Development environment ready");

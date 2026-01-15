@@ -10,6 +10,9 @@ export interface CfOptimizedDomain {
   optimizedIps: string[];
   isEnabled: boolean;
   description: string | null;
+  autoTestEnabled: boolean;
+  autoTestInterval: number | null;
+  lastAutoTestAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +32,9 @@ export async function getActiveCfOptimizedDomains(): Promise<CfOptimizedDomain[]
     optimizedIps: r.optimizedIps,
     isEnabled: r.isEnabled,
     description: r.description,
+    autoTestEnabled: r.autoTestEnabled,
+    autoTestInterval: r.autoTestInterval,
+    lastAutoTestAt: r.lastAutoTestAt,
     createdAt: r.createdAt ?? new Date(),
     updatedAt: r.updatedAt ?? new Date(),
   }));
@@ -63,6 +69,9 @@ export async function getAllCfOptimizedDomains(): Promise<CfOptimizedDomain[]> {
     optimizedIps: r.optimizedIps,
     isEnabled: r.isEnabled,
     description: r.description,
+    autoTestEnabled: r.autoTestEnabled,
+    autoTestInterval: r.autoTestInterval,
+    lastAutoTestAt: r.lastAutoTestAt,
     createdAt: r.createdAt ?? new Date(),
     updatedAt: r.updatedAt ?? new Date(),
   }));
@@ -75,6 +84,8 @@ export async function createCfOptimizedDomain(data: {
   domain: string;
   optimizedIps: string[];
   description?: string;
+  autoTestEnabled?: boolean;
+  autoTestInterval?: number;
 }): Promise<CfOptimizedDomain> {
   const [result] = await db
     .insert(cfOptimizedDomains)
@@ -82,6 +93,8 @@ export async function createCfOptimizedDomain(data: {
       domain: data.domain,
       optimizedIps: data.optimizedIps,
       description: data.description,
+      autoTestEnabled: data.autoTestEnabled ?? false,
+      autoTestInterval: data.autoTestInterval ?? 60,
     })
     .returning();
 
@@ -91,6 +104,9 @@ export async function createCfOptimizedDomain(data: {
     optimizedIps: result.optimizedIps,
     isEnabled: result.isEnabled,
     description: result.description,
+    autoTestEnabled: result.autoTestEnabled,
+    autoTestInterval: result.autoTestInterval,
+    lastAutoTestAt: result.lastAutoTestAt,
     createdAt: result.createdAt ?? new Date(),
     updatedAt: result.updatedAt ?? new Date(),
   };
@@ -106,6 +122,9 @@ export async function updateCfOptimizedDomain(
     optimizedIps: string[];
     description: string;
     isEnabled: boolean;
+    autoTestEnabled: boolean;
+    autoTestInterval: number;
+    lastAutoTestAt: Date;
   }>
 ): Promise<CfOptimizedDomain | null> {
   const [result] = await db
@@ -127,6 +146,9 @@ export async function updateCfOptimizedDomain(
     optimizedIps: result.optimizedIps,
     isEnabled: result.isEnabled,
     description: result.description,
+    autoTestEnabled: result.autoTestEnabled,
+    autoTestInterval: result.autoTestInterval,
+    lastAutoTestAt: result.lastAutoTestAt,
     createdAt: result.createdAt ?? new Date(),
     updatedAt: result.updatedAt ?? new Date(),
   };

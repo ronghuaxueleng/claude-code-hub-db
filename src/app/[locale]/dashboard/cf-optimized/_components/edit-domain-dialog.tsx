@@ -36,6 +36,8 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
   const [ips, setIps] = useState("");
   const [description, setDescription] = useState("");
   const [isEnabled, setIsEnabled] = useState(true);
+  const [autoTestEnabled, setAutoTestEnabled] = useState(false);
+  const [autoTestInterval, setAutoTestInterval] = useState(60);
 
   useEffect(() => {
     if (domain) {
@@ -43,6 +45,8 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
       setIps(domain.optimizedIps.join("\n"));
       setDescription(domain.description || "");
       setIsEnabled(domain.isEnabled);
+      setAutoTestEnabled(domain.autoTestEnabled);
+      setAutoTestInterval(domain.autoTestInterval || 60);
     }
   }, [domain]);
 
@@ -92,6 +96,8 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
         optimizedIps: ipList.length > 0 ? ipList : [],
         description: description.trim() || undefined,
         isEnabled,
+        autoTestEnabled,
+        autoTestInterval,
       });
 
       if (result.ok) {
@@ -177,6 +183,33 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
             <div className="flex items-center justify-between">
               <Label htmlFor="edit-enabled">{t("fields.enabled.label")}</Label>
               <Switch id="edit-enabled" checked={isEnabled} onCheckedChange={setIsEnabled} />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-autoTest">定时自动测速</Label>
+                <Switch
+                  id="edit-autoTest"
+                  checked={autoTestEnabled}
+                  onCheckedChange={setAutoTestEnabled}
+                />
+              </div>
+              {autoTestEnabled && (
+                <div className="grid gap-2 mt-2">
+                  <Label htmlFor="edit-interval">测速间隔（分钟）</Label>
+                  <Input
+                    id="edit-interval"
+                    type="number"
+                    min="10"
+                    max="1440"
+                    value={autoTestInterval}
+                    onChange={(e) => setAutoTestInterval(Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    系统将每隔指定时间自动测速并更新优选 IP（建议 60-120 分钟）
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

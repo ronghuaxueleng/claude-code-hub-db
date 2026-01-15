@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Zap } from "lucide-react";
 import { createCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
 import { testCfOptimizedIps } from "@/actions/cf-ip-test";
@@ -32,6 +33,8 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
   const [domain, setDomain] = useState("");
   const [ips, setIps] = useState("");
   const [description, setDescription] = useState("");
+  const [autoTestEnabled, setAutoTestEnabled] = useState(false);
+  const [autoTestInterval, setAutoTestInterval] = useState(60);
 
   async function handleTestSpeed() {
     if (!domain.trim()) {
@@ -76,6 +79,8 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
         domain: domain.trim(),
         optimizedIps: ipList.length > 0 ? ipList : [],
         description: description.trim() || undefined,
+        autoTestEnabled,
+        autoTestInterval,
       });
 
       if (result.ok) {
@@ -161,6 +166,33 @@ export function AddDomainDialog({ open, onOpenChange, onSuccess }: AddDomainDial
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="autoTest">定时自动测速</Label>
+                <Switch
+                  id="autoTest"
+                  checked={autoTestEnabled}
+                  onCheckedChange={setAutoTestEnabled}
+                />
+              </div>
+              {autoTestEnabled && (
+                <div className="grid gap-2 mt-2">
+                  <Label htmlFor="interval">测速间隔（分钟）</Label>
+                  <Input
+                    id="interval"
+                    type="number"
+                    min="10"
+                    max="1440"
+                    value={autoTestInterval}
+                    onChange={(e) => setAutoTestInterval(Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    系统将每隔指定时间自动测速并更新优选 IP（建议 60-120 分钟）
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

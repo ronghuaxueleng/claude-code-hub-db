@@ -622,12 +622,17 @@ export const cfOptimizedDomains = pgTable(
     optimizedIps: jsonb('optimized_ips').$type<string[]>().notNull(),
     isEnabled: boolean('is_enabled').notNull().default(true),
     description: text('description'),
+    // 自动测速配置
+    autoTestEnabled: boolean('auto_test_enabled').notNull().default(false),
+    autoTestInterval: integer('auto_test_interval').default(60), // 默认 60 分钟
+    lastAutoTestAt: timestamp('last_auto_test_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
     domainUniqueIdx: uniqueIndex('idx_cf_optimized_domains_domain').on(table.domain),
     isEnabledIdx: index('idx_cf_optimized_domains_enabled').on(table.isEnabled),
+    autoTestEnabledIdx: index('idx_cf_optimized_domains_auto_test').on(table.autoTestEnabled),
   })
 );
 
