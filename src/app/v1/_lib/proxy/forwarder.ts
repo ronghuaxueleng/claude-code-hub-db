@@ -13,6 +13,7 @@ import { applyCodexProviderOverridesWithAudit } from "@/lib/codex/provider-overr
 import { getCachedSystemSettings, isHttp2Enabled } from "@/lib/config";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { PROVIDER_DEFAULTS, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
+import { createCfOptimizedAgent } from "@/lib/cf-optimized-agent";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
 import { SessionManager } from "@/lib/session-manager";
@@ -1439,13 +1440,24 @@ export class ProxyForwarder {
         targetUrl: new URL(proxyUrl).origin,
         http2Enabled: proxyConfig.http2Enabled,
       });
-    } else if (enableHttp2) {
-      // 直连场景：创建支持 HTTP/2 的 Agent
-      init.dispatcher = new Agent({ allowH2: true });
-      logger.debug("ProxyForwarder: Using HTTP/2 Agent for direct connection", {
-        providerId: provider.id,
-        providerName: provider.name,
-      });
+    } else {
+      // 尝试使用 CF 优选 IP（仅在直连场景）
+      const cfOptimizedAgent = await createCfOptimizedAgent(proxyUrl, { allowH2: enableHttp2 });
+      if (cfOptimizedAgent) {
+        init.dispatcher = cfOptimizedAgent;
+        logger.info("ProxyForwarder: Using CF optimized IP", {
+          providerId: provider.id,
+          providerName: provider.name,
+          targetUrl: new URL(proxyUrl).hostname,
+        });
+      } else if (enableHttp2) {
+        // 直连场景：创建支持 HTTP/2 的 Agent
+        init.dispatcher = new Agent({ allowH2: true });
+        logger.debug("ProxyForwarder: Using HTTP/2 Agent for direct connection", {
+          providerId: provider.id,
+          providerName: provider.name,
+        });
+      }
     }
 
     (init as Record<string, unknown>).verbose = true;
