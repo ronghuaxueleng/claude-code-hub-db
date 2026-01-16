@@ -107,13 +107,12 @@ export function UsageLogsTable({
               <TableHead className="text-right">{t("logs.columns.cost")}</TableHead>
               <TableHead className="text-right">{t("logs.columns.performance")}</TableHead>
               <TableHead>{t("logs.columns.status")}</TableHead>
-              <TableHead className="text-center">{t("logs.columns.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground">
+                <TableCell colSpan={10} className="text-center text-muted-foreground">
                   {t("logs.table.noData")}
                 </TableCell>
               </TableRow>
@@ -465,63 +464,73 @@ export function UsageLogsTable({
                       })()}
                     </TableCell>
                     <TableCell>
-                      <ErrorDetailsDialog
-                        statusCode={log.statusCode}
-                        errorMessage={log.errorMessage}
-                        providerChain={log.providerChain}
-                        sessionId={log.sessionId}
-                        requestSequence={log.requestSequence}
-                        blockedBy={log.blockedBy}
-                        blockedReason={log.blockedReason}
-                        originalModel={log.originalModel}
-                        currentModel={log.model}
-                        userAgent={log.userAgent}
-                        messagesCount={log.messagesCount}
-                        endpoint={log.endpoint}
-                        billingModelSource={billingModelSource}
-                        specialSettings={log.specialSettings}
-                        inputTokens={log.inputTokens}
-                        outputTokens={log.outputTokens}
-                        cacheCreationInputTokens={log.cacheCreationInputTokens}
-                        cacheCreation5mInputTokens={log.cacheCreation5mInputTokens}
-                        cacheCreation1hInputTokens={log.cacheCreation1hInputTokens}
-                        cacheReadInputTokens={log.cacheReadInputTokens}
-                        cacheTtlApplied={log.cacheTtlApplied}
-                        costUsd={log.costUsd}
-                        costMultiplier={log.costMultiplier}
-                        context1mApplied={log.context1mApplied}
-                        durationMs={log.durationMs}
-                        ttfbMs={log.ttfbMs}
-                        externalOpen={dialogState.logId === log.id ? true : undefined}
-                        onExternalOpenChange={(open) => {
-                          if (!open) setDialogState({ logId: null, scrollToRedirect: false });
-                        }}
-                        scrollToRedirect={
-                          dialogState.logId === log.id && dialogState.scrollToRedirect
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {!log.statusCode && !isMutedRow && log.sessionId ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCancelRequest(log.id)}
-                                disabled={cancellingIds.has(log.id)}
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {t("logs.actions.cancel")}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : null}
+                      <div className="flex items-center gap-2 bg-yellow-100">
+                        <span className="text-red-500 font-bold">TEST</span>
+                        <ErrorDetailsDialog
+                          statusCode={log.statusCode}
+                          errorMessage={log.errorMessage}
+                          providerChain={log.providerChain}
+                          sessionId={log.sessionId}
+                          requestSequence={log.requestSequence}
+                          blockedBy={log.blockedBy}
+                          blockedReason={log.blockedReason}
+                          originalModel={log.originalModel}
+                          currentModel={log.model}
+                          userAgent={log.userAgent}
+                          messagesCount={log.messagesCount}
+                          endpoint={log.endpoint}
+                          billingModelSource={billingModelSource}
+                          specialSettings={log.specialSettings}
+                          inputTokens={log.inputTokens}
+                          outputTokens={log.outputTokens}
+                          cacheCreationInputTokens={log.cacheCreationInputTokens}
+                          cacheCreation5mInputTokens={log.cacheCreation5mInputTokens}
+                          cacheCreation1hInputTokens={log.cacheCreation1hInputTokens}
+                          cacheReadInputTokens={log.cacheReadInputTokens}
+                          cacheTtlApplied={log.cacheTtlApplied}
+                          costUsd={log.costUsd}
+                          costMultiplier={log.costMultiplier}
+                          context1mApplied={log.context1mApplied}
+                          durationMs={log.durationMs}
+                          ttfbMs={log.ttfbMs}
+                          externalOpen={dialogState.logId === log.id ? true : undefined}
+                          onExternalOpenChange={(open) => {
+                            if (!open) setDialogState({ logId: null, scrollToRedirect: false });
+                          }}
+                          scrollToRedirect={
+                            dialogState.logId === log.id && dialogState.scrollToRedirect
+                          }
+                        />
+                        {/* 调试：显示条件检查结果 */}
+                        {!log.statusCode ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    console.log("取消按钮调试信息:", {
+                                      logId: log.id,
+                                      statusCode: log.statusCode,
+                                      isMutedRow,
+                                      sessionId: log.sessionId,
+                                      isNonBilling,
+                                      isWarmupSkipped,
+                                    });
+                                    handleCancelRequest(log.id);
+                                  }}
+                                  disabled={cancellingIds.has(log.id)}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t("logs.actions.cancel")}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

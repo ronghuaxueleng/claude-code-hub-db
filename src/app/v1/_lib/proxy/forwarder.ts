@@ -3,6 +3,7 @@ import type { Readable } from "node:stream";
 import { createGunzip, constants as zlibConstants } from "node:zlib";
 import type { Dispatcher } from "undici";
 import { Agent, request as undiciRequest } from "undici";
+import { isRequestCancelled } from "@/actions/cancel-request";
 import {
   getCircuitState,
   getProviderHealthInfo,
@@ -206,6 +207,20 @@ export class ProxyForwarder {
     // ========== 外层循环：供应商切换（最多 MAX_PROVIDER_SWITCHES 次）==========
     while (totalProvidersAttempted < MAX_PROVIDER_SWITCHES) {
       totalProvidersAttempted++;
+
+      // 检查用户是否请求取消
+      if (session.sessionId && session.requestSequence !== undefined) {
+        const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+        if (cancelled) {
+          logger.info("ProxyForwarder: Request cancelled by user", {
+            sessionId: session.sessionId,
+            requestSequence: session.requestSequence,
+            totalProvidersAttempted,
+          });
+          throw new ProxyError("Request cancelled by user", 499);
+        }
+      }
+
       let attemptCount = 0; // 当前供应商的尝试次数
 
       let maxAttemptsPerProvider = resolveMaxAttemptsForProvider(
@@ -224,6 +239,20 @@ export class ProxyForwarder {
       // ========== 内层循环：重试当前供应商（根据配置最多尝试 maxAttemptsPerProvider 次）==========
       while (attemptCount < maxAttemptsPerProvider) {
         attemptCount++;
+
+        // 检查用户是否请求取消
+        if (session.sessionId && session.requestSequence !== undefined) {
+          const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+          if (cancelled) {
+            logger.info("ProxyForwarder: Retry cancelled by user", {
+              sessionId: session.sessionId,
+              requestSequence: session.requestSequence,
+              providerId: currentProvider.id,
+              attemptCount,
+            });
+            throw new ProxyError("Request cancelled by user", 499);
+          }
+        }
 
         try {
           const response = await ProxyForwarder.doForward(session, currentProvider);
@@ -956,6 +985,19 @@ export class ProxyForwarder {
   ): Promise<Response> {
     if (!provider) {
       throw new Error("Provider is required");
+    }
+
+    // 在发送请求前检查用户是否请求取消（最关键的检查点）
+    if (session.sessionId && session.requestSequence !== undefined) {
+      const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+      if (cancelled) {
+        logger.info("ProxyForwarder: Request cancelled before forwarding", {
+          sessionId: session.sessionId,
+          requestSequence: session.requestSequence,
+          providerId: provider.id,
+        });
+        throw new ProxyError("Request cancelled by user", 499);
+      }
     }
 
     const resolvedCacheTtl = resolveCacheTtlPreference(

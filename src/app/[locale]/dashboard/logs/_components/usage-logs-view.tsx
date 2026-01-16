@@ -169,7 +169,7 @@ export function UsageLogsView({
   }, [loadData]);
 
   useVisibilityPolling(handlePolling, {
-    intervalMs: 5000, // 5 秒间隔（统一轮询周期）
+    intervalMs: 1000, // 1 秒间隔（更快更新以显示取消按钮）
     enabled: isAutoRefresh,
     executeOnVisible: true, // 页面重新可见时立即刷新
   });

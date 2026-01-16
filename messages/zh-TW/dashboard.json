@@ -112,6 +112,11 @@
       "actions": "操作"
     },
     "actions": {
+      "refresh": "重新整理",
+      "refreshing": "重新整理中...",
+      "stopAutoRefresh": "停止自動重新整理",
+      "startAutoRefresh": "啟用自動重新整理",
+      "view": "檢視",
       "cancel": "取消請求",
       "cancelSuccess": "已發送取消請求",
       "cancelFailed": "取消請求失敗"
@@ -145,13 +150,6 @@
       "loadingMore": "載入更多中...",
       "noMoreData": "已載入全部記錄",
       "scrollToTop": "回到頂端"
-    },
-    "actions": {
-      "refresh": "重新整理",
-      "refreshing": "重新整理中...",
-      "stopAutoRefresh": "停止自動重新整理",
-      "startAutoRefresh": "啟用自動重新整理",
-      "view": "檢視"
     },
     "error": {
       "loadFailed": "載入失敗",

@@ -112,6 +112,11 @@
       "actions": "Actions"
     },
     "actions": {
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "stopAutoRefresh": "Stop Auto-Refresh",
+      "startAutoRefresh": "Start Auto-Refresh",
+      "view": "View",
       "cancel": "Cancel request",
       "cancelSuccess": "Cancellation request sent",
       "cancelFailed": "Failed to cancel request"
@@ -145,13 +150,6 @@
       "loadingMore": "Loading more...",
       "noMoreData": "All records loaded",
       "scrollToTop": "Back to top"
-    },
-    "actions": {
-      "refresh": "Refresh",
-      "refreshing": "Refreshing...",
-      "stopAutoRefresh": "Stop Auto-Refresh",
-      "startAutoRefresh": "Start Auto-Refresh",
-      "view": "View"
     },
     "error": {
       "loadFailed": "Load Failed",
@@ -1572,14 +1570,14 @@
           "descriptionEnabled": "When enabled, this key will access an independent personal usage page upon login. However, it cannot modify its own key's provider group.",
           "descriptionDisabled": "When disabled, the user cannot access the personal usage page UI. Instead, they will use the restricted Web UI."
         },
-      "providerGroup": {
-        "label": "Provider Group",
-        "placeholder": "Default: default",
-        "selectHint": "Select the provider group(s) this key can use (default: default).",
-        "editHint": "Provider group cannot be changed for existing keys.",
-        "allGroups": "Use all groups",
-        "noGroupHint": "default includes providers without groupTag."
-      },
+        "providerGroup": {
+          "label": "Provider Group",
+          "placeholder": "Default: default",
+          "selectHint": "Select the provider group(s) this key can use (default: default).",
+          "editHint": "Provider group cannot be changed for existing keys.",
+          "allGroups": "Use all groups",
+          "noGroupHint": "default includes providers without groupTag."
+        },
         "cacheTtl": {
           "label": "Cache TTL Override",
           "description": "Force Anthropic prompt cache TTL for requests containing cache_control.",

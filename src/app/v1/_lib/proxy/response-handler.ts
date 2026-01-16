@@ -1,4 +1,5 @@
 import { ResponseFixer } from "@/app/v1/_lib/proxy/response-fixer";
+import { isRequestCancelled } from "@/actions/cancel-request";
 import { AsyncTaskManager } from "@/lib/async-task-manager";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { logger } from "@/lib/logger";
@@ -623,9 +624,23 @@ export class ProxyResponseHandler {
             const chunks: string[] = [];
             const decoder = new TextDecoder();
             let isFirstChunk = true;
+            let userCancelled = false; // 标记用户是否取消
 
             while (true) {
               if (session.clientAbortSignal?.aborted) break;
+
+              // 检查用户是否请求取消
+              if (session.sessionId && session.requestSequence !== undefined) {
+                const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+                if (cancelled) {
+                  logger.info("ResponseHandler: Gemini passthrough cancelled by user", {
+                    sessionId: session.sessionId,
+                    requestSequence: session.requestSequence,
+                  });
+                  userCancelled = true;
+                  break;
+                }
+              }
 
               const { done, value } = await reader.read();
               if (done) break;
@@ -643,7 +658,7 @@ export class ProxyResponseHandler {
             const allContent = chunks.join("");
 
             // 存储响应体到 Redis（5分钟过期）
-            if (session.sessionId) {
+            if (session.sessionId && allContent) {
               void SessionManager.storeSessionResponse(
                 session.sessionId,
                 allContent,
@@ -653,9 +668,36 @@ export class ProxyResponseHandler {
               });
             }
 
-            // 使用共享的统计处理方法
-            const duration = Date.now() - session.startTime;
-            await finalizeRequestStats(session, allContent, statusCode, duration);
+            // 检查是否为用户取消
+            if (userCancelled) {
+              // 用户取消：记录 499 状态码
+              const duration = Date.now() - session.startTime;
+              await updateMessageRequestDuration(messageContext.id, duration);
+
+              const tracker = ProxyStatusTracker.getInstance();
+              tracker.endRequest(messageContext.user.id, messageContext.id);
+
+              await updateMessageRequestDetails(messageContext.id, {
+                statusCode: 499, // Client Closed Request
+                inputTokens: undefined,
+                outputTokens: undefined,
+                ttfbMs: session.ttfbMs,
+                providerChain: session.getProviderChain(),
+                model: session.getCurrentModel() ?? undefined,
+                providerId: session.provider?.id,
+                errorMessage: "Request cancelled by user",
+              });
+
+              logger.info("ResponseHandler: Gemini passthrough cancellation recorded", {
+                messageRequestId: messageContext.id,
+                sessionId: session.sessionId,
+                requestSequence: session.requestSequence,
+              });
+            } else {
+              // 正常完成：使用共享的统计处理方法
+              const duration = Date.now() - session.startTime;
+              await finalizeRequestStats(session, allContent, statusCode, duration);
+            }
           } catch (error) {
             if (!isClientAbortError(error as Error)) {
               logger.error("[ResponseHandler] Gemini passthrough stats task failed:", error);
@@ -794,6 +836,7 @@ export class ProxyResponseHandler {
       const chunks: string[] = [];
       let usageForCost: UsageMetrics | null = null;
       let isFirstChunk = true; // ⭐ 标记是否为第一块数据
+      let userCancelled = false; // ⭐ 标记用户是否取消请求
 
       // ⭐ 静默期 Watchdog：监控流式请求中途卡住（无新数据推送）
       const idleTimeoutMs =
@@ -984,7 +1027,7 @@ export class ProxyResponseHandler {
 
       try {
         while (true) {
-          // 检查取消信号
+          // 检查取消信号（客户端断开、内部终止、用户取消）
           if (session.clientAbortSignal?.aborted || abortController.signal.aborted) {
             logger.info("ResponseHandler: Stream processing cancelled", {
               taskId,
@@ -992,6 +1035,43 @@ export class ProxyResponseHandler {
               chunksCollected: chunks.length,
             });
             break; // 提前终止
+          }
+
+          // 检查用户是否请求取消
+          if (session.sessionId && session.requestSequence !== undefined) {
+            const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+            if (cancelled) {
+              logger.info("ResponseHandler: Stream cancelled by user", {
+                taskId,
+                providerId: provider.id,
+                sessionId: session.sessionId,
+                requestSequence: session.requestSequence,
+                chunksCollected: chunks.length,
+              });
+              userCancelled = true; // 标记为用户取消
+              // 关闭客户端流
+              try {
+                if (streamController) {
+                  (streamController as TransformStreamDefaultController<Uint8Array>).error(
+                    new Error("Request cancelled by user")
+                  );
+                }
+              } catch (e) {
+                logger.warn("ResponseHandler: Failed to close client stream on cancellation", { error: e });
+              }
+              // 终止上游连接
+              try {
+                const sessionWithController = session as typeof session & {
+                  responseController?: AbortController;
+                };
+                if (sessionWithController.responseController) {
+                  sessionWithController.responseController.abort(new Error("user_cancelled"));
+                }
+              } catch (e) {
+                logger.warn("ResponseHandler: Failed to abort upstream on cancellation", { error: e });
+              }
+              break;
+            }
           }
 
           const { value, done } = await reader.read();
@@ -1033,8 +1113,51 @@ export class ProxyResponseHandler {
 
         // ⭐ 流式读取完成：清除静默期计时器
         clearIdleTimer();
-        const allContent = flushAndJoin();
-        await finalizeStream(allContent);
+
+        // 检查是否为用户取消
+        if (userCancelled) {
+          // 用户取消：记录 499 状态码（Client Closed Request）
+          const duration = Date.now() - session.startTime;
+          await updateMessageRequestDuration(messageContext.id, duration);
+
+          const tracker = ProxyStatusTracker.getInstance();
+          tracker.endRequest(messageContext.user.id, messageContext.id);
+
+          // 存储已收到的部分响应（用于调试）
+          const allContent = flushAndJoin();
+          if (session.sessionId && allContent) {
+            void SessionManager.storeSessionResponse(
+              session.sessionId,
+              allContent,
+              session.requestSequence
+            ).catch((err) => {
+              logger.error("[ResponseHandler] Failed to store cancelled stream response:", err);
+            });
+          }
+
+          // 记录为取消状态（499）
+          await updateMessageRequestDetails(messageContext.id, {
+            statusCode: 499, // Client Closed Request
+            inputTokens: undefined,
+            outputTokens: undefined,
+            ttfbMs: session.ttfbMs,
+            providerChain: session.getProviderChain(),
+            model: session.getCurrentModel() ?? undefined,
+            providerId: session.provider?.id,
+            errorMessage: "Request cancelled by user",
+          });
+
+          logger.info("ResponseHandler: User cancellation recorded", {
+            messageRequestId: messageContext.id,
+            sessionId: session.sessionId,
+            requestSequence: session.requestSequence,
+            chunksCollected: chunks.length,
+          });
+        } else {
+          // 正常完成：执行常规的 finalize
+          const allContent = flushAndJoin();
+          await finalizeStream(allContent);
+        }
       } catch (error) {
         // 检测 AbortError 的来源：响应超时 vs 静默期超时 vs 客户端/上游中断
         const err = error as Error;
