@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { providers } from "@/drizzle/schema";
 import { getCachedProviders } from "@/lib/cache/provider-cache";
@@ -612,7 +612,7 @@ export async function batchUpdateProvidersEnabled(
   const result = await db
     .update(providers)
     .set({ isEnabled, updatedAt: new Date() })
-    .where(and(sql`${providers.id} = ANY(${ids})`, isNull(providers.deletedAt)))
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
     .returning({ id: providers.id });
 
   return result.length;
@@ -632,7 +632,7 @@ export async function batchDeleteProviders(ids: number[]): Promise<number> {
   const result = await db
     .update(providers)
     .set({ deletedAt: new Date() })
-    .where(and(sql`${providers.id} = ANY(${ids})`, isNull(providers.deletedAt)))
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
     .returning({ id: providers.id });
 
   return result.length;
