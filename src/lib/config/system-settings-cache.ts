@@ -108,6 +108,7 @@ export async function getCachedSystemSettings(): Promise<SystemSettings> {
       enableCodexSessionIdCompletion: DEFAULT_SETTINGS.enableCodexSessionIdCompletion,
       enableResponseFixer: DEFAULT_SETTINGS.enableResponseFixer,
       responseFixerConfig: DEFAULT_SETTINGS.responseFixerConfig,
+      blockedUrls: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     } satisfies SystemSettings;

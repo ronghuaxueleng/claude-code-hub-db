@@ -1,0 +1,30 @@
+{
+  "title": "禁用 URL",
+  "description": "配置禁止轉發的 URL 列表，匹配的請求將被攔截並返回錯誤。",
+  "section": {
+    "title": "URL 黑名單",
+    "description": "添加需要禁止轉發的 URL，支持路徑前綴匹配和完整 URL 匹配。"
+  },
+  "form": {
+    "listLabel": "URL 列表",
+    "listHint": "以 / 開頭表示路徑匹配，以 http:// 或 https:// 開頭表示完整 URL 匹配",
+    "placeholder": "例如：/v1/complete 或 https://api.example.com",
+    "addButton": "添加",
+    "saveButton": "保存",
+    "saving": "保存中...",
+    "emptyList": "暫無禁用的 URL"
+  },
+  "rules": {
+    "title": "匹配規則：",
+    "pathMatch": "路徑匹配：以 / 開頭（如 /v1/complete）會檢查請求路徑",
+    "fullMatch": "完整 URL 匹配：以 http:// 或 https:// 開頭會檢查上游完整 URL",
+    "response": "匹配成功時返回 403 Forbidden 錯誤"
+  },
+  "errors": {
+    "empty": "URL 不能為空",
+    "invalidFormat": "URL 格式無效，必須以 / 或 http:// 或 https:// 開頭",
+    "duplicate": "URL 已存在",
+    "saveFailed": "保存失敗"
+  },
+  "saveSuccess": "保存成功"
+}

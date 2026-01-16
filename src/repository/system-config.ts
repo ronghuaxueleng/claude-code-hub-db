@@ -158,6 +158,7 @@ function createFallbackSettings(): SystemSettings {
       maxJsonDepth: 200,
       maxFixSize: 1024 * 1024,
     },
+    blockedUrls: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -186,6 +187,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
       enableCodexSessionIdCompletion: systemSettings.enableCodexSessionIdCompletion,
       enableResponseFixer: systemSettings.enableResponseFixer,
       responseFixerConfig: systemSettings.responseFixerConfig,
+      blockedUrls: systemSettings.blockedUrls,
       createdAt: systemSettings.createdAt,
       updatedAt: systemSettings.updatedAt,
     };
@@ -338,6 +340,11 @@ export async function updateSystemSettings(
       };
     }
 
+    // 禁用 URL 列表（如果提供）
+    if (payload.blockedUrls !== undefined) {
+      updates.blockedUrls = payload.blockedUrls;
+    }
+
     const [updated] = await db
       .update(systemSettings)
       .set(updates)
@@ -360,6 +367,7 @@ export async function updateSystemSettings(
         enableCodexSessionIdCompletion: systemSettings.enableCodexSessionIdCompletion,
         enableResponseFixer: systemSettings.enableResponseFixer,
         responseFixerConfig: systemSettings.responseFixerConfig,
+        blockedUrls: systemSettings.blockedUrls,
         createdAt: systemSettings.createdAt,
         updatedAt: systemSettings.updatedAt,
       });

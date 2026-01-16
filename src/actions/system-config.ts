@@ -42,6 +42,7 @@ export async function saveSystemSettings(formData: {
   enableCodexSessionIdCompletion?: boolean;
   enableResponseFixer?: boolean;
   responseFixerConfig?: Partial<ResponseFixerConfig>;
+  blockedUrls?: string[];
 }): Promise<ActionResult<SystemSettings>> {
   try {
     const session = await getSession();
@@ -67,6 +68,7 @@ export async function saveSystemSettings(formData: {
       enableCodexSessionIdCompletion: validated.enableCodexSessionIdCompletion,
       enableResponseFixer: validated.enableResponseFixer,
       responseFixerConfig: validated.responseFixerConfig,
+      blockedUrls: validated.blockedUrls,
     });
 
     // Invalidate the system settings cache so proxy requests get fresh settings

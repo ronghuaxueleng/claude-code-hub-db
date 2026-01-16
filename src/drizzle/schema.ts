@@ -513,6 +513,9 @@ export const systemSettings = pgTable('system_settings', {
       maxFixSize: 1024 * 1024,
     }),
 
+  // 禁用 URL 列表（JSON 数组格式存储）
+  blockedUrls: jsonb('blocked_urls').$type<string[]>().default([]),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

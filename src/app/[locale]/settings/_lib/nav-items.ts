@@ -28,6 +28,11 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     label: "请求过滤",
   },
   {
+    href: "/settings/blocked-urls",
+    labelKey: "nav.blockedUrls",
+    label: "禁用 URL",
+  },
+  {
     href: "/settings/client-versions",
     labelKey: "nav.clientVersions",
     label: "客户端升级提醒",

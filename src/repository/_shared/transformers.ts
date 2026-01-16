@@ -178,6 +178,7 @@ export function toSystemSettings(dbSettings: any): SystemSettings {
       ...defaultResponseFixerConfig,
       ...(dbSettings?.responseFixerConfig ?? {}),
     },
+    blockedUrls: dbSettings?.blockedUrls ?? [],
     createdAt: dbSettings?.createdAt ? new Date(dbSettings.createdAt) : new Date(),
     updatedAt: dbSettings?.updatedAt ? new Date(dbSettings.updatedAt) : new Date(),
   };

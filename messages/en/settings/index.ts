@@ -10,6 +10,7 @@ import notifications from "./notifications.json";
 import prices from "./prices.json";
 import requestFilters from "./requestFilters.json";
 import sensitiveWords from "./sensitiveWords.json";
+import blockedUrls from "./blockedUrls.json";
 import strings from "./strings.json";
 
 import providersAutoSort from "./providers/autoSort.json";
@@ -93,6 +94,7 @@ export default {
   prices,
   sensitiveWords,
   requestFilters,
+  blockedUrls,
   logs,
   data,
   clientVersions,

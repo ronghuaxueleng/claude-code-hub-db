@@ -772,6 +772,8 @@ export const UpdateSystemSettingsSchema = z.object({
     })
     .partial()
     .optional(),
+  // 禁用 URL 列表（可选）
+  blockedUrls: z.array(z.string()).optional(),
 });
 
 // 导出类型推断

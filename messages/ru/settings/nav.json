@@ -1,5 +1,6 @@
 {
   "apiDocs": "API док.",
+  "blockedUrls": "Блок. URLs",
   "clientVersions": "Обновления",
   "config": "Конфиг",
   "data": "Данные",

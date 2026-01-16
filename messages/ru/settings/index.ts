@@ -11,6 +11,7 @@ import prices from "./prices.json";
 import requestFilters from "./requestFilters.json";
 import sensitiveWords from "./sensitiveWords.json";
 import strings from "./strings.json";
+import blockedUrls from "./blockedUrls.json";
 
 import providersAutoSort from "./providers/autoSort.json";
 import providersBatch from "./providers/batch.json";
@@ -93,6 +94,7 @@ export default {
   prices,
   sensitiveWords,
   requestFilters,
+  blockedUrls,
   logs,
   data,
   clientVersions,

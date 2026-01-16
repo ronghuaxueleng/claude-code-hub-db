@@ -1,5 +1,6 @@
 {
   "apiDocs": "API文書",
+  "blockedUrls": "ブロックURL",
   "clientVersions": "更新通知",
   "config": "設定",
   "data": "データ",

@@ -1,0 +1,30 @@
+{
+  "title": "Blocked URLs",
+  "description": "Configure URLs to block from forwarding. Matching requests will be intercepted and return an error.",
+  "section": {
+    "title": "URL Blocklist",
+    "description": "Add URLs to block. Supports path prefix matching and full URL matching."
+  },
+  "form": {
+    "listLabel": "URL List",
+    "listHint": "Start with / for path matching, or http:// or https:// for full URL matching",
+    "placeholder": "e.g., /v1/complete or https://api.example.com",
+    "addButton": "Add",
+    "saveButton": "Save",
+    "saving": "Saving...",
+    "emptyList": "No blocked URLs"
+  },
+  "rules": {
+    "title": "Matching Rules:",
+    "pathMatch": "Path matching: Start with / (e.g., /v1/complete) to check request path",
+    "fullMatch": "Full URL matching: Start with http:// or https:// to check upstream full URL",
+    "response": "Returns 403 Forbidden error when matched"
+  },
+  "errors": {
+    "empty": "URL cannot be empty",
+    "invalidFormat": "Invalid URL format, must start with /, http://, or https://",
+    "duplicate": "URL already exists",
+    "saveFailed": "Save failed"
+  },
+  "saveSuccess": "Saved successfully"
+}

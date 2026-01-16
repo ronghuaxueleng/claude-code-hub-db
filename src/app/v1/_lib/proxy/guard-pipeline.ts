@@ -1,4 +1,5 @@
 import { ProxyAuthenticator } from "./auth-guard";
+import { ProxyBlockedUrlGuard } from "./blocked-url-guard";
 import { ProxyClientGuard } from "./client-guard";
 import { ProxyMessageService } from "./message-service";
 import { ProxyModelGuard } from "./model-guard";
@@ -38,6 +39,7 @@ export type GuardStepKey =
   | "rateLimit"
   | "provider"
   | "providerRequestFilter"
+  | "blockedUrl"
   | "messageContext";
 
 export interface GuardConfig {
@@ -132,6 +134,12 @@ const Steps: Record<GuardStepKey, GuardStep> = {
       return null;
     },
   },
+  blockedUrl: {
+    name: "blockedUrl",
+    async execute(session) {
+      return ProxyBlockedUrlGuard.ensure(session);
+    },
+  },
   messageContext: {
     name: "messageContext",
     async execute(session) {
@@ -184,6 +192,7 @@ export const CHAT_PIPELINE: GuardConfig = {
     "rateLimit",
     "provider",
     "providerRequestFilter",
+    "blockedUrl",
     "messageContext",
   ],
 };
@@ -199,5 +208,6 @@ export const COUNT_TOKENS_PIPELINE: GuardConfig = {
     "requestFilter",
     "provider",
     "providerRequestFilter",
+    "blockedUrl",
   ],
 };

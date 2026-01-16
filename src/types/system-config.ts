@@ -52,6 +52,9 @@ export interface SystemSettings {
   enableResponseFixer: boolean;
   responseFixerConfig: ResponseFixerConfig;
 
+  // 禁用 URL 列表
+  blockedUrls: string[];
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,4 +97,7 @@ export interface UpdateSystemSettingsInput {
   // 响应整流（可选）
   enableResponseFixer?: boolean;
   responseFixerConfig?: Partial<ResponseFixerConfig>;
+
+  // 禁用 URL 列表（可选）
+  blockedUrls?: string[];
 }

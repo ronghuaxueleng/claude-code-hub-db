@@ -1,0 +1,30 @@
+{
+  "title": "ブロックURL",
+  "description": "転送を禁止するURLリストを設定します。一致するリクエストは遮断されエラーが返されます。",
+  "section": {
+    "title": "URLブロックリスト",
+    "description": "ブロックするURLを追加します。パスプレフィックスマッチングと完全URLマッチングをサポートします。"
+  },
+  "form": {
+    "listLabel": "URLリスト",
+    "listHint": "/ で始まるとパスマッチング、http:// または https:// で始まると完全URLマッチング",
+    "placeholder": "例：/v1/complete または https://api.example.com",
+    "addButton": "追加",
+    "saveButton": "保存",
+    "saving": "保存中...",
+    "emptyList": "ブロックされたURLはありません"
+  },
+  "rules": {
+    "title": "マッチングルール：",
+    "pathMatch": "パスマッチング：/ で始まる（例：/v1/complete）とリクエストパスをチェック",
+    "fullMatch": "完全URLマッチング：http:// または https:// で始まるとアップストリーム完全URLをチェック",
+    "response": "マッチした場合は403 Forbiddenエラーを返します"
+  },
+  "errors": {
+    "empty": "URLを空にすることはできません",
+    "invalidFormat": "無効なURL形式です。/、http://、またはhttps://で始まる必要があります",
+    "duplicate": "URLは既に存在します",
+    "saveFailed": "保存に失敗しました"
+  },
+  "saveSuccess": "保存に成功しました"
+}
