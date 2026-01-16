@@ -126,6 +126,14 @@ export class ProxySession {
    */
   private providersSnapshot: Provider[] | null = null;
 
+  /**
+   * 请求级 Provider 查询缓存（性能优化）
+   *
+   * 缓存通过 ID 查询的单个 Provider，避免同一请求中重复查询数据库。
+   * Key: providerId, Value: Provider | null
+   */
+  private providerByIdCache: Map<number, Provider | null> = new Map();
+
   private constructor(init: {
     startTime: number;
     method: string;
@@ -372,6 +380,31 @@ export class ProxySession {
 
     this.providersSnapshot = await findAllProviders();
     return this.providersSnapshot;
+  }
+
+  /**
+   * 请求级 Provider 查询（性能优化）
+   *
+   * 缓存通过 ID 查询的 Provider，避免同一请求中重复查询数据库。
+   * 每个请求中对同一 Provider ID 只查询一次数据库。
+   *
+   * @param providerId - Provider ID
+   * @returns Provider 对象或 null（如果未找到）
+   */
+  async getProviderById(providerId: number): Promise<Provider | null> {
+    // 检查缓存
+    if (this.providerByIdCache.has(providerId)) {
+      return this.providerByIdCache.get(providerId)!;
+    }
+
+    // 查询数据库
+    const { findProviderById } = await import("@/repository/provider");
+    const provider = await findProviderById(providerId);
+
+    // 缓存结果（包括 null）
+    this.providerByIdCache.set(providerId, provider);
+
+    return provider;
   }
 
   /**

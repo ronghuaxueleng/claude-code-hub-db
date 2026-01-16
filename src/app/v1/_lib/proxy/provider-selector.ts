@@ -518,8 +518,8 @@ export class ProxyProviderResolver {
       return null;
     }
 
-    // 验证 provider 可用性
-    const provider = await findProviderById(providerId);
+    // 验证 provider 可用性（使用请求级缓存）
+    const provider = await session.getProviderById(providerId);
     if (!provider || !provider.isEnabled) {
       logger.debug("ProviderSelector: Session provider unavailable", {
         sessionId: session.sessionId,
