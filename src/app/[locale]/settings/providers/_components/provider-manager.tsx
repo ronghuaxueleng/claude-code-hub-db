@@ -1,4 +1,5 @@
 "use client";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckSquare, Loader2, Search, Trash2, XSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -74,6 +75,7 @@ export function ProviderManager({
   addDialogSlot,
 }: ProviderManagerProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const t = useTranslations("settings.providers.search");
   const tFilter = useTranslations("settings.providers.filter");
   const tCommon = useTranslations("settings.common");
@@ -141,6 +143,8 @@ export function ProviderManager({
             description: tBatch("enableSuccessDesc", { count: result.data.updatedCount }),
           });
           setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
           router.refresh();
         } else {
           toast.error(tBatch("enableFailed"), { description: result.error });
@@ -163,6 +167,8 @@ export function ProviderManager({
             description: tBatch("disableSuccessDesc", { count: result.data.updatedCount }),
           });
           setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
           router.refresh();
         } else {
           toast.error(tBatch("disableFailed"), { description: result.error });
@@ -186,6 +192,8 @@ export function ProviderManager({
           });
           setSelectedIds(new Set());
           setShowDeleteDialog(false);
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
           router.refresh();
         } else {
           toast.error(tBatch("deleteFailed"), { description: result.error });
