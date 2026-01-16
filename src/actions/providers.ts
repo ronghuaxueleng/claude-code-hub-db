@@ -33,6 +33,8 @@ import { maskKey } from "@/lib/utils/validation";
 import { validateProviderUrlForConnectivity } from "@/lib/validation/provider-url";
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import {
+  batchDeleteProviders as batchDeleteProvidersRepo,
+  batchUpdateProvidersEnabled,
   createProvider,
   deleteProvider,
   findAllProviders,
@@ -3375,5 +3377,134 @@ export async function getModelSuggestionsByProviderGroup(
   } catch (error) {
     logger.error("获取模型建议列表失败:", error);
     return { ok: false, error: "获取模型建议列表失败" };
+  }
+}
+
+/**
+ * 批量启用供应商
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchEnableProviders(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const updatedCount = await batchUpdateProvidersEnabled(providerIds, true);
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量启用供应商成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量启用供应商失败:", error);
+    const message = error instanceof Error ? error.message : "批量启用供应商失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量禁用供应商
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchDisableProviders(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const updatedCount = await batchUpdateProvidersEnabled(providerIds, false);
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量禁用供应商成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量禁用供应商失败:", error);
+    const message = error instanceof Error ? error.message : "批量禁用供应商失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量删除供应商
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 删除的记录数
+ */
+export async function batchDeleteProviders(
+  providerIds: number[]
+): Promise<ActionResult<{ deletedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const deletedCount = await batchDeleteProvidersRepo(providerIds);
+
+    // 清除内存缓存（无论 Redis 是否成功都要执行）
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+      await clearProviderState(providerId);
+
+      // 删除 Redis 缓存（非关键路径，失败时记录警告）
+      try {
+        await deleteProviderCircuitConfig(providerId);
+        logger.debug("batchDeleteProviders:cache_cleared", { providerId });
+      } catch (error) {
+        logger.warn("batchDeleteProviders:redis_cache_clear_failed", {
+          providerId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    logger.info("批量删除供应商成功", { providerIds, deletedCount });
+
+    return { ok: true, data: { deletedCount } };
+  } catch (error) {
+    logger.error("批量删除供应商失败:", error);
+    const message = error instanceof Error ? error.message : "批量删除供应商失败";
+    return { ok: false, error: message };
   }
 }

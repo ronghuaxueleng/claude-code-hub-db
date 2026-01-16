@@ -1,6 +1,7 @@
 "use client";
 import { Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { CurrencyCode } from "@/lib/utils/currency";
 import type { ProviderDisplay, ProviderStatisticsMap } from "@/types/provider";
 import type { User } from "@/types/user";
@@ -23,6 +24,9 @@ interface ProviderListProps {
   statisticsLoading?: boolean;
   currencyCode?: CurrencyCode;
   enableMultiProviderTypes: boolean;
+  selectedIds?: Set<number>;
+  onSelectChange?: (id: number, checked: boolean) => void;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 export function ProviderList({
@@ -33,8 +37,16 @@ export function ProviderList({
   statisticsLoading = false,
   currencyCode = "USD",
   enableMultiProviderTypes,
+  selectedIds = new Set(),
+  onSelectChange,
+  onSelectAll,
 }: ProviderListProps) {
   const t = useTranslations("settings.providers");
+  const tBatch = useTranslations("settings.providers.batch");
+
+  const isSelectMode = Boolean(onSelectChange && onSelectAll);
+  const allSelected = providers.length > 0 && providers.every((p) => selectedIds.has(p.id));
+  const someSelected = providers.some((p) => selectedIds.has(p.id)) && !allSelected;
 
   if (providers.length === 0) {
     return (
@@ -50,6 +62,23 @@ export function ProviderList({
 
   return (
     <div className="border rounded-lg overflow-hidden">
+      {isSelectMode && providers.length > 0 && onSelectAll && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b">
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={(checked) => onSelectAll(Boolean(checked))}
+            aria-label={tBatch("selectAll")}
+            className={someSelected ? "data-[state=checked]:bg-primary/50" : ""}
+          />
+          <span className="text-sm text-muted-foreground">
+            {allSelected
+              ? tBatch("allSelected", { count: providers.length })
+              : someSelected
+                ? tBatch("someSelected", { count: selectedIds.size })
+                : tBatch("selectAll")}
+          </span>
+        </div>
+      )}
       {providers.map((provider) => (
         <ProviderRichListItem
           key={provider.id}
@@ -60,6 +89,12 @@ export function ProviderList({
           statisticsLoading={statisticsLoading}
           currencyCode={currencyCode}
           enableMultiProviderTypes={enableMultiProviderTypes}
+          selected={selectedIds.has(provider.id)}
+          onSelectChange={
+            isSelectMode && onSelectChange
+              ? (checked) => onSelectChange(provider.id, checked)
+              : undefined
+          }
         />
       ))}
     </div>

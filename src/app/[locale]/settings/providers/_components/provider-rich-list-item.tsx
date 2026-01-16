@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +70,8 @@ interface ProviderRichListItemProps {
   statisticsLoading?: boolean;
   currencyCode?: CurrencyCode;
   enableMultiProviderTypes: boolean;
+  selected?: boolean;
+  onSelectChange?: (checked: boolean) => void;
   onEdit?: () => void;
   onClone?: () => void;
   onDelete?: () => void;
@@ -82,6 +85,8 @@ export function ProviderRichListItem({
   statisticsLoading = false,
   currencyCode = "USD",
   enableMultiProviderTypes,
+  selected = false,
+  onSelectChange,
   onEdit: onEditProp,
   onClone: onCloneProp,
   onDelete: onDeleteProp,
@@ -346,6 +351,16 @@ export function ProviderRichListItem({
   return (
     <>
       <div className="flex items-center gap-4 py-3 px-4 border-b hover:bg-muted/50 transition-colors">
+        {/* 复选框 (批量选择模式) */}
+        {onSelectChange && (
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelectChange(Boolean(checked))}
+            aria-label={`选择 ${provider.name}`}
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+
         {/* 左侧：状态和类型图标 */}
         <div className="flex items-center gap-2">
           {/* 启用状态指示器 */}

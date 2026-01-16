@@ -1,0 +1,23 @@
+{
+  "selectAll": "すべて選択",
+  "allSelected": "全 {count} 件を選択中",
+  "someSelected": "{count} 件を選択中",
+  "selected": "{count} 件を選択中",
+  "enable": "有効化",
+  "disable": "無効化",
+  "delete": "削除",
+  "cancel": "キャンセル",
+  "enableSuccess": "一括有効化に成功しました",
+  "enableSuccessDesc": "{count} 件のプロバイダーを有効化しました",
+  "enableFailed": "一括有効化に失敗しました",
+  "disableSuccess": "一括無効化に成功しました",
+  "disableSuccessDesc": "{count} 件のプロバイダーを無効化しました",
+  "disableFailed": "一括無効化に失敗しました",
+  "deleteSuccess": "一括削除に成功しました",
+  "deleteSuccessDesc": "{count} 件のプロバイダーを削除しました",
+  "deleteFailed": "一括削除に失敗しました",
+  "deleteConfirmTitle": "一括削除の確認",
+  "deleteConfirmDesc": "選択した {count} 件のプロバイダーを削除してもよろしいですか？この操作は元に戻せません。",
+  "confirmDelete": "削除を確認",
+  "unknownError": "不明なエラー"
+}

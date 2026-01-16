@@ -1,7 +1,24 @@
 "use client";
-import { AlertTriangle, Loader2, Search } from "lucide-react";
+import { AlertTriangle, CheckSquare, Loader2, Search, Trash2, XSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
+import {
+  batchDeleteProviders,
+  batchDisableProviders,
+  batchEnableProviders,
+} from "@/actions/providers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,13 +73,24 @@ export function ProviderManager({
   refreshing = false,
   addDialogSlot,
 }: ProviderManagerProps) {
+  const router = useRouter();
   const t = useTranslations("settings.providers.search");
   const tFilter = useTranslations("settings.providers.filter");
   const tCommon = useTranslations("settings.common");
+  const tBatch = useTranslations("settings.providers.batch");
   const [typeFilter, setTypeFilter] = useState<ProviderType | "all">("all");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Batch selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [batchEnablePending, startBatchEnable] = useTransition();
+  const [batchDisablePending, startBatchDisable] = useTransition();
+  const [batchDeletePending, startBatchDelete] = useTransition();
+
+  const isBatchPending = batchEnablePending || batchDisablePending || batchDeletePending;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -80,6 +108,94 @@ export function ProviderManager({
       setCircuitBrokenFilter(false);
     }
   }, [circuitBrokenCount, circuitBrokenFilter]);
+
+  // Batch selection handlers
+  const handleSelectChange = (id: number, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredProviders.map((p) => p.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleBatchEnable = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchEnable(async () => {
+      try {
+        const result = await batchEnableProviders(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("enableSuccess"), {
+            description: tBatch("enableSuccessDesc", { count: result.data.updatedCount }),
+          });
+          setSelectedIds(new Set());
+          router.refresh();
+        } else {
+          toast.error(tBatch("enableFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch enable failed:", error);
+        toast.error(tBatch("enableFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchDisable = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchDisable(async () => {
+      try {
+        const result = await batchDisableProviders(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("disableSuccess"), {
+            description: tBatch("disableSuccessDesc", { count: result.data.updatedCount }),
+          });
+          setSelectedIds(new Set());
+          router.refresh();
+        } else {
+          toast.error(tBatch("disableFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch disable failed:", error);
+        toast.error(tBatch("disableFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchDelete(async () => {
+      try {
+        const result = await batchDeleteProviders(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("deleteSuccess"), {
+            description: tBatch("deleteSuccessDesc", { count: result.data.deletedCount }),
+          });
+          setSelectedIds(new Set());
+          setShowDeleteDialog(false);
+          router.refresh();
+        } else {
+          toast.error(tBatch("deleteFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch delete failed:", error);
+        toast.error(tBatch("deleteFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
 
   // Extract unique groups from all providers
   const allGroups = useMemo(() => {
@@ -199,6 +315,55 @@ export function ProviderManager({
   return (
     <div className="space-y-4">
       {addDialogSlot ? <div className="flex justify-end">{addDialogSlot}</div> : null}
+
+      {/* Batch operation toolbar */}
+      {selectedIds.size > 0 && currentUser?.role === "admin" && (
+        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+          <span className="text-sm font-medium text-muted-foreground">
+            {tBatch("selected", { count: selectedIds.size })}
+          </span>
+          <div className="flex-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBatchEnable}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <CheckSquare className="h-4 w-4" />
+            {tBatch("enable")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBatchDisable}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <XSquare className="h-4 w-4" />
+            {tBatch("disable")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            {tBatch("delete")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+            disabled={isBatchPending}
+          >
+            {tBatch("cancel")}
+          </Button>
+        </div>
+      )}
+
       {/* 筛选条件 */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -325,9 +490,35 @@ export function ProviderManager({
             statisticsLoading={statisticsLoading}
             currencyCode={currencyCode}
             enableMultiProviderTypes={enableMultiProviderTypes}
+            selectedIds={selectedIds}
+            onSelectChange={currentUser?.role === "admin" ? handleSelectChange : undefined}
+            onSelectAll={currentUser?.role === "admin" ? handleSelectAll : undefined}
           />
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tBatch("deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tBatch("deleteConfirmDesc", { count: selectedIds.size })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeletePending}>{tBatch("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={batchDeletePending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {batchDeletePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {tBatch("confirmDelete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

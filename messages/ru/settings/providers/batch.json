@@ -1,0 +1,23 @@
+{
+  "selectAll": "Выбрать все",
+  "allSelected": "Выбрано все {count}",
+  "someSelected": "Выбрано {count}",
+  "selected": "Выбрано {count}",
+  "enable": "Включить",
+  "disable": "Отключить",
+  "delete": "Удалить",
+  "cancel": "Отмена",
+  "enableSuccess": "Массовое включение выполнено",
+  "enableSuccessDesc": "Включено провайдеров: {count}",
+  "enableFailed": "Массовое включение не удалось",
+  "disableSuccess": "Массовое отключение выполнено",
+  "disableSuccessDesc": "Отключено провайдеров: {count}",
+  "disableFailed": "Массовое отключение не удалось",
+  "deleteSuccess": "Массовое удаление выполнено",
+  "deleteSuccessDesc": "Удалено провайдеров: {count}",
+  "deleteFailed": "Массовое удаление не удалось",
+  "deleteConfirmTitle": "Подтвердить массовое удаление?",
+  "deleteConfirmDesc": "Вы уверены, что хотите удалить выбранных провайдеров ({count})? Это действие нельзя отменить.",
+  "confirmDelete": "Подтвердить удаление",
+  "unknownError": "Неизвестная ошибка"
+}

@@ -1,0 +1,23 @@
+{
+  "selectAll": "Select All",
+  "allSelected": "All {count} selected",
+  "someSelected": "{count} selected",
+  "selected": "{count} selected",
+  "enable": "Enable",
+  "disable": "Disable",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "enableSuccess": "Batch enable successful",
+  "enableSuccessDesc": "Enabled {count} provider(s)",
+  "enableFailed": "Batch enable failed",
+  "disableSuccess": "Batch disable successful",
+  "disableSuccessDesc": "Disabled {count} provider(s)",
+  "disableFailed": "Batch disable failed",
+  "deleteSuccess": "Batch delete successful",
+  "deleteSuccessDesc": "Deleted {count} provider(s)",
+  "deleteFailed": "Batch delete failed",
+  "deleteConfirmTitle": "Confirm Batch Delete?",
+  "deleteConfirmDesc": "Are you sure you want to delete {count} selected provider(s)? This action cannot be undone.",
+  "confirmDelete": "Confirm Delete",
+  "unknownError": "Unknown error"
+}
