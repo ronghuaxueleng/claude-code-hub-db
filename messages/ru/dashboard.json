@@ -108,7 +108,13 @@
       "cost": "Стоимость",
       "duration": "Продолжительность",
       "performance": "Perf",
-      "status": "Статус"
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "actions": {
+      "cancel": "Отменить запрос",
+      "cancelSuccess": "Запрос на отмену отправлен",
+      "cancelFailed": "Не удалось отменить запрос"
     },
     "stats": {
       "title": "Сводка статистики",

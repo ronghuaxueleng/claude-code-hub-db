@@ -1,7 +1,10 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { toast } from "sonner";
+import { cancelPendingRequest } from "@/actions/cancel-request";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
@@ -62,6 +65,32 @@ export function UsageLogsTable({
     scrollToRedirect: boolean;
   }>({ logId: null, scrollToRedirect: false });
 
+  // 取消请求状态管理
+  const [cancellingIds, setCancellingIds] = useState<Set<number>>(new Set());
+
+  // 处理取消请求
+  const handleCancelRequest = async (logId: number) => {
+    setCancellingIds((prev) => new Set(prev).add(logId));
+
+    try {
+      const result = await cancelPendingRequest(logId);
+
+      if (result.ok) {
+        toast.success(t("logs.actions.cancelSuccess"));
+      } else {
+        toast.error(result.error || t("logs.actions.cancelFailed"));
+      }
+    } catch (error) {
+      toast.error(t("logs.actions.cancelFailed"));
+    } finally {
+      setCancellingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(logId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
@@ -78,12 +107,13 @@ export function UsageLogsTable({
               <TableHead className="text-right">{t("logs.columns.cost")}</TableHead>
               <TableHead className="text-right">{t("logs.columns.performance")}</TableHead>
               <TableHead>{t("logs.columns.status")}</TableHead>
+              <TableHead className="text-center">{t("logs.columns.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   {t("logs.table.noData")}
                 </TableCell>
               </TableRow>
@@ -470,6 +500,28 @@ export function UsageLogsTable({
                           dialogState.logId === log.id && dialogState.scrollToRedirect
                         }
                       />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {!log.statusCode && !isMutedRow && log.sessionId ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCancelRequest(log.id)}
+                                disabled={cancellingIds.has(log.id)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {t("logs.actions.cancel")}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

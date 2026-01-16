@@ -108,7 +108,13 @@
       "cost": "成本",
       "duration": "耗时",
       "performance": "性能",
-      "status": "状态"
+      "status": "状态",
+      "actions": "操作"
+    },
+    "actions": {
+      "cancel": "取消请求",
+      "cancelSuccess": "已发送取消请求",
+      "cancelFailed": "取消请求失败"
     },
     "stats": {
       "title": "统计汇总",

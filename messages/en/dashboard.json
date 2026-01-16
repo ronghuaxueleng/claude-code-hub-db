@@ -108,7 +108,13 @@
       "cost": "Cost",
       "duration": "Duration",
       "performance": "Perf",
-      "status": "Status"
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "actions": {
+      "cancel": "Cancel request",
+      "cancelSuccess": "Cancellation request sent",
+      "cancelFailed": "Failed to cancel request"
     },
     "stats": {
       "title": "Statistics Summary",

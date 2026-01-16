@@ -108,7 +108,13 @@
       "cost": "コスト",
       "duration": "所要時間",
       "performance": "Perf",
-      "status": "ステータス"
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "actions": {
+      "cancel": "リクエストをキャンセル",
+      "cancelSuccess": "キャンセルリクエストを送信しました",
+      "cancelFailed": "リクエストのキャンセルに失敗しました"
     },
     "stats": {
       "title": "統計サマリー",

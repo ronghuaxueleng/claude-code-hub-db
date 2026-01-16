@@ -108,7 +108,13 @@
       "cost": "費用",
       "duration": "耗時",
       "performance": "效能",
-      "status": "狀態"
+      "status": "狀態",
+      "actions": "操作"
+    },
+    "actions": {
+      "cancel": "取消請求",
+      "cancelSuccess": "已發送取消請求",
+      "cancelFailed": "取消請求失敗"
     },
     "stats": {
       "title": "統計匯總",
