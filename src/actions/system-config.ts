@@ -43,6 +43,7 @@ export async function saveSystemSettings(formData: {
   enableResponseFixer?: boolean;
   responseFixerConfig?: Partial<ResponseFixerConfig>;
   blockedUrls?: string[];
+  enableCfOptimization?: boolean;
 }): Promise<ActionResult<SystemSettings>> {
   try {
     const session = await getSession();
@@ -69,6 +70,7 @@ export async function saveSystemSettings(formData: {
       enableResponseFixer: validated.enableResponseFixer,
       responseFixerConfig: validated.responseFixerConfig,
       blockedUrls: validated.blockedUrls,
+      enableCfOptimization: validated.enableCfOptimization,
     });
 
     // Invalidate the system settings cache so proxy requests get fresh settings
@@ -76,6 +78,7 @@ export async function saveSystemSettings(formData: {
 
     revalidatePath("/settings/config");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/cf-optimized");
     revalidatePath("/", "layout");
 
     return { ok: true, data: updated };

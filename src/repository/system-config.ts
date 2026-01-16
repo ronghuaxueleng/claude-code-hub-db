@@ -159,6 +159,7 @@ function createFallbackSettings(): SystemSettings {
       maxFixSize: 1024 * 1024,
     },
     blockedUrls: [],
+    enableCfOptimization: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -188,6 +189,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
       enableResponseFixer: systemSettings.enableResponseFixer,
       responseFixerConfig: systemSettings.responseFixerConfig,
       blockedUrls: systemSettings.blockedUrls,
+      enableCfOptimization: systemSettings.enableCfOptimization,
       createdAt: systemSettings.createdAt,
       updatedAt: systemSettings.updatedAt,
     };
@@ -345,6 +347,11 @@ export async function updateSystemSettings(
       updates.blockedUrls = payload.blockedUrls;
     }
 
+    // CF 优选全局启用开关（如果提供）
+    if (payload.enableCfOptimization !== undefined) {
+      updates.enableCfOptimization = payload.enableCfOptimization;
+    }
+
     const [updated] = await db
       .update(systemSettings)
       .set(updates)
@@ -368,6 +375,7 @@ export async function updateSystemSettings(
         enableResponseFixer: systemSettings.enableResponseFixer,
         responseFixerConfig: systemSettings.responseFixerConfig,
         blockedUrls: systemSettings.blockedUrls,
+        enableCfOptimization: systemSettings.enableCfOptimization,
         createdAt: systemSettings.createdAt,
         updatedAt: systemSettings.updatedAt,
       });

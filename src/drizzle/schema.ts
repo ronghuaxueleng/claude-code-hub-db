@@ -516,6 +516,9 @@ export const systemSettings = pgTable('system_settings', {
   // 禁用 URL 列表（JSON 数组格式存储）
   blockedUrls: jsonb('blocked_urls').$type<string[]>().default([]),
 
+  // Cloudflare 优选 IP 全局启用开关（默认关闭）
+  enableCfOptimization: boolean('enable_cf_optimization').notNull().default(false),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

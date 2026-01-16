@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
+import { getSystemSettings } from "@/repository/system-config";
 import { CfOptimizedDomainsTable } from "./_components/cf-optimized-domains-table";
+import { CfOptimizationGlobalSwitch } from "./_components/cf-optimization-global-switch";
 
 export default async function CfOptimizedDomainsPage() {
   const t = await getTranslations("cfOptimizedDomains");
+  const systemSettings = await getSystemSettings();
 
   return (
     <div className="space-y-6">
@@ -11,6 +14,9 @@ export default async function CfOptimizedDomainsPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground mt-2">{t("description")}</p>
       </div>
+
+      {/* 全局启用开关 */}
+      <CfOptimizationGlobalSwitch initialEnabled={systemSettings.enableCfOptimization} />
 
       <Suspense fallback={<div>Loading...</div>}>
         <CfOptimizedDomainsTable />

@@ -1,16 +1,14 @@
 /**
  * Cloudflare 优选 IP Agent
  * 用于在代理请求时自动使用配置的优选 IP
+ *
+ * 参考 dns-cleaner 的实现，使用 undici Agent 的 connect.lookup 选项
  */
 
 import { Agent } from "undici";
 import { lookup as dnsLookup } from "node:dns";
-import { promisify } from "node:util";
-import { connect as tlsConnect } from "node:tls";
 import { getOptimizedIp } from "./cf-optimized-ip-resolver";
 import { logger } from "@/lib/logger";
-
-const lookupAsync = promisify(dnsLookup);
 
 export interface CfOptimizedAgentResult {
   agent: Agent;
@@ -36,68 +34,52 @@ export async function createCfOptimizedAgent(
     const optimizedIp = await getOptimizedIp(domain);
 
     if (!optimizedIp) {
-      // 没有配置优选 IP
+      // 没有配置优选 IP，返回 null，调用方会使用默认 Agent
       return null;
     }
 
-    logger.debug("[CfOptimizedAgent] Using optimized IP", {
+    logger.debug("[CfOptimizedAgent] Creating agent with optimized IP", {
       domain,
       ip: optimizedIp,
     });
 
-    // 创建自定义 connect 函数，将域名解析到优选 IP
-    const customConnect = function (opts: any, callback: any) {
+    // 创建自定义 lookup 函数
+    const customLookup = (hostname: string, opts: any, callback: any) => {
+      // 检查 options.all 参数（某些情况下 undici 会传入这个参数）
+      const needsArray = opts && (opts as { all?: boolean }).all === true;
+
+      logger.debug("[CfOptimizedAgent] lookup called", {
+        hostname,
+        all: needsArray,
+        targetDomain: domain,
+      });
+
       // 如果是目标域名，使用优选 IP
-      if (opts.hostname === domain || opts.servername === domain) {
-        logger.debug("[CfOptimizedAgent] Connecting to optimized IP", {
-          originalHost: opts.hostname,
-          optimizedIp,
-          servername: domain,
+      if (hostname === domain) {
+        if (needsArray) {
+          // 返回数组格式
+          callback(null, [{ address: optimizedIp, family: 4 }]);
+        } else {
+          // 返回单地址格式
+          callback(null, optimizedIp, 4);
+        }
+        logger.info("[CfOptimizedAgent] Using optimized IP for domain", {
+          domain: hostname,
+          ip: optimizedIp,
         });
-
-        // 使用 Node.js 原生 tls 模块创建连接
-        const socket = tlsConnect({
-          host: optimizedIp, // 连接到优选 IP
-          port: opts.port || 443,
-          servername: domain, // SNI 使用原域名
-          rejectUnauthorized: true,
-        });
-
-        // 处理连接事件
-        socket.once("secureConnect", () => {
-          callback(null, socket);
-        });
-
-        socket.once("error", (err) => {
-          callback(err, null);
-        });
-
-        return socket;
+        return;
       }
 
-      // 其他域名使用默认连接
-      const socket = tlsConnect({
-        host: opts.hostname,
-        port: opts.port || 443,
-        servername: opts.servername || opts.hostname,
-        rejectUnauthorized: true,
-      });
-
-      socket.once("secureConnect", () => {
-        callback(null, socket);
-      });
-
-      socket.once("error", (err) => {
-        callback(err, null);
-      });
-
-      return socket;
+      // 其他域名使用默认 DNS
+      dnsLookup(hostname, opts, callback);
     };
 
-    // 创建带自定义 connect 的 Agent
+    // 创建带自定义 lookup 的 Agent
     const agent = new Agent({
       ...options,
-      connect: customConnect,
+      connect: {
+        lookup: customLookup,
+      },
     });
 
     return {

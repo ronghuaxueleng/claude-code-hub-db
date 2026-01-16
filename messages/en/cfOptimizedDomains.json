@@ -1,6 +1,16 @@
 {
   "title": "CF Optimized Domains",
   "description": "Manage Cloudflare optimized domains and their corresponding IP addresses to improve access speed",
+  "globalSwitch": {
+    "title": "Global Enable Switch",
+    "description": "Control whether to enable Cloudflare optimized IP feature",
+    "switchLabel": "Enable CF Optimization",
+    "switchDescription": "When enabled, the system will use optimized IPs for configured domains",
+    "enabled": "CF Optimization enabled",
+    "disabled": "CF Optimization disabled",
+    "updateFailed": "Update failed",
+    "disabledWarning": "⚠️ CF Optimization is disabled. Even if domains are configured, they won't take effect. Please enable the global switch to use optimized IPs."
+  },
   "table": {
     "title": "Optimized Domains List",
     "addButton": "Add Domain",

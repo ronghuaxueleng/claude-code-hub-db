@@ -1,6 +1,16 @@
 {
   "title": "CF 优选域名管理",
   "description": "管理 Cloudflare 优选域名和对应的 IP 地址，提升访问速度",
+  "globalSwitch": {
+    "title": "全局启用开关",
+    "description": "控制是否启用 Cloudflare 优选 IP 功能",
+    "switchLabel": "启用 CF 优选",
+    "switchDescription": "开启后，系统将对配置的域名使用优选 IP 进行连接",
+    "enabled": "CF 优选已启用",
+    "disabled": "CF 优选已禁用",
+    "updateFailed": "更新失败",
+    "disabledWarning": "⚠️ CF 优选功能已禁用，即使配置了域名也不会生效。请启用全局开关以使用优选 IP。"
+  },
   "table": {
     "title": "优选域名列表",
     "addButton": "添加域名",

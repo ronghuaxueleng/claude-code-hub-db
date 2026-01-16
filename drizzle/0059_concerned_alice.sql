@@ -1,0 +1,1 @@
+ALTER TABLE "system_settings" ADD COLUMN "enable_cf_optimization" boolean DEFAULT false NOT NULL;

@@ -55,6 +55,9 @@ export interface SystemSettings {
   // 禁用 URL 列表
   blockedUrls: string[];
 
+  // Cloudflare 优选 IP 全局启用开关
+  enableCfOptimization: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,4 +103,7 @@ export interface UpdateSystemSettingsInput {
 
   // 禁用 URL 列表（可选）
   blockedUrls?: string[];
+
+  // Cloudflare 优选 IP 全局启用开关（可选）
+  enableCfOptimization?: boolean;
 }

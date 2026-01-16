@@ -1,6 +1,16 @@
 {
   "title": "CF 最適化ドメイン管理",
   "description": "Cloudflare 最適化ドメインと対応する IP アドレスを管理し、アクセス速度を向上させます",
+  "globalSwitch": {
+    "title": "グローバル有効化スイッチ",
+    "description": "Cloudflare 最適化 IP 機能を有効にするかどうかを制御します",
+    "switchLabel": "CF 最適化を有効化",
+    "switchDescription": "有効にすると、設定されたドメインに対して最適化 IP を使用して接続します",
+    "enabled": "CF 最適化が有効になりました",
+    "disabled": "CF 最適化が無効になりました",
+    "updateFailed": "更新に失敗しました",
+    "disabledWarning": "⚠️ CF 最適化機能が無効になっています。ドメインが設定されていても有効になりません。最適化 IP を使用するにはグローバルスイッチを有効にしてください。"
+  },
   "table": {
     "title": "最適化ドメインリスト",
     "addButton": "ドメインを追加",

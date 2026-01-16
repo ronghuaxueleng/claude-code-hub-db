@@ -5,18 +5,65 @@
 
 import { getActiveCfOptimizedDomains } from "@/repository/cf-optimized-domains";
 import { getBlacklistedIps } from "@/repository/cf-ip-blacklist";
+import { getSystemSettings } from "@/repository/system-config";
 import { logger } from "@/lib/logger";
 
 // 优选 IP 缓存（域名 -> IP 列表）
 let optimizedIpCache: Map<string, string[]> = new Map();
 let lastCacheUpdate = 0;
+let isGloballyEnabled = false; // 全局启用状态缓存
 const CACHE_TTL = 60000; // 1 分钟缓存
+
+/**
+ * 检查域名是否匹配（支持精确匹配和子域名匹配）
+ */
+function isDomainMatch(hostname: string, targetDomain: string): boolean {
+  // 精确匹配
+  if (hostname === targetDomain) {
+    return true;
+  }
+  // 子域名匹配（如 api.claude.ai 匹配 claude.ai）
+  if (hostname.endsWith(`.${targetDomain}`)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * 检查域名是否应该使用优选 IP
+ */
+function shouldOptimize(hostname: string): boolean {
+  // 1. 检查全局开关
+  if (!isGloballyEnabled) {
+    return false;
+  }
+
+  // 2. 检查是否在配置的域名列表中
+  for (const domain of optimizedIpCache.keys()) {
+    if (isDomainMatch(hostname, domain)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 /**
  * 加载优选 IP 配置到缓存
  */
 async function loadOptimizedIps(): Promise<void> {
   try {
+    // 获取全局启用状态
+    const systemSettings = await getSystemSettings();
+    isGloballyEnabled = systemSettings.enableCfOptimization;
+
+    if (!isGloballyEnabled) {
+      logger.info("[CfOptimizedIpResolver] CF 优选功能已全局禁用");
+      optimizedIpCache.clear();
+      lastCacheUpdate = Date.now();
+      return;
+    }
+
     const domains = await getActiveCfOptimizedDomains();
 
     const newCache = new Map<string, string[]>();
@@ -30,6 +77,7 @@ async function loadOptimizedIps(): Promise<void> {
     lastCacheUpdate = Date.now();
 
     logger.info("[CfOptimizedIpResolver] Loaded optimized IPs", {
+      globallyEnabled: isGloballyEnabled,
       domainsCount: newCache.size,
     });
   } catch (error) {
@@ -46,7 +94,20 @@ export async function getOptimizedIp(domain: string): Promise<string | null> {
     await loadOptimizedIps();
   }
 
-  const ips = optimizedIpCache.get(domain);
+  // 检查是否应该优化该域名
+  if (!shouldOptimize(domain)) {
+    return null;
+  }
+
+  // 查找匹配的域名配置（支持精确匹配和子域名匹配）
+  let ips: string[] | undefined;
+  for (const [cachedDomain, cachedIps] of optimizedIpCache.entries()) {
+    if (isDomainMatch(domain, cachedDomain)) {
+      ips = cachedIps;
+      break;
+    }
+  }
+
   if (!ips || ips.length === 0) {
     return null;
   }
@@ -58,17 +119,25 @@ export async function getOptimizedIp(domain: string): Promise<string | null> {
   const availableIps = ips.filter((ip) => !blacklistedIps.includes(ip));
 
   if (availableIps.length === 0) {
-    logger.warn("[CfOptimizedIpResolver] All IPs are blacklisted", {
+    logger.warn("[CfOptimizedIpResolver] All IPs are blacklisted, falling back to default DNS", {
       domain,
       totalIps: ips.length,
       blacklistedCount: blacklistedIps.length,
     });
-    return null;
+    return null; // 返回 null，回退到默认 DNS
   }
 
   // 随机选择一个可用 IP（负载均衡）
   const randomIndex = Math.floor(Math.random() * availableIps.length);
-  return availableIps[randomIndex];
+  const selectedIp = availableIps[randomIndex];
+
+  logger.debug("[CfOptimizedIpResolver] Selected optimized IP", {
+    domain,
+    ip: selectedIp,
+    availableCount: availableIps.length,
+  });
+
+  return selectedIp;
 }
 
 /**

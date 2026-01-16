@@ -774,6 +774,8 @@ export const UpdateSystemSettingsSchema = z.object({
     .optional(),
   // 禁用 URL 列表（可选）
   blockedUrls: z.array(z.string()).optional(),
+  // CF 优选全局启用开关（可选）
+  enableCfOptimization: z.boolean().optional(),
 });
 
 // 导出类型推断

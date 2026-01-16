@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS: Pick<
   | "enableCodexSessionIdCompletion"
   | "enableResponseFixer"
   | "responseFixerConfig"
+  | "enableCfOptimization"
 > = {
   enableHttp2: false,
   interceptAnthropicWarmupRequests: false,
@@ -45,6 +46,7 @@ const DEFAULT_SETTINGS: Pick<
     maxJsonDepth: 200,
     maxFixSize: 1024 * 1024,
   },
+  enableCfOptimization: false,
 };
 
 /**
@@ -109,6 +111,7 @@ export async function getCachedSystemSettings(): Promise<SystemSettings> {
       enableResponseFixer: DEFAULT_SETTINGS.enableResponseFixer,
       responseFixerConfig: DEFAULT_SETTINGS.responseFixerConfig,
       blockedUrls: [],
+      enableCfOptimization: DEFAULT_SETTINGS.enableCfOptimization,
       createdAt: new Date(),
       updatedAt: new Date(),
     } satisfies SystemSettings;
