@@ -1,6 +1,7 @@
 {
   "cancelButton": "Cancel",
   "circuitBroken": "Circuit Broken",
+  "clickToCopyUrl": "Click to copy URL",
   "clipboardUnavailable": "Clipboard access is blocked in this environment. Select and copy the key manually.",
   "confirmDeleteMessage": "Are you sure you want to delete provider \"{name}\"? This action cannot be undone.",
   "confirmDeleteTitle": "Confirm Delete Provider?",
@@ -31,6 +32,7 @@
   "toggleSuccess": "Provider {status}",
   "toggleSuccessDesc": "Provider \"{name}\" status updated",
   "unknownError": "Unknown error",
+  "urlCopied": "URL copied to clipboard",
   "viewFullKey": "View Complete API Key",
   "viewFullKeyDesc": "Please keep it safe and don't share it with others",
   "weight": "Weight"

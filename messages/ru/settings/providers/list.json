@@ -1,6 +1,7 @@
 {
   "cancelButton": "Отмена",
   "circuitBroken": "Разорвано",
+  "clickToCopyUrl": "Нажмите, чтобы скопировать URL",
   "clipboardUnavailable": "Буфер обмена недоступен в этой среде. Скопируйте ключ вручную.",
   "confirmDeleteMessage": "Вы уверены, что хотите удалить провайдера \"{name}\"? Это действие нельзя отменить.",
   "confirmDeleteTitle": "Подтвердить удаление провайдера?",
@@ -31,6 +32,7 @@
   "toggleSuccess": "Провайдер {status}",
   "toggleSuccessDesc": "Статус провайдера \"{name}\" обновлен",
   "unknownError": "Неизвестная ошибка",
+  "urlCopied": "URL скопирован в буфер обмена",
   "viewFullKey": "Просмотр полного API-ключа",
   "viewFullKeyDesc": "Пожалуйста, храните его в безопасности и не делитесь с другими",
   "weight": "Вес"

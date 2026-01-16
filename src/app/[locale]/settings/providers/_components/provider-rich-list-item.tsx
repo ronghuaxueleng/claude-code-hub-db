@@ -442,8 +442,19 @@ export function ProviderRichListItem({
           </div>
 
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
-            {/* URL */}
-            <span className="truncate max-w-[300px]">{provider.url}</span>
+            {/* URL - 点击复制 */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                copyToClipboard(provider.url);
+                toast.success(tList("urlCopied"));
+              }}
+              className="truncate max-w-[300px] hover:text-foreground hover:underline cursor-pointer transition-colors"
+              title={tList("clickToCopyUrl")}
+            >
+              {provider.url}
+            </button>
 
             {/* 官网链接 */}
             {provider.websiteUrl && (

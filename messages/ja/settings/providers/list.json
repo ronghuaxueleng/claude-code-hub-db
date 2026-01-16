@@ -1,6 +1,7 @@
 {
   "cancelButton": "キャンセル",
   "circuitBroken": "遮断中",
+  "clickToCopyUrl": "クリックして URL をコピー",
   "clipboardUnavailable": "この環境ではクリップボードを使用できません。手動でコピーしてください。",
   "confirmDeleteMessage": "プロバイダー \"{name}\" を削除してもよろしいですか？この操作は元に戻せません。",
   "confirmDeleteTitle": "プロバイダーの削除を確認しますか?",
@@ -31,6 +32,7 @@
   "toggleSuccess": "プロバイダーが{status}になりました",
   "toggleSuccessDesc": "プロバイダー \"{name}\" のステータスが更新されました",
   "unknownError": "不明なエラー",
+  "urlCopied": "URL がクリップボードにコピーされました",
   "viewFullKey": "完全な API キーを表示",
   "viewFullKeyDesc": "安全に保管し、他人と共有しないでください",
   "weight": "重み"
