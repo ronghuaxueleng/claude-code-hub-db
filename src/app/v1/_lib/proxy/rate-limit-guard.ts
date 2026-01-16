@@ -56,17 +56,10 @@ export class ProxyRateLimitGuard {
 
     // 并行执行 Key 和 User 总限额检查
     const [keyTotalCheck, userTotalCheck] = await Promise.all([
-      RateLimitService.checkTotalCostLimit(
-        key.id,
-        "key",
-        key.limitTotalUsd ?? null,
-        { keyHash: key.key }
-      ),
-      RateLimitService.checkTotalCostLimit(
-        user.id,
-        "user",
-        user.limitTotalUsd ?? null
-      ),
+      RateLimitService.checkTotalCostLimit(key.id, "key", key.limitTotalUsd ?? null, {
+        keyHash: key.key,
+      }),
+      RateLimitService.checkTotalCostLimit(user.id, "user", user.limitTotalUsd ?? null),
     ]);
 
     // 1. Key 总限额（用户明确要求优先检查）
@@ -118,16 +111,13 @@ export class ProxyRateLimitGuard {
     // ========== 第二层：资源/频率保护（并行检查）==========
 
     // 并行执行 Session 限制和 RPM 检查
-    const rpmCheckPromise = user.rpm !== null
-      ? RateLimitService.checkUserRPM(user.id, user.rpm)
-      : Promise.resolve({ allowed: true, current: 0, reason: null });
+    const rpmCheckPromise =
+      user.rpm !== null
+        ? RateLimitService.checkUserRPM(user.id, user.rpm)
+        : Promise.resolve({ allowed: true, current: 0, reason: null });
 
     const [sessionCheck, rpmCheck] = await Promise.all([
-      RateLimitService.checkSessionLimit(
-        key.id,
-        "key",
-        key.limitConcurrentSessions || 0
-      ),
+      RateLimitService.checkSessionLimit(key.id, "key", key.limitConcurrentSessions || 0),
       rpmCheckPromise,
     ]);
 
