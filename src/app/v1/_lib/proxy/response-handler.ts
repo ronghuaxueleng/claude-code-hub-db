@@ -631,7 +631,10 @@ export class ProxyResponseHandler {
 
               // 检查用户是否请求取消
               if (session.sessionId && session.requestSequence !== undefined) {
-                const cancelled = await isRequestCancelled(session.sessionId, session.requestSequence);
+                const cancelled = await isRequestCancelled(
+                  session.sessionId,
+                  session.requestSequence
+                );
                 if (cancelled) {
                   logger.info("ResponseHandler: Gemini passthrough cancelled by user", {
                     sessionId: session.sessionId,
@@ -1057,7 +1060,9 @@ export class ProxyResponseHandler {
                   );
                 }
               } catch (e) {
-                logger.warn("ResponseHandler: Failed to close client stream on cancellation", { error: e });
+                logger.warn("ResponseHandler: Failed to close client stream on cancellation", {
+                  error: e,
+                });
               }
               // 终止上游连接
               try {
@@ -1068,7 +1073,9 @@ export class ProxyResponseHandler {
                   sessionWithController.responseController.abort(new Error("user_cancelled"));
                 }
               } catch (e) {
-                logger.warn("ResponseHandler: Failed to abort upstream on cancellation", { error: e });
+                logger.warn("ResponseHandler: Failed to abort upstream on cancellation", {
+                  error: e,
+                });
               }
               break;
             }

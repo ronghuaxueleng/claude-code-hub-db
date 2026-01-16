@@ -13,9 +13,7 @@ import type { ActionResult } from "./types";
  *
  * @param messageRequestId - message_request 记录 ID
  */
-export async function cancelPendingRequest(
-  messageRequestId: number
-): Promise<ActionResult<void>> {
+export async function cancelPendingRequest(messageRequestId: number): Promise<ActionResult<void>> {
   try {
     // 1. 验证用户权限
     const authSession = await getSession();
