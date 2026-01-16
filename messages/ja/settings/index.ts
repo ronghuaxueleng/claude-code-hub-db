@@ -13,6 +13,7 @@ import sensitiveWords from "./sensitiveWords.json";
 import strings from "./strings.json";
 
 import providersAutoSort from "./providers/autoSort.json";
+import providersBatch from "./providers/batch.json";
 import providersFilter from "./providers/filter.json";
 import providersGuide from "./providers/guide.json";
 import providersInlineEdit from "./providers/inlineEdit.json";
@@ -71,6 +72,7 @@ const providersForm = {
 const providers = {
   ...providersStrings,
   autoSort: providersAutoSort,
+  batch: providersBatch,
   filter: providersFilter,
   form: providersForm,
   guide: providersGuide,
