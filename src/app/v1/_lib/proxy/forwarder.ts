@@ -14,7 +14,7 @@ import { applyCodexProviderOverridesWithAudit } from "@/lib/codex/provider-overr
 import { getCachedSystemSettings, isHttp2Enabled } from "@/lib/config";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { PROVIDER_DEFAULTS, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
-import { createCfOptimizedAgent } from "@/lib/cf-optimized-agent";
+import { createCfOptimizedAgent, createSingleIpAgent } from "@/lib/cf-optimized-agent";
 import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
 import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
@@ -1550,10 +1550,10 @@ export class ProxyForwarder {
           providerName: provider.name,
           targetUrl: new URL(proxyUrl).hostname,
         });
-      } else if (enableHttp2) {
-        // 直连场景：创建支持 HTTP/2 的 Agent
-        init.dispatcher = new Agent({ allowH2: true });
-        logger.debug("ProxyForwarder: Using HTTP/2 Agent for direct connection", {
+      } else {
+        // ⭐ CF 优选禁用时，使用单 IP Agent（避免 undici 多 IP 重试导致超时翻倍）
+        init.dispatcher = createSingleIpAgent({ allowH2: enableHttp2 });
+        logger.debug("ProxyForwarder: Using single-IP Agent (CF optimization disabled)", {
           providerId: provider.id,
           providerName: provider.name,
         });

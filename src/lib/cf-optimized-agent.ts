@@ -17,6 +17,40 @@ export interface CfOptimizedAgentResult {
 }
 
 /**
+ * 创建只使用第一个 IP 的 Agent（避免 undici 多 IP 重试导致超时翻倍）
+ * @param options Agent 选项
+ * @returns 配置了单 IP lookup 的 Agent
+ */
+export function createSingleIpAgent(options: { allowH2?: boolean } = {}): Agent {
+  // 创建自定义 lookup 函数，只返回第一个 IP
+  const singleIpLookup = (hostname: string, opts: any, callback: any) => {
+    const needsArray = opts && (opts as { all?: boolean }).all === true;
+
+    dnsLookup(hostname, { ...opts, all: false }, (err, address, family) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      if (needsArray) {
+        // 返回数组格式，但只包含第一个 IP
+        callback(null, [{ address, family }]);
+      } else {
+        // 返回单地址格式
+        callback(null, address, family);
+      }
+    });
+  };
+
+  return new Agent({
+    ...options,
+    connect: {
+      lookup: singleIpLookup,
+    },
+  });
+}
+
+/**
  * 创建支持 CF 优选 IP 的 Agent
  * @param targetUrl 目标 URL
  * @param options Agent 选项
