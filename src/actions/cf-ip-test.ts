@@ -118,7 +118,8 @@ async function testSingleIp(
  * 从远程 URL 获取 IP 列表
  */
 async function fetchRemoteIpList(): Promise<string[]> {
-  const url = "https://gh-proxy.org/https://raw.githubusercontent.com/DuanFeiX/CFIP/refs/heads/main/ip.txt";
+  const url =
+    "https://gh-proxy.org/https://raw.githubusercontent.com/DuanFeiX/CFIP/refs/heads/main/ip.txt";
 
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
