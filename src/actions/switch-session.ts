@@ -96,13 +96,13 @@ export async function switchToNewSession(
  * @param sessionId - session ID
  * @returns 映射信息（如果存在）
  */
-export async function getSessionMapping(
-  sessionId: string
-): Promise<ActionResult<{
-  oldSessionId: string;
-  newSessionId: string;
-  createdAt: string;
-} | null>> {
+export async function getSessionMapping(sessionId: string): Promise<
+  ActionResult<{
+    oldSessionId: string;
+    newSessionId: string;
+    createdAt: string;
+  } | null>
+> {
   try {
     const authSession = await getSession();
     if (!authSession) {
