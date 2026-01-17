@@ -956,6 +956,7 @@ export class ProxyForwarder {
       // ⭐ 故障转移时生成新的会话ID并建立映射关系
       if (session.sessionId) {
         const oldSessionId = session.sessionId;
+        const oldRequestSequence = session.requestSequence;
         const newSessionId = await SessionManager.createSessionMapping(
           oldSessionId,
           "provider_failover",
@@ -966,12 +967,15 @@ export class ProxyForwarder {
         // 更新 session 对象的会话ID
         session.setSessionId(newSessionId);
 
-        // 重置请求序号（新会话从1开始）
-        session.setRequestSequence(1);
+        // 获取新会话的请求序号（通过 Redis INCR 原子操作，新会话第一个请求会返回1）
+        const newRequestSequence = await SessionManager.getNextRequestSequence(newSessionId);
+        session.setRequestSequence(newRequestSequence);
 
         logger.info("ProxyForwarder: Session ID switched due to provider failover", {
           oldSessionId,
           newSessionId,
+          oldRequestSequence,
+          newRequestSequence,
           newProviderId: currentProvider.id,
           newProviderName: currentProvider.name,
           totalProvidersAttempted,
