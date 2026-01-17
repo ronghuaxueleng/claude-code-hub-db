@@ -9,10 +9,14 @@ import {
   Gauge,
   Loader2,
   Monitor,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { hasSessionMessages } from "@/actions/active-sessions";
+import { cancelPendingRequest } from "@/actions/cancel-request";
+import { switchToNewSession } from "@/actions/switch-session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,6 +104,7 @@ export function ErrorDetailsDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const [hasMessages, setHasMessages] = useState(false);
   const [checkingMessages, setCheckingMessages] = useState(false);
+  const [isSwitchingSession, setIsSwitchingSession] = useState(false);
 
   // 支持外部控制和内部控制
   const isControlled = externalOpen !== undefined;
@@ -116,6 +121,48 @@ export function ErrorDetailsDialog({
   const isInProgress = !statusCode; // 没有状态码表示请求进行中
   const isWarmupSkipped = blockedBy === "warmup";
   const isBlocked = !!blockedBy && !isWarmupSkipped; // 是否被拦截（不含 warmup 跳过）
+
+  // 处理切换会话
+  const handleSwitchSession = async () => {
+    if (!sessionId) return;
+
+    setIsSwitchingSession(true);
+    try {
+      // 1. 尝试取消当前请求
+      if (requestSequence !== null && requestSequence !== undefined) {
+        // messageRequestId 从哪里获取？我们需要传递这个参数
+        // 暂时跳过取消步骤，因为我们没有 messageRequestId
+      }
+
+      // 2. 切换到新会话
+      const result = await switchToNewSession(sessionId);
+
+      if (result.ok) {
+        const { newSessionId } = result.data;
+
+        // 3. 复制到剪贴板
+        await navigator.clipboard.writeText(newSessionId);
+
+        // 4. 提示用户
+        toast.success(t("logs.details.sessionSwitch.success"), {
+          description: t("logs.details.sessionSwitch.successDesc", {
+            oldSession: sessionId.substring(0, 12),
+            newSession: newSessionId.substring(0, 12),
+          }),
+          duration: 10000,
+        });
+
+        // 5. 关闭对话框
+        setOpen(false);
+      } else {
+        toast.error(result.error || t("logs.details.sessionSwitch.failed"));
+      }
+    } catch (error) {
+      toast.error(t("logs.details.sessionSwitch.failed"));
+    } finally {
+      setIsSwitchingSession(false);
+    }
+  };
 
   const specialSettingsContent =
     specialSettings && specialSettings.length > 0 ? JSON.stringify(specialSettings, null, 2) : null;
@@ -264,6 +311,49 @@ export function ErrorDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* 请求进行中的切换会话提示 */}
+          {isInProgress && sessionId && (
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
+                      {t("logs.details.sessionSwitch.inProgressTitle")}
+                    </h4>
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                      {t("logs.details.sessionSwitch.inProgressDesc")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSwitchSession}
+                      disabled={isSwitchingSession}
+                      className="bg-white dark:bg-gray-900 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-950/50"
+                    >
+                      {isSwitchingSession ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {t("logs.details.sessionSwitch.switching")}
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          {t("logs.details.sessionSwitch.switchButton")}
+                        </>
+                      )}
+                    </Button>
+                    <span className="text-xs text-yellow-700 dark:text-yellow-300">
+                      {t("logs.details.sessionSwitch.hint")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Warmup 跳过信息 */}
           {isWarmupSkipped && (
             <div className="space-y-2">

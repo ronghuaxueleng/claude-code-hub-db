@@ -226,6 +226,16 @@
         "ttfb": "TTFB",
         "duration": "総所要時間",
         "outputRate": "出力速度"
+      },
+      "sessionSwitch": {
+        "inProgressTitle": "リクエストが長時間応答なし？",
+        "inProgressDesc": "リクエストがスタックしている場合、新しいセッションに切り替えて再送信できます。新しいセッションIDは自動的にクリップボードにコピーされ、現在のセッションとマッピングされます。",
+        "switchButton": "新しいセッションに切り替え",
+        "switching": "切り替え中...",
+        "hint": "新しいセッションIDがコピーされます",
+        "success": "新しいセッションに切り替えました",
+        "successDesc": "旧セッション: {oldSession}...\n新セッション: {newSession}...\n新しいセッションIDがクリップボードにコピーされました。クライアントでリクエストを再送信してください。",
+        "failed": "セッションの切り替えに失敗しました"
       }
     },
     "providerChain": {

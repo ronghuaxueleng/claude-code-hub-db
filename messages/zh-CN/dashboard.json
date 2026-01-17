@@ -227,6 +227,16 @@
         "ttfb": "首字节时间（TTFB）",
         "duration": "总耗时",
         "outputRate": "输出速率"
+      },
+      "sessionSwitch": {
+        "inProgressTitle": "请求长时间无响应？",
+        "inProgressDesc": "如果请求长时间卡住，您可以切换到新会话重新发送。新会话 ID 将自动复制到剪贴板，并与当前会话建立映射关系。",
+        "switchButton": "切换到新会话",
+        "switching": "切换中...",
+        "hint": "新会话 ID 将复制到剪贴板",
+        "success": "已切换到新会话",
+        "successDesc": "旧会话: {oldSession}...\n新会话: {newSession}...\n新会话 ID 已复制到剪贴板，请在客户端重新发送请求。",
+        "failed": "切换会话失败"
       }
     },
     "providerChain": {

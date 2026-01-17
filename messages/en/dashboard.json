@@ -227,6 +227,16 @@
         "ttfb": "TTFB",
         "duration": "Total Duration",
         "outputRate": "Output Rate"
+      },
+      "sessionSwitch": {
+        "inProgressTitle": "Request stuck for too long?",
+        "inProgressDesc": "If your request is stuck, you can switch to a new session and retry. The new session ID will be automatically copied to clipboard and mapped to the current session.",
+        "switchButton": "Switch to New Session",
+        "switching": "Switching...",
+        "hint": "New session ID will be copied",
+        "success": "Switched to new session",
+        "successDesc": "Old session: {oldSession}...\nNew session: {newSession}...\nNew session ID has been copied to clipboard. Please resend your request in the client.",
+        "failed": "Failed to switch session"
       }
     },
     "providerChain": {

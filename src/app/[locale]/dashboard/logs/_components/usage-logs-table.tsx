@@ -464,8 +464,7 @@ export function UsageLogsTable({
                       })()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2 bg-yellow-100">
-                        <span className="text-red-500 font-bold">TEST</span>
+                      <div className="flex items-center gap-2">
                         <ErrorDetailsDialog
                           statusCode={log.statusCode}
                           errorMessage={log.errorMessage}
@@ -501,25 +500,14 @@ export function UsageLogsTable({
                             dialogState.logId === log.id && dialogState.scrollToRedirect
                           }
                         />
-                        {/* 调试：显示条件检查结果 */}
-                        {!log.statusCode ? (
+                        {!log.statusCode && !isMutedRow && log.sessionId ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
-                                    console.log("取消按钮调试信息:", {
-                                      logId: log.id,
-                                      statusCode: log.statusCode,
-                                      isMutedRow,
-                                      sessionId: log.sessionId,
-                                      isNonBilling,
-                                      isWarmupSkipped,
-                                    });
-                                    handleCancelRequest(log.id);
-                                  }}
+                                  onClick={() => handleCancelRequest(log.id)}
                                   disabled={cancellingIds.has(log.id)}
                                   className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 >
