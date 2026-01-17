@@ -1,7 +1,8 @@
 import TOML from "@iarna/toml";
 import type { ModelPriceData } from "@/types/model-price";
 
-export const CLOUD_PRICE_TABLE_URL = "https://gh-proxy.org/https://raw.githubusercontent.com/ding113/claude-code-hub-docs/refs/heads/main/public/config/prices-base.toml";
+export const CLOUD_PRICE_TABLE_URL =
+  "https://gh-proxy.org/https://raw.githubusercontent.com/ding113/claude-code-hub-docs/refs/heads/main/public/config/prices-base.toml";
 const FETCH_TIMEOUT_MS = 10000;
 
 export type CloudPriceTable = {
