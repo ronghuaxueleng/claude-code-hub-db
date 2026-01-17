@@ -70,7 +70,27 @@ export async function cancelPendingRequest(messageRequestId: number): Promise<Ac
       };
     }
 
-    // 5. 在 Redis 中设置取消标记
+    // 5. 尝试直接中断请求（如果在当前进程中）
+    if (request.sessionId && request.requestSequence) {
+      const { tryAbortRequest } = await import("@/lib/request-abort-registry");
+      const abortedInProcess = tryAbortRequest(request.sessionId, request.requestSequence);
+
+      if (abortedInProcess) {
+        // 同一进程内成功中断，立即返回
+        logger.info("Request aborted immediately (same process)", {
+          messageRequestId,
+          sessionId: request.sessionId,
+          requestSequence: request.requestSequence,
+          userId: currentUserId,
+        });
+        return {
+          ok: true,
+          data: undefined,
+        };
+      }
+    }
+
+    // 6. 请求在其他进程中，设置 Redis 标记（通过轮询检测）
     const redis = getRedisClient();
     if (!redis || redis.status !== "ready") {
       logger.warn("Redis unavailable when attempting to cancel request", {

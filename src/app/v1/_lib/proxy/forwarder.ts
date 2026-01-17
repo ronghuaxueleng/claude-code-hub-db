@@ -1569,6 +1569,36 @@ export class ProxyForwarder {
     // 并通过 nodeStreamToWebStreamSafe 实现容错流转换（捕获错误并优雅关闭）
     const useErrorTolerantFetch = true;
 
+    // ⭐ 注册 AbortController 到全局注册表（用于立即取消）
+    if (session.sessionId && session.requestSequence !== undefined) {
+      const { registerRequest } = await import("@/lib/request-abort-registry");
+      registerRequest(session.sessionId, session.requestSequence, responseController);
+    }
+
+    // ⭐ 启动轻量级取消检查（备用方案，处理跨进程场景）
+    let cancelCheckInterval: NodeJS.Timeout | null = null;
+    if (session.sessionId && session.requestSequence !== undefined) {
+      cancelCheckInterval = setInterval(async () => {
+        try {
+          const cancelled = await isRequestCancelled(session.sessionId!, session.requestSequence!);
+          if (cancelled) {
+            logger.info("ProxyForwarder: Cancel detected via polling (cross-process)", {
+              sessionId: session.sessionId,
+              requestSequence: session.requestSequence,
+              providerId: provider.id,
+            });
+            responseController.abort(new Error("Request cancelled by user"));
+            if (cancelCheckInterval) {
+              clearInterval(cancelCheckInterval);
+              cancelCheckInterval = null;
+            }
+          }
+        } catch (error) {
+          logger.error("ProxyForwarder: Failed to check cancellation:", error);
+        }
+      }, 500);
+    }
+
     let response: Response;
     const fetchStartTime = Date.now();
     try {
@@ -1595,10 +1625,28 @@ export class ProxyForwarder {
         note: "Response timeout continues to monitor body reading",
       });
       // ⚠️ 不要清除 responseTimeoutId！让它继续监控响应体读取
+
+      // ⭐ 清理取消检查和注册表
+      if (cancelCheckInterval) {
+        clearInterval(cancelCheckInterval);
+        cancelCheckInterval = null;
+      }
+      if (session.sessionId && session.requestSequence !== undefined) {
+        const { unregisterRequest } = await import("@/lib/request-abort-registry");
+        unregisterRequest(session.sessionId, session.requestSequence);
+      }
     } catch (fetchError) {
-      // ⭐ fetch 失败：清除所有超时定时器
+      // ⭐ fetch 失败：清除所有超时定时器、轮询和注册表
       if (responseTimeoutId) {
         clearTimeout(responseTimeoutId);
+      }
+      if (cancelCheckInterval) {
+        clearInterval(cancelCheckInterval);
+        cancelCheckInterval = null;
+      }
+      if (session.sessionId && session.requestSequence !== undefined) {
+        const { unregisterRequest } = await import("@/lib/request-abort-registry");
+        unregisterRequest(session.sessionId, session.requestSequence);
       }
 
       // 捕获 fetch 原始错误（网络错误、DNS 解析失败、连接失败等）
