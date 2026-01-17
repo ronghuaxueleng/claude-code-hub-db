@@ -115,6 +115,54 @@ async function testSingleIp(
 }
 
 /**
+ * 从远程 URL 获取 IP 列表
+ */
+async function fetchRemoteIpList(): Promise<string[]> {
+  const url = "https://gh-proxy.org/https://raw.githubusercontent.com/DuanFeiX/CFIP/refs/heads/main/ip.txt";
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = await response.text();
+    const ips = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && /^\d+\.\d+\.\d+\.\d+$/.test(line));
+
+    console.log(`[CF IP Test] Fetched ${ips.length} IPs from remote`);
+    return ips;
+  } catch (error) {
+    console.error(`[CF IP Test] Failed to fetch remote IP list:`, error);
+    // 回退到硬编码列表
+    return [
+      "104.16.132.229",
+      "104.16.133.229",
+      "172.67.177.54",
+      "172.67.178.54",
+      "104.21.48.200",
+      "104.21.49.200",
+      "172.64.155.89",
+      "172.64.156.89",
+      "104.18.32.167",
+      "104.18.33.167",
+      "104.22.64.196",
+      "104.22.65.196",
+      "172.66.40.112",
+      "172.66.41.112",
+      "104.17.96.13",
+      "104.17.97.13",
+      "104.19.128.15",
+      "104.19.129.15",
+      "172.65.32.10",
+      "172.65.33.10",
+    ];
+  }
+}
+
+/**
  * 测试 Cloudflare IP 访问指定域名的速度
  * @param domain 要测试的域名（如 api.anthropic.com）
  * @param testCount 每个 IP 测试次数（默认 1 次）
@@ -129,29 +177,8 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
     console.log(`[CF IP Test] Found ${blacklistedIps.length} blacklisted IPs, will skip them`);
   }
 
-  // Cloudflare 常用 Anycast IP 列表
-  const commonCfIps = [
-    "104.16.132.229",
-    "104.16.133.229",
-    "172.67.177.54",
-    "172.67.178.54",
-    "104.21.48.200",
-    "104.21.49.200",
-    "172.64.155.89",
-    "172.64.156.89",
-    "104.18.32.167",
-    "104.18.33.167",
-    "104.22.64.196",
-    "104.22.65.196",
-    "172.66.40.112",
-    "172.66.41.112",
-    "104.17.96.13",
-    "104.17.97.13",
-    "104.19.128.15",
-    "104.19.129.15",
-    "172.65.32.10",
-    "172.65.33.10",
-  ];
+  // 从远程获取 IP 列表
+  const commonCfIps = await fetchRemoteIpList();
 
   const results: CfIpTestResult[] = [];
 
