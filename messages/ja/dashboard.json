@@ -242,6 +242,11 @@
         "newSession": "新セッション",
         "switchAgain": "再度切り替え",
         "switchAgainHint": "別の新しいセッションに切り替えることができます"
+      },
+      "copyCurl": {
+        "button": "Curl をコピー",
+        "success": "クリップボードにコピーしました",
+        "failed": "コピーに失敗しました"
       }
     },
     "providerChain": {

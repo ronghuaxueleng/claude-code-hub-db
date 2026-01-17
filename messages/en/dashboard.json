@@ -243,6 +243,11 @@
         "newSession": "New Session",
         "switchAgain": "Switch Again",
         "switchAgainHint": "Can switch to another new session"
+      },
+      "copyCurl": {
+        "button": "Copy Curl",
+        "success": "Copied to clipboard",
+        "failed": "Copy failed"
       }
     },
     "providerChain": {

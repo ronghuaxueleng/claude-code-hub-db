@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle,
+  Copy,
   DollarSign,
   ExternalLink,
   Gauge,
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { hasSessionMessages } from "@/actions/active-sessions";
 import { cancelPendingRequest } from "@/actions/cancel-request";
+import { getCurlCommand } from "@/actions/copy-curl";
 import { getSessionMapping, switchToNewSession } from "@/actions/switch-session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -106,6 +108,7 @@ export function ErrorDetailsDialog({
   const [checkingMessages, setCheckingMessages] = useState(false);
   const [isSwitchingSession, setIsSwitchingSession] = useState(false);
   const [mappedSessionId, setMappedSessionId] = useState<string | null>(null);
+  const [isCopyingCurl, setIsCopyingCurl] = useState(false);
 
   // 支持外部控制和内部控制
   const isControlled = externalOpen !== undefined;
@@ -153,6 +156,27 @@ export function ErrorDetailsDialog({
       toast.error(t("logs.details.sessionSwitch.failed"));
     } finally {
       setIsSwitchingSession(false);
+    }
+  };
+
+  // 处理复制curl
+  const handleCopyCurl = async () => {
+    if (!sessionId) return;
+
+    setIsCopyingCurl(true);
+    try {
+      const result = await getCurlCommand(sessionId, requestSequence);
+
+      if (result.ok) {
+        await navigator.clipboard.writeText(result.data.curl);
+        toast.success(t("logs.details.copyCurl.success"));
+      } else {
+        toast.error(result.error || t("logs.details.copyCurl.failed"));
+      }
+    } catch (error) {
+      toast.error(t("logs.details.copyCurl.failed"));
+    } finally {
+      setIsCopyingCurl(false);
     }
   };
 
@@ -322,6 +346,26 @@ export function ErrorDetailsDialog({
                 : t("logs.details.error")}
           </DialogDescription>
         </DialogHeader>
+
+        {/* 操作按钮 */}
+        {sessionId && (
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyCurl}
+              disabled={isCopyingCurl}
+              className="gap-2"
+            >
+              {isCopyingCurl ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              {t("logs.details.copyCurl.button")}
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-6 mt-4">
           {/* 会话映射信息或切换会话提示 */}

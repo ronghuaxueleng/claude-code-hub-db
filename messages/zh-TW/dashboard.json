@@ -243,6 +243,11 @@
         "newSession": "新會話",
         "switchAgain": "再次切換",
         "switchAgainHint": "可以切換到另一個新會話"
+      },
+      "copyCurl": {
+        "button": "複製 Curl",
+        "success": "已複製到剪貼簿",
+        "failed": "複製失敗"
       }
     },
     "providerChain": {
