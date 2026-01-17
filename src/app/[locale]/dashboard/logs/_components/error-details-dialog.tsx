@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { hasSessionMessages } from "@/actions/active-sessions";
 import { cancelPendingRequest } from "@/actions/cancel-request";
-import { switchToNewSession } from "@/actions/switch-session";
+import { getSessionMapping, switchToNewSession } from "@/actions/switch-session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -211,6 +211,27 @@ export function ErrorDetailsDialog({
     }
   }, [open, sessionId, requestSequence]);
 
+  // 检查会话映射关系
+  useEffect(() => {
+    if (open && sessionId && !mappedSessionId) {
+      getSessionMapping(sessionId)
+        .then((result) => {
+          if (result.ok && result.data) {
+            // 如果当前 sessionId 是旧会话，显示映射到的新会话
+            if (result.data.oldSessionId === sessionId) {
+              setMappedSessionId(result.data.newSessionId);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to check session mapping:", err);
+        });
+    } else if (!open) {
+      // 弹窗关闭时重置映射状态
+      setMappedSessionId(null);
+    }
+  }, [open, sessionId, mappedSessionId]);
+
   // 滚动到重定向部分
   useEffect(() => {
     if (open && scrollToRedirect) {
@@ -303,8 +324,8 @@ export function ErrorDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
-          {/* 请求进行中的切换会话提示 */}
-          {isInProgress && sessionId && (
+          {/* 会话映射信息或切换会话提示 */}
+          {(mappedSessionId || isInProgress) && sessionId && (
             <div
               className={`rounded-md border p-4 ${
                 mappedSessionId
@@ -321,22 +342,10 @@ export function ErrorDetailsDialog({
                 <div className="flex-1 space-y-3">
                   {mappedSessionId ? (
                     <div>
-                      <h4
-                        className={`font-semibold text-sm ${
-                          mappedSessionId
-                            ? "text-green-900 dark:text-green-100"
-                            : "text-yellow-900 dark:text-yellow-100"
-                        }`}
-                      >
+                      <h4 className="font-semibold text-sm text-green-900 dark:text-green-100">
                         {t("logs.details.sessionSwitch.mappedTitle")}
                       </h4>
-                      <p
-                        className={`text-xs mt-1 ${
-                          mappedSessionId
-                            ? "text-green-800 dark:text-green-200"
-                            : "text-yellow-800 dark:text-yellow-200"
-                        }`}
-                      >
+                      <p className="text-xs mt-1 text-green-800 dark:text-green-200">
                         {t("logs.details.sessionSwitch.mappedDesc")}
                       </p>
                       <div className="mt-2 space-y-1 text-xs font-mono">
