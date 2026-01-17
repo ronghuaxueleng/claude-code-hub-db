@@ -1651,6 +1651,16 @@ export class SessionManager {
       const key = `session:${sessionId}:req:${sequence}:reqHeaders`;
       const headersJson = JSON.stringify(headersToSanitizedObject(headers));
       await redis.setex(key, SessionManager.SESSION_TTL, headersJson);
+
+      // 额外存储一份完整的原始 headers（用于复制 curl 命令）
+      const rawKey = `session:${sessionId}:req:${sequence}:reqHeaders:raw`;
+      const rawHeadersObj: Record<string, string> = {};
+      headers.forEach((value, key) => {
+        rawHeadersObj[key] = value;
+      });
+      const rawHeadersJson = JSON.stringify(rawHeadersObj);
+      await redis.setex(rawKey, SessionManager.SESSION_TTL, rawHeadersJson);
+
       logger.trace("SessionManager: Stored session request headers", {
         sessionId,
         requestSequence: sequence,
@@ -1703,6 +1713,33 @@ export class SessionManager {
       return parseHeaderRecord(value);
     } catch (error) {
       logger.error("SessionManager: Failed to get session request headers", { error, sessionId });
+      return null;
+    }
+  }
+
+  /**
+   * 获取原始的（未遮罩的）请求 headers
+   * 用于复制 curl 命令等需要完整 headers 的场景
+   */
+  static async getSessionRequestHeadersRaw(
+    sessionId: string,
+    requestSequence?: number
+  ): Promise<Record<string, string> | null> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return null;
+
+    try {
+      const sequence = normalizeRequestSequence(requestSequence);
+      if (!sequence) return null;
+      const rawKey = `session:${sessionId}:req:${sequence}:reqHeaders:raw`;
+      const value = await redis.get(rawKey);
+      if (!value) return null;
+      return parseHeaderRecord(value);
+    } catch (error) {
+      logger.error("SessionManager: Failed to get raw session request headers", {
+        error,
+        sessionId,
+      });
       return null;
     }
   }

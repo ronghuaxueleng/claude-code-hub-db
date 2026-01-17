@@ -33,7 +33,7 @@ export async function getCurlCommand(
       SessionManager.getSessionRequestBody(sessionId, effectiveSequence),
       SessionManager.getSessionClientRequestMeta(sessionId, effectiveSequence),
       SessionManager.getSessionUpstreamRequestMeta(sessionId, effectiveSequence),
-      SessionManager.getSessionRequestHeaders(sessionId, effectiveSequence),
+      SessionManager.getSessionRequestHeadersRaw(sessionId, effectiveSequence), // 使用原始 headers
     ]);
 
     // 3. 优先使用上游请求，fallback到客户端请求
@@ -53,11 +53,11 @@ export async function getCurlCommand(
     // 添加URL
     curl += ` \\\n  '${url}'`;
 
-    // 添加请求头
+    // 添加请求头（使用完整的原始 headers，包含完整的 authorization 和 x-api-key）
     if (requestHeaders && typeof requestHeaders === "object") {
       const headers = requestHeaders as Record<string, string>;
       for (const [key, value] of Object.entries(headers)) {
-        // 跳过敏感headers和不必要的headers
+        // 跳过不必要的headers（但保留敏感headers如 authorization、x-api-key）
         if (shouldIncludeHeader(key)) {
           const escapedValue = value.replace(/'/g, "'\\''");
           curl += ` \\\n  -H '${key}: ${escapedValue}'`;
@@ -93,6 +93,7 @@ export async function getCurlCommand(
 
 /**
  * 判断是否应该包含该header
+ * 注意：现在使用原始 headers，敏感字段（authorization、x-api-key）会完整显示
  */
 function shouldIncludeHeader(key: string): boolean {
   const lowerKey = key.toLowerCase();
@@ -108,7 +109,7 @@ function shouldIncludeHeader(key: string): boolean {
     "sec-", // 浏览器自动添加的安全headers
   ];
 
-  // 敏感headers（可选包含，但需要注意）
+  // 敏感headers（现在会完整包含，不再遮罩）
   const sensitiveHeaders = [
     "authorization",
     "x-api-key",
@@ -122,6 +123,6 @@ function shouldIncludeHeader(key: string): boolean {
     }
   }
 
-  // 包含敏感headers（用户可能需要它们来重现请求）
+  // 包含敏感headers（现在使用原始值，完整显示）
   return true;
 }
