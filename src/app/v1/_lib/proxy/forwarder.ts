@@ -1551,9 +1551,10 @@ export class ProxyForwarder {
           targetUrl: new URL(proxyUrl).hostname,
         });
       } else {
-        // ⭐ CF 优选禁用时，使用单 IP Agent（避免 undici 多 IP 重试导致超时翻倍）
-        init.dispatcher = createSingleIpAgent({ allowH2: enableHttp2 });
-        logger.debug("ProxyForwarder: Using single-IP Agent (CF optimization disabled)", {
+        // ⭐ CF 优选禁用时，不设置 dispatcher，使用全局 dispatcher
+        // 优点：允许 undici 在多个 IP 之间重试，避免单个 IP 被阻止导致无法访问
+        // 缺点：如果多个 IP 都超时，总超时时间会翻倍（例如 2 个 IP × 30 秒 = 60 秒）
+        logger.debug("ProxyForwarder: Using global dispatcher (allow multi-IP retry)", {
           providerId: provider.id,
           providerName: provider.name,
         });
