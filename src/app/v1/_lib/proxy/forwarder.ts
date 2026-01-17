@@ -953,6 +953,31 @@ export class ProxyForwarder {
       currentProvider = alternativeProvider;
       session.setProvider(currentProvider);
 
+      // ⭐ 故障转移时生成新的会话ID并建立映射关系
+      if (session.sessionId) {
+        const oldSessionId = session.sessionId;
+        const newSessionId = await SessionManager.createSessionMapping(
+          oldSessionId,
+          "provider_failover",
+          session.authState?.user?.id,
+          currentProvider.id
+        );
+
+        // 更新 session 对象的会话ID
+        session.setSessionId(newSessionId);
+
+        // 重置请求序号（新会话从1开始）
+        session.setRequestSequence(1);
+
+        logger.info("ProxyForwarder: Session ID switched due to provider failover", {
+          oldSessionId,
+          newSessionId,
+          newProviderId: currentProvider.id,
+          newProviderName: currentProvider.name,
+          totalProvidersAttempted,
+        });
+      }
+
       logger.info("ProxyForwarder: Switched to alternative provider", {
         totalProvidersAttempted,
         newProviderId: currentProvider.id,

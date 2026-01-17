@@ -62,52 +62,12 @@ export async function switchToNewSession(
       };
     }
 
-    // 2. 生成新的 session ID
-    const newSessionId = SessionManager.generateSessionId();
-
-    // 3. 在 Redis 中记录映射关系
-    const redis = getRedisClient();
-    if (redis && redis.status === "ready") {
-      // 映射关系 key: session_mapping:{oldSessionId}
-      const mappingKey = `session_mapping:${oldSessionId}`;
-
-      // 存储映射关系（保留 7 天）
-      await redis.setex(
-        mappingKey,
-        7 * 24 * 60 * 60, // 7天过期
-        JSON.stringify({
-          oldSessionId,
-          newSessionId,
-          userId: authSession.user.id,
-          createdAt: new Date().toISOString(),
-          reason: "user_switch",
-        })
-      );
-
-      // 反向映射：new -> old（用于追溯）
-      const reverseMappingKey = `session_reverse_mapping:${newSessionId}`;
-      await redis.setex(
-        reverseMappingKey,
-        7 * 24 * 60 * 60,
-        JSON.stringify({
-          oldSessionId,
-          newSessionId,
-          userId: authSession.user.id,
-          createdAt: new Date().toISOString(),
-        })
-      );
-
-      logger.info("Session switched with mapping", {
-        oldSessionId,
-        newSessionId,
-        userId: authSession.user.id,
-      });
-    } else {
-      logger.warn("Redis unavailable, session mapping not stored", {
-        oldSessionId,
-        newSessionId,
-      });
-    }
+    // 2. 使用 SessionManager 的公共方法创建会话映射
+    const newSessionId = await SessionManager.createSessionMapping(
+      oldSessionId,
+      "user_switch",
+      authSession.user.id
+    );
 
     return {
       ok: true,
@@ -133,6 +93,9 @@ export async function getSessionMapping(sessionId: string): Promise<
     oldSessionId: string;
     newSessionId: string;
     createdAt: string;
+    reason: "provider_failover" | "user_switch";
+    userId?: number;
+    providerId?: number;
   } | null>
 > {
   try {
@@ -164,6 +127,9 @@ export async function getSessionMapping(sessionId: string): Promise<
           oldSessionId: mapping.oldSessionId,
           newSessionId: mapping.newSessionId,
           createdAt: mapping.createdAt,
+          reason: mapping.reason || "user_switch",
+          userId: mapping.userId,
+          providerId: mapping.providerId,
         },
       };
     }
@@ -180,6 +146,9 @@ export async function getSessionMapping(sessionId: string): Promise<
           oldSessionId: mapping.oldSessionId,
           newSessionId: mapping.newSessionId,
           createdAt: mapping.createdAt,
+          reason: mapping.reason || "user_switch",
+          userId: mapping.userId,
+          providerId: mapping.providerId,
         },
       };
     }

@@ -161,6 +161,81 @@ export class SessionManager {
   }
 
   /**
+   * 创建会话映射（用于故障转移或用户主动切换）
+   *
+   * @param oldSessionId - 旧的会话ID
+   * @param reason - 切换原因（"provider_failover" 或 "user_switch"）
+   * @param userId - 用户ID（可选，用于记录）
+   * @param providerId - 供应商ID（可选，用于故障转移记录）
+   * @returns 新的会话ID
+   */
+  static async createSessionMapping(
+    oldSessionId: string,
+    reason: "provider_failover" | "user_switch",
+    userId?: number,
+    providerId?: number
+  ): Promise<string> {
+    const newSessionId = SessionManager.generateSessionId();
+
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") {
+      logger.warn("Redis unavailable, session mapping not stored", {
+        oldSessionId,
+        newSessionId,
+        reason,
+      });
+      return newSessionId;
+    }
+
+    try {
+      // 映射关系 key: session_mapping:{oldSessionId}
+      const mappingKey = `session_mapping:${oldSessionId}`;
+
+      // 存储映射关系（保留 7 天）
+      await redis.setex(
+        mappingKey,
+        7 * 24 * 60 * 60, // 7天过期
+        JSON.stringify({
+          oldSessionId,
+          newSessionId,
+          userId,
+          providerId,
+          createdAt: new Date().toISOString(),
+          reason,
+        })
+      );
+
+      // 反向映射：new -> old（用于追溯）
+      const reverseMappingKey = `session_reverse_mapping:${newSessionId}`;
+      await redis.setex(
+        reverseMappingKey,
+        7 * 24 * 60 * 60,
+        JSON.stringify({
+          oldSessionId,
+          newSessionId,
+          userId,
+          providerId,
+          createdAt: new Date().toISOString(),
+          reason,
+        })
+      );
+
+      logger.info("Session mapping created", {
+        oldSessionId,
+        newSessionId,
+        reason,
+        userId,
+        providerId,
+      });
+
+      return newSessionId;
+    } catch (error) {
+      logger.error("Failed to create session mapping:", error);
+      return newSessionId; // 即使存储失败，也返回新的会话ID
+    }
+  }
+
+  /**
    * 获取 Session 内下一个请求序号（原子操作）
    *
    * 使用 Redis INCR 保证并发安全，序号从 1 开始递增
