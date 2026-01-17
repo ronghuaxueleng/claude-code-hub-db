@@ -230,12 +230,12 @@
       },
       "sessionSwitch": {
         "inProgressTitle": "请求长时间无响应？",
-        "inProgressDesc": "如果请求长时间卡住，您可以切换到新会话重新发送。新会话 ID 将自动复制到剪贴板，并与当前会话建立映射关系。",
+        "inProgressDesc": "如果请求长时间卡住，您可以切换到新会话。系统会自动将后续使用旧会话ID的请求映射到新会话，无需修改客户端配置。",
         "switchButton": "切换到新会话",
         "switching": "切换中...",
-        "hint": "新会话 ID 将复制到剪贴板",
+        "hint": "后续请求会自动映射",
         "success": "已切换到新会话",
-        "successDesc": "旧会话: {oldSession}...\n新会话: {newSession}...\n新会话 ID 已复制到剪贴板，请在客户端重新发送请求。",
+        "successDesc": "旧会话: {oldSession}...\n新会话: {newSession}...\n\n后续使用旧会话 ID 的请求将自动映射到新会话，无需修改客户端配置。",
         "failed": "切换会话失败"
       }
     },

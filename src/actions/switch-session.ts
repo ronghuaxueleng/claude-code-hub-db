@@ -7,6 +7,38 @@ import { SessionManager } from "@/lib/session-manager";
 import type { ActionResult } from "./types";
 
 /**
+ * 获取会话映射的新会话ID（内部使用，不做权限检查）
+ *
+ * @param oldSessionId - 旧的会话ID
+ * @returns 新会话ID（如果存在映射），否则返回null
+ */
+export async function getMappedSessionId(oldSessionId: string): Promise<string | null> {
+  try {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") {
+      return null;
+    }
+
+    const mappingKey = `session_mapping:${oldSessionId}`;
+    const mappingData = await redis.get(mappingKey);
+
+    if (mappingData) {
+      const mapping = JSON.parse(mappingData);
+      logger.debug("Session mapping found", {
+        oldSessionId,
+        newSessionId: mapping.newSessionId,
+      });
+      return mapping.newSessionId;
+    }
+
+    return null;
+  } catch (error) {
+    logger.error("Failed to get mapped session ID:", error);
+    return null;
+  }
+}
+
+/**
  * 切换到新会话并保持映射关系
  *
  * 功能：

@@ -230,12 +230,12 @@
       },
       "sessionSwitch": {
         "inProgressTitle": "請求長時間無響應？",
-        "inProgressDesc": "如果請求長時間卡住，您可以切換到新會話重新發送。新會話 ID 將自動複製到剪貼簿，並與當前會話建立映射關係。",
+        "inProgressDesc": "如果請求長時間卡住，您可以切換到新會話。系統會自動將後續使用舊會話ID的請求映射到新會話，無需修改客戶端配置。",
         "switchButton": "切換到新會話",
         "switching": "切換中...",
-        "hint": "新會話 ID 將複製到剪貼簿",
+        "hint": "後續請求會自動映射",
         "success": "已切換到新會話",
-        "successDesc": "舊會話: {oldSession}...\n新會話: {newSession}...\n新會話 ID 已複製到剪貼簿，請在客戶端重新發送請求。",
+        "successDesc": "舊會話: {oldSession}...\n新會話: {newSession}...\n\n後續使用舊會話 ID 的請求將自動映射到新會話，無需修改客戶端配置。",
         "failed": "切換會話失敗"
       }
     },

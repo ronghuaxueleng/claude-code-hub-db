@@ -1,3 +1,4 @@
+import { getMappedSessionId } from "@/actions/switch-session";
 import { getCachedSystemSettings } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { SessionManager } from "@/lib/session-manager";
@@ -91,11 +92,29 @@ export class ProxySessionGuard {
           session.userAgent
         ) || session.generateDeterministicSessionId();
 
+      // 1.5 检查会话映射（如果客户端使用旧会话ID，自动映射到新会话ID）
+      let effectiveSessionId = clientSessionId;
+      if (clientSessionId) {
+        const mappedSessionId = await getMappedSessionId(clientSessionId);
+        if (mappedSessionId) {
+          effectiveSessionId = mappedSessionId;
+          logger.info("Session mapping applied", {
+            oldSessionId: clientSessionId,
+            newSessionId: mappedSessionId,
+            keyId,
+          });
+        }
+      }
+
       // 2. 获取 messages 数组
       const messages = session.getMessages();
 
-      // 3. 获取或创建 session_id
-      const sessionId = await SessionManager.getOrCreateSessionId(keyId, messages, clientSessionId);
+      // 3. 获取或创建 session_id（使用映射后的会话ID）
+      const sessionId = await SessionManager.getOrCreateSessionId(
+        keyId,
+        messages,
+        effectiveSessionId
+      );
 
       // 4. 设置到 session 对象
       session.setSessionId(sessionId);

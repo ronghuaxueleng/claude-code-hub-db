@@ -230,12 +230,12 @@
       },
       "sessionSwitch": {
         "inProgressTitle": "Request stuck for too long?",
-        "inProgressDesc": "If your request is stuck, you can switch to a new session and retry. The new session ID will be automatically copied to clipboard and mapped to the current session.",
+        "inProgressDesc": "If your request is stuck, you can switch to a new session. The system will automatically map subsequent requests using the old session ID to the new session, without requiring any client configuration changes.",
         "switchButton": "Switch to New Session",
         "switching": "Switching...",
-        "hint": "New session ID will be copied",
+        "hint": "Subsequent requests will be auto-mapped",
         "success": "Switched to new session",
-        "successDesc": "Old session: {oldSession}...\nNew session: {newSession}...\nNew session ID has been copied to clipboard. Please resend your request in the client.",
+        "successDesc": "Old session: {oldSession}...\nNew session: {newSession}...\n\nSubsequent requests using the old session ID will be automatically mapped to the new session, without requiring any client configuration changes.",
         "failed": "Failed to switch session"
       }
     },

@@ -128,22 +128,13 @@ export function ErrorDetailsDialog({
 
     setIsSwitchingSession(true);
     try {
-      // 1. 尝试取消当前请求
-      if (requestSequence !== null && requestSequence !== undefined) {
-        // messageRequestId 从哪里获取？我们需要传递这个参数
-        // 暂时跳过取消步骤，因为我们没有 messageRequestId
-      }
-
-      // 2. 切换到新会话
+      // 切换到新会话
       const result = await switchToNewSession(sessionId);
 
       if (result.ok) {
         const { newSessionId } = result.data;
 
-        // 3. 复制到剪贴板
-        await navigator.clipboard.writeText(newSessionId);
-
-        // 4. 提示用户
+        // 提示用户
         toast.success(t("logs.details.sessionSwitch.success"), {
           description: t("logs.details.sessionSwitch.successDesc", {
             oldSession: sessionId.substring(0, 12),
@@ -152,7 +143,7 @@ export function ErrorDetailsDialog({
           duration: 10000,
         });
 
-        // 5. 关闭对话框
+        // 关闭对话框
         setOpen(false);
       } else {
         toast.error(result.error || t("logs.details.sessionSwitch.failed"));
