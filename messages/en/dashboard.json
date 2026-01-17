@@ -236,7 +236,11 @@
         "hint": "Subsequent requests will be auto-mapped",
         "success": "Switched to new session",
         "successDesc": "Old session: {oldSession}...\nNew session: {newSession}...\n\nSubsequent requests using the old session ID will be automatically mapped to the new session, without requiring any client configuration changes.",
-        "failed": "Failed to switch session"
+        "failed": "Failed to switch session",
+        "mappedTitle": "Session Switched",
+        "mappedDesc": "Subsequent requests using the old session ID will be automatically mapped to the new session",
+        "oldSession": "Old Session",
+        "newSession": "New Session"
       }
     },
     "providerChain": {

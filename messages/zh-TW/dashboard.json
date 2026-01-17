@@ -236,7 +236,11 @@
         "hint": "後續請求會自動映射",
         "success": "已切換到新會話",
         "successDesc": "舊會話: {oldSession}...\n新會話: {newSession}...\n\n後續使用舊會話 ID 的請求將自動映射到新會話，無需修改客戶端配置。",
-        "failed": "切換會話失敗"
+        "failed": "切換會話失敗",
+        "mappedTitle": "會話已切換",
+        "mappedDesc": "後續使用舊會話ID的請求將自動映射到新會話",
+        "oldSession": "舊會話",
+        "newSession": "新會話"
       }
     },
     "providerChain": {

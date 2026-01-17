@@ -236,7 +236,11 @@
         "hint": "后续请求会自动映射",
         "success": "已切换到新会话",
         "successDesc": "旧会话: {oldSession}...\n新会话: {newSession}...\n\n后续使用旧会话 ID 的请求将自动映射到新会话，无需修改客户端配置。",
-        "failed": "切换会话失败"
+        "failed": "切换会话失败",
+        "mappedTitle": "会话已切换",
+        "mappedDesc": "后续使用旧会话ID的请求将自动映射到新会话",
+        "oldSession": "旧会话",
+        "newSession": "新会话"
       }
     },
     "providerChain": {

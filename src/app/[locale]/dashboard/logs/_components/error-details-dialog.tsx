@@ -105,6 +105,7 @@ export function ErrorDetailsDialog({
   const [hasMessages, setHasMessages] = useState(false);
   const [checkingMessages, setCheckingMessages] = useState(false);
   const [isSwitchingSession, setIsSwitchingSession] = useState(false);
+  const [mappedSessionId, setMappedSessionId] = useState<string | null>(null);
 
   // 支持外部控制和内部控制
   const isControlled = externalOpen !== undefined;
@@ -134,6 +135,9 @@ export function ErrorDetailsDialog({
       if (result.ok) {
         const { newSessionId } = result.data;
 
+        // 保存映射的新会话ID，在页面中显示
+        setMappedSessionId(newSessionId);
+
         // 提示用户
         toast.success(t("logs.details.sessionSwitch.success"), {
           description: t("logs.details.sessionSwitch.successDesc", {
@@ -142,9 +146,6 @@ export function ErrorDetailsDialog({
           }),
           duration: 10000,
         });
-
-        // 关闭对话框
-        setOpen(false);
       } else {
         toast.error(result.error || t("logs.details.sessionSwitch.failed"));
       }
@@ -304,42 +305,95 @@ export function ErrorDetailsDialog({
         <div className="space-y-6 mt-4">
           {/* 请求进行中的切换会话提示 */}
           {isInProgress && sessionId && (
-            <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+            <div
+              className={`rounded-md border p-4 ${
+                mappedSessionId
+                  ? "border-green-200 bg-green-50 dark:bg-green-950/20"
+                  : "border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20"
+              }`}
+            >
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                {mappedSessionId ? (
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                )}
                 <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
-                      {t("logs.details.sessionSwitch.inProgressTitle")}
-                    </h4>
-                    <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
-                      {t("logs.details.sessionSwitch.inProgressDesc")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleSwitchSession}
-                      disabled={isSwitchingSession}
-                      className="bg-white dark:bg-gray-900 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-950/50"
-                    >
-                      {isSwitchingSession ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t("logs.details.sessionSwitch.switching")}
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          {t("logs.details.sessionSwitch.switchButton")}
-                        </>
-                      )}
-                    </Button>
-                    <span className="text-xs text-yellow-700 dark:text-yellow-300">
-                      {t("logs.details.sessionSwitch.hint")}
-                    </span>
-                  </div>
+                  {mappedSessionId ? (
+                    <div>
+                      <h4
+                        className={`font-semibold text-sm ${
+                          mappedSessionId
+                            ? "text-green-900 dark:text-green-100"
+                            : "text-yellow-900 dark:text-yellow-100"
+                        }`}
+                      >
+                        {t("logs.details.sessionSwitch.mappedTitle")}
+                      </h4>
+                      <p
+                        className={`text-xs mt-1 ${
+                          mappedSessionId
+                            ? "text-green-800 dark:text-green-200"
+                            : "text-yellow-800 dark:text-yellow-200"
+                        }`}
+                      >
+                        {t("logs.details.sessionSwitch.mappedDesc")}
+                      </p>
+                      <div className="mt-2 space-y-1 text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-700 dark:text-green-300">
+                            {t("logs.details.sessionSwitch.oldSession")}:
+                          </span>
+                          <code className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">
+                            {sessionId}
+                          </code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-700 dark:text-green-300">
+                            {t("logs.details.sessionSwitch.newSession")}:
+                          </span>
+                          <code className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">
+                            {mappedSessionId}
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <h4 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
+                          {t("logs.details.sessionSwitch.inProgressTitle")}
+                        </h4>
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                          {t("logs.details.sessionSwitch.inProgressDesc")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleSwitchSession}
+                          disabled={isSwitchingSession}
+                          className="bg-white dark:bg-gray-900 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-950/50"
+                        >
+                          {isSwitchingSession ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t("logs.details.sessionSwitch.switching")}
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              {t("logs.details.sessionSwitch.switchButton")}
+                            </>
+                          )}
+                        </Button>
+                        <span className="text-xs text-yellow-700 dark:text-yellow-300">
+                          {t("logs.details.sessionSwitch.hint")}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
