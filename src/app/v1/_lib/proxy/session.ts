@@ -251,6 +251,14 @@ export class ProxySession {
     return original !== current;
   }
 
+  /**
+   * 获取原始的客户端请求 headers（未经处理的）
+   * 用于复制 curl 命令等需要完整 headers 的场景
+   */
+  getOriginalHeaders(): Headers {
+    return this.originalHeaders;
+  }
+
   setAuthState(state: AuthState): void {
     this.authState = state;
     if (state.user) {

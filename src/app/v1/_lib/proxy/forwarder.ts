@@ -1091,7 +1091,8 @@ export class ProxyForwarder {
         void SessionManager.storeSessionRequestHeaders(
           session.sessionId,
           processedHeaders,
-          session.requestSequence
+          session.requestSequence,
+          session.getOriginalHeaders()
         ).catch((err) => logger.error("Failed to store request headers:", err));
       }
 
@@ -1264,7 +1265,8 @@ export class ProxyForwarder {
         void SessionManager.storeSessionRequestHeaders(
           session.sessionId,
           processedHeaders,
-          session.requestSequence
+          session.requestSequence,
+          session.getOriginalHeaders()
         ).catch((err) => logger.error("Failed to store request headers:", err));
       }
 

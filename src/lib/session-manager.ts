@@ -1641,7 +1641,8 @@ export class SessionManager {
   static async storeSessionRequestHeaders(
     sessionId: string,
     headers: Headers,
-    requestSequence?: number
+    requestSequence?: number,
+    clientHeaders?: Headers
   ): Promise<void> {
     const redis = getRedisClient();
     if (!redis || redis.status !== "ready") return;
@@ -1652,10 +1653,11 @@ export class SessionManager {
       const headersJson = JSON.stringify(headersToSanitizedObject(headers));
       await redis.setex(key, SessionManager.SESSION_TTL, headersJson);
 
-      // 额外存储一份完整的原始 headers（用于复制 curl 命令）
+      // 额外存储一份完整的原始客户端 headers（用于复制 curl 命令）
       const rawKey = `session:${sessionId}:req:${sequence}:reqHeaders:raw`;
+      const sourceHeaders = clientHeaders || headers; // 优先使用原始客户端 headers
       const rawHeadersObj: Record<string, string> = {};
-      headers.forEach((value, key) => {
+      sourceHeaders.forEach((value, key) => {
         rawHeadersObj[key] = value;
       });
       const rawHeadersJson = JSON.stringify(rawHeadersObj);
