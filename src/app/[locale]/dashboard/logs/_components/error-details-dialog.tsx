@@ -366,6 +366,33 @@ export function ErrorDetailsDialog({
                           </code>
                         </div>
                       </div>
+                      {/* 如果请求还在进行中，显示再次切换按钮 */}
+                      {isInProgress && (
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-green-200 dark:border-green-800">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSwitchSession}
+                            disabled={isSwitchingSession}
+                            className="bg-white dark:bg-gray-900 border-green-300 hover:bg-green-50 dark:hover:bg-green-950/50"
+                          >
+                            {isSwitchingSession ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {t("logs.details.sessionSwitch.switching")}
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                {t("logs.details.sessionSwitch.switchAgain")}
+                              </>
+                            )}
+                          </Button>
+                          <span className="text-xs text-green-700 dark:text-green-300">
+                            {t("logs.details.sessionSwitch.switchAgainHint")}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>

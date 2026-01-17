@@ -239,7 +239,9 @@
         "mappedTitle": "セッションが切り替えられました",
         "mappedDesc": "旧セッションIDを使用した後続のリクエストは、自動的に新しいセッションにマッピングされます",
         "oldSession": "旧セッション",
-        "newSession": "新セッション"
+        "newSession": "新セッション",
+        "switchAgain": "再度切り替え",
+        "switchAgainHint": "別の新しいセッションに切り替えることができます"
       }
     },
     "providerChain": {

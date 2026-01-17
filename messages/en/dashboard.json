@@ -240,7 +240,9 @@
         "mappedTitle": "Session Switched",
         "mappedDesc": "Subsequent requests using the old session ID will be automatically mapped to the new session",
         "oldSession": "Old Session",
-        "newSession": "New Session"
+        "newSession": "New Session",
+        "switchAgain": "Switch Again",
+        "switchAgainHint": "Can switch to another new session"
       }
     },
     "providerChain": {

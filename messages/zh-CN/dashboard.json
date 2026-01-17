@@ -240,7 +240,9 @@
         "mappedTitle": "会话已切换",
         "mappedDesc": "后续使用旧会话ID的请求将自动映射到新会话",
         "oldSession": "旧会话",
-        "newSession": "新会话"
+        "newSession": "新会话",
+        "switchAgain": "再次切换",
+        "switchAgainHint": "可以切换到另一个新会话"
       }
     },
     "providerChain": {
