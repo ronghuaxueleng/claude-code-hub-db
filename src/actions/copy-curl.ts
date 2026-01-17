@@ -109,11 +109,7 @@ function shouldIncludeHeader(key: string): boolean {
   ];
 
   // 敏感headers（可选包含，但需要注意）
-  const sensitiveHeaders = [
-    "authorization",
-    "x-api-key",
-    "api-key",
-  ];
+  const sensitiveHeaders = ["authorization", "x-api-key", "api-key"];
 
   // 排除特定前缀
   for (const exclude of excludeHeaders) {
