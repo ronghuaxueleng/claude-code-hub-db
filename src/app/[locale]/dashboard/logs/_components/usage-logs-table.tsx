@@ -250,9 +250,10 @@ export function UsageLogsTable({
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 // 复制实际显示的计费模型（根据 billingModelSource 配置）
-                                const billingModel = billingModelSource === "original"
-                                  ? (log.originalModel || log.model)
-                                  : log.model;
+                                const billingModel =
+                                  billingModelSource === "original"
+                                    ? log.originalModel || log.model
+                                    : log.model;
                                 if (billingModel) {
                                   const success = await copyToClipboard(billingModel);
                                   if (success) {
@@ -276,8 +277,8 @@ export function UsageLogsTable({
                           <TooltipContent>
                             <p className="text-xs">
                               {billingModelSource === "original"
-                                ? (log.originalModel || log.model || "-")
-                                : (log.model || "-")}
+                                ? log.originalModel || log.model || "-"
+                                : log.model || "-"}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-1">
                               {tCommon("clickToCopy")}
