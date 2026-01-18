@@ -17,14 +17,14 @@ import { db } from "@/drizzle/db";
 import { messageRequest } from "@/drizzle/schema";
 import { logger } from "@/lib/logger";
 import { getSystemSettings } from "@/repository/system-config";
-import { ProxyError } from "./errors";
+import { ProxyResponses } from "./responses";
 import type { ProxySession } from "./session";
 
 export class ProxyBlockedUrlGuard {
   /**
    * 检查请求 URL 是否被禁用
    *
-   * @returns 如果 URL 被禁用，抛出 ProxyError；否则返回 null（放行）
+   * @returns 如果 URL 被禁用，返回 Response；否则返回 null（放行）
    */
   static async ensure(session: ProxySession): Promise<Response | null> {
     try {
@@ -95,21 +95,16 @@ export class ProxyBlockedUrlGuard {
         // 记录到数据库（异步，不阻塞响应）
         void ProxyBlockedUrlGuard.logBlockedRequest(session, matchedRule);
 
-        // 抛出错误
-        throw new ProxyError(
-          `请求被系统策略拦截。匹配规则："${matchedRule}"，请求路径：${session.requestUrl.pathname}`,
-          403
+        // 返回错误响应（不抛出异常，避免计入熔断器）
+        return ProxyResponses.buildError(
+          403,
+          `请求被系统策略拦截。匹配规则："${matchedRule}"，请求路径：${session.requestUrl.pathname}`
         );
       }
 
       return null; // 通过检测，放行
     } catch (error) {
-      // 如果是 ProxyError，直接重新抛出
-      if (error instanceof ProxyError) {
-        throw error;
-      }
-
-      // 其他错误：记录日志但放行，避免守卫故障阻塞正常请求
+      // 记录日志但放行，避免守卫故障阻塞正常请求
       logger.error("[BlockedUrlGuard] Detection error:", error);
       return null;
     }
