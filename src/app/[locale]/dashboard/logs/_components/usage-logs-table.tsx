@@ -44,6 +44,17 @@ interface UsageLogsTableProps {
   billingModelSource?: BillingModelSource;
 }
 
+// 复制文本到剪贴板的辅助函数
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    console.error("Failed to copy:", error);
+    return false;
+  }
+};
+
 export function UsageLogsTable({
   logs,
   total,
@@ -57,6 +68,7 @@ export function UsageLogsTable({
 }: UsageLogsTableProps) {
   const t = useTranslations("dashboard");
   const tChain = useTranslations("provider-chain");
+  const tCommon = useTranslations("common");
   const totalPages = Math.ceil(total / pageSize);
 
   // 弹窗状态管理：记录当前打开的行 ID 和是否需要滚动到重定向部分
@@ -233,7 +245,21 @@ export function UsageLogsTable({
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1 min-w-0 cursor-help">
+                            <div
+                              className="flex items-center gap-1 min-w-0 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const modelToCopy = log.originalModel || log.model;
+                                if (modelToCopy) {
+                                  const success = await copyToClipboard(modelToCopy);
+                                  if (success) {
+                                    toast.success(tCommon("copySuccess"));
+                                  } else {
+                                    toast.error(tCommon("copyFailed"));
+                                  }
+                                }
+                              }}
+                            >
                               <ModelDisplayWithRedirect
                                 originalModel={log.originalModel}
                                 currentModel={log.model}
@@ -246,6 +272,9 @@ export function UsageLogsTable({
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="text-xs">{log.originalModel || log.model || "-"}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {tCommon("clickToCopy")}
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

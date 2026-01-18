@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import type { MyUsageLogEntry } from "@/actions/my-usage";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,17 @@ interface UsageLogsTableProps {
   loadingLabel?: string;
 }
 
+// 复制文本到剪贴板的辅助函数
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    console.error("Failed to copy:", error);
+    return false;
+  }
+};
+
 export function UsageLogsTable({
   logs,
   total,
@@ -37,6 +49,7 @@ export function UsageLogsTable({
   loadingLabel,
 }: UsageLogsTableProps) {
   const t = useTranslations("myUsage.logs");
+  const tCommon = useTranslations("common");
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const formatTokenAmount = (value: number | null | undefined): string => {
@@ -83,15 +96,43 @@ export function UsageLogsTable({
                     {log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}
                   </TableCell>
                   <TableCell className="space-y-1">
-                    <div className="font-medium text-sm">{log.model ?? t("unknownModel")}</div>
-                    {log.modelRedirect ? (
-                      <div className="text-xs text-muted-foreground">{log.modelRedirect}</div>
-                    ) : null}
-                    {log.billingModel && log.billingModel !== log.model ? (
-                      <div className="text-[11px] text-muted-foreground">
-                        {t("billingModel", { model: log.billingModel })}
-                      </div>
-                    ) : null}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const modelToCopy = log.model;
+                              if (modelToCopy) {
+                                const success = await copyToClipboard(modelToCopy);
+                                if (success) {
+                                  toast.success(tCommon("copySuccess"));
+                                } else {
+                                  toast.error(tCommon("copyFailed"));
+                                }
+                              }
+                            }}
+                          >
+                            <div className="font-medium text-sm">{log.model ?? t("unknownModel")}</div>
+                            {log.modelRedirect ? (
+                              <div className="text-xs text-muted-foreground">{log.modelRedirect}</div>
+                            ) : null}
+                            {log.billingModel && log.billingModel !== log.model ? (
+                              <div className="text-[11px] text-muted-foreground">
+                                {t("billingModel", { model: log.billingModel })}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{log.model ?? t("unknownModel")}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {tCommon("clickToCopy")}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-right text-xs font-mono tabular-nums">
                     <div className="flex flex-col items-end leading-tight">
