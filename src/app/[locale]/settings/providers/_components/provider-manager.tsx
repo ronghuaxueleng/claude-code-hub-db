@@ -1,6 +1,6 @@
 "use client";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckSquare, Loader2, Search, Trash2, XSquare } from "lucide-react";
+import { AlertTriangle, CheckSquare, Loader2, RotateCcw, Search, Trash2, XSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
@@ -9,6 +9,7 @@ import {
   batchDeleteProviders,
   batchDisableProviders,
   batchEnableProviders,
+  batchResetCircuitBreakers,
 } from "@/actions/providers";
 import {
   AlertDialog,
@@ -91,8 +92,9 @@ export function ProviderManager({
   const [batchEnablePending, startBatchEnable] = useTransition();
   const [batchDisablePending, startBatchDisable] = useTransition();
   const [batchDeletePending, startBatchDelete] = useTransition();
+  const [batchResetPending, startBatchReset] = useTransition();
 
-  const isBatchPending = batchEnablePending || batchDisablePending || batchDeletePending;
+  const isBatchPending = batchEnablePending || batchDisablePending || batchDeletePending || batchResetPending;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -201,6 +203,30 @@ export function ProviderManager({
       } catch (error) {
         console.error("Batch delete failed:", error);
         toast.error(tBatch("deleteFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchResetCircuitBreakers = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchReset(async () => {
+      try {
+        const result = await batchResetCircuitBreakers(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("resetCircuitSuccess"), {
+            description: tBatch("resetCircuitSuccessDesc", { count: result.data.resetCount }),
+          });
+          setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("resetCircuitFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch reset circuit breakers failed:", error);
+        toast.error(tBatch("resetCircuitFailed"), { description: tBatch("unknownError") });
       }
     });
   };
@@ -350,6 +376,16 @@ export function ProviderManager({
           >
             <XSquare className="h-4 w-4" />
             {tBatch("disable")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBatchResetCircuitBreakers}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            {tBatch("resetCircuit")}
           </Button>
           <Button
             variant="destructive"

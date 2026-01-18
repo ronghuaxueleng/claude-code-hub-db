@@ -7,6 +7,7 @@
   "disable": "無効化",
   "delete": "削除",
   "cancel": "キャンセル",
+  "resetCircuit": "サーキットブレーカーをリセット",
   "enableSuccess": "一括有効化に成功しました",
   "enableSuccessDesc": "{count} 件のプロバイダーを有効化しました",
   "enableFailed": "一括有効化に失敗しました",
@@ -19,5 +20,8 @@
   "deleteConfirmTitle": "一括削除の確認",
   "deleteConfirmDesc": "選択した {count} 件のプロバイダーを削除してもよろしいですか？この操作は元に戻せません。",
   "confirmDelete": "削除を確認",
+  "resetCircuitSuccess": "一括サーキットブレーカーリセットに成功しました",
+  "resetCircuitSuccessDesc": "{count} 件のプロバイダーのサーキットブレーカーをリセットしました",
+  "resetCircuitFailed": "一括サーキットブレーカーリセットに失敗しました",
   "unknownError": "不明なエラー"
 }

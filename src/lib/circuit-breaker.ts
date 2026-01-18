@@ -561,6 +561,36 @@ export function resetCircuit(providerId: number): void {
 }
 
 /**
+ * 批量重置熔断器（用于运维批量恢复）
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 成功重置的供应商数量
+ */
+export function batchResetCircuits(providerIds: number[]): number {
+  let resetCount = 0;
+
+  for (const providerId of providerIds) {
+    try {
+      resetCircuit(providerId);
+      resetCount++;
+    } catch (error) {
+      logger.error(`[CircuitBreaker] Failed to reset circuit for provider ${providerId}`, {
+        providerId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  logger.info(`[CircuitBreaker] Batch reset completed: ${resetCount}/${providerIds.length}`, {
+    providerIds,
+    resetCount,
+    total: providerIds.length,
+  });
+
+  return resetCount;
+}
+
+/**
  * 将熔断器从 OPEN 状态转换到 HALF_OPEN 状态（用于智能探测）
  * 比直接 resetCircuit 更安全，允许通过 HALF_OPEN 阶段验证恢复
  */

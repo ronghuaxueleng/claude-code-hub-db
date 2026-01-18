@@ -7,6 +7,7 @@
   "disable": "禁用",
   "delete": "刪除",
   "cancel": "取消",
+  "resetCircuit": "重置熔斷器",
   "enableSuccess": "批量啟用成功",
   "enableSuccessDesc": "已啟用 {count} 個供應商",
   "enableFailed": "批量啟用失敗",
@@ -19,5 +20,8 @@
   "deleteConfirmTitle": "確認批量刪除？",
   "deleteConfirmDesc": "確定要刪除選中的 {count} 個供應商嗎？此操作無法撤銷。",
   "confirmDelete": "確認刪除",
+  "resetCircuitSuccess": "批量重置熔斷器成功",
+  "resetCircuitSuccessDesc": "已重置 {count} 個供應商的熔斷器",
+  "resetCircuitFailed": "批量重置熔斷器失敗",
   "unknownError": "未知錯誤"
 }
