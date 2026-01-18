@@ -103,7 +103,8 @@ export function UsageLogsTable({
                             className="cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
                             onClick={async (e) => {
                               e.stopPropagation();
-                              const modelToCopy = log.model;
+                              // 优先复制计费模型，如果没有则复制请求模型
+                              const modelToCopy = log.billingModel || log.model;
                               if (modelToCopy) {
                                 const success = await copyToClipboard(modelToCopy);
                                 if (success) {
@@ -130,7 +131,9 @@ export function UsageLogsTable({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">{log.model ?? t("unknownModel")}</p>
+                          <p className="text-xs">
+                            {log.billingModel || log.model || t("unknownModel")}
+                          </p>
                           <p className="text-[10px] text-muted-foreground mt-1">
                             {tCommon("clickToCopy")}
                           </p>

@@ -249,9 +249,12 @@ export function UsageLogsTable({
                               className="flex items-center gap-1 min-w-0 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                const modelToCopy = log.originalModel || log.model;
-                                if (modelToCopy) {
-                                  const success = await copyToClipboard(modelToCopy);
+                                // 复制实际显示的计费模型（根据 billingModelSource 配置）
+                                const billingModel = billingModelSource === "original"
+                                  ? (log.originalModel || log.model)
+                                  : log.model;
+                                if (billingModel) {
+                                  const success = await copyToClipboard(billingModel);
                                   if (success) {
                                     toast.success(tCommon("copySuccess"));
                                   } else {
@@ -271,7 +274,11 @@ export function UsageLogsTable({
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="text-xs">{log.originalModel || log.model || "-"}</p>
+                            <p className="text-xs">
+                              {billingModelSource === "original"
+                                ? (log.originalModel || log.model || "-")
+                                : (log.model || "-")}
+                            </p>
                             <p className="text-[10px] text-muted-foreground mt-1">
                               {tCommon("clickToCopy")}
                             </p>

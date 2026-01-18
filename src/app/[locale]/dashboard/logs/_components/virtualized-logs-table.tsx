@@ -29,6 +29,17 @@ import { ProviderChainPopover } from "./provider-chain-popover";
 const BATCH_SIZE = 50;
 const ROW_HEIGHT = 52; // Estimated row height in pixels
 
+// 复制文本到剪贴板的辅助函数
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    console.error("Failed to copy:", error);
+    return false;
+  }
+};
+
 export interface VirtualizedLogsTableFilters {
   userId?: number;
   keyId?: number;
@@ -59,6 +70,7 @@ export function VirtualizedLogsTable({
 }: VirtualizedLogsTableProps) {
   const t = useTranslations("dashboard");
   const tChain = useTranslations("provider-chain");
+  const tCommon = useTranslations("common");
   const parentRef = useRef<HTMLDivElement>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
 
@@ -410,7 +422,24 @@ export function VirtualizedLogsTable({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 min-w-0 cursor-help truncate">
+                          <div
+                            className="flex items-center gap-1 min-w-0 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors truncate"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              // 复制实际显示的计费模型（根据 billingModelSource 配置）
+                              const billingModel = billingModelSource === "original"
+                                ? (log.originalModel || log.model)
+                                : log.model;
+                              if (billingModel) {
+                                const success = await copyToClipboard(billingModel);
+                                if (success) {
+                                  toast.success(tCommon("copySuccess"));
+                                } else {
+                                  toast.error(tCommon("copyFailed"));
+                                }
+                              }
+                            }}
+                          >
                             <ModelDisplayWithRedirect
                               originalModel={log.originalModel}
                               currentModel={log.model}
@@ -422,7 +451,14 @@ export function VirtualizedLogsTable({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">{log.originalModel || log.model || "-"}</p>
+                          <p className="text-xs">
+                            {billingModelSource === "original"
+                              ? (log.originalModel || log.model || "-")
+                              : (log.model || "-")}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {tCommon("clickToCopy")}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
