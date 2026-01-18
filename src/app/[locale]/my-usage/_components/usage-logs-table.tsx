@@ -114,9 +114,13 @@ export function UsageLogsTable({
                               }
                             }}
                           >
-                            <div className="font-medium text-sm">{log.model ?? t("unknownModel")}</div>
+                            <div className="font-medium text-sm">
+                              {log.model ?? t("unknownModel")}
+                            </div>
                             {log.modelRedirect ? (
-                              <div className="text-xs text-muted-foreground">{log.modelRedirect}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {log.modelRedirect}
+                              </div>
                             ) : null}
                             {log.billingModel && log.billingModel !== log.model ? (
                               <div className="text-[11px] text-muted-foreground">
