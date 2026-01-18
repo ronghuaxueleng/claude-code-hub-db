@@ -1,6 +1,14 @@
 "use client";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckSquare, Loader2, RotateCcw, Search, Trash2, XSquare } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckSquare,
+  Loader2,
+  RotateCcw,
+  Search,
+  Trash2,
+  XSquare,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
@@ -94,7 +102,8 @@ export function ProviderManager({
   const [batchDeletePending, startBatchDelete] = useTransition();
   const [batchResetPending, startBatchReset] = useTransition();
 
-  const isBatchPending = batchEnablePending || batchDisablePending || batchDeletePending || batchResetPending;
+  const isBatchPending =
+    batchEnablePending || batchDisablePending || batchDeletePending || batchResetPending;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
