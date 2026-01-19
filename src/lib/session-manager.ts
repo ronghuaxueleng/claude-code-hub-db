@@ -2145,9 +2145,12 @@ export class SessionManager {
   ): Promise<boolean> {
     // 如果原始会话ID和成功会话ID相同，无需记录映射
     if (originalSessionId === successfulSessionId) {
-      logger.trace("SessionManager: Original and successful session ID are the same, skip mapping", {
-        sessionId: originalSessionId,
-      });
+      logger.trace(
+        "SessionManager: Original and successful session ID are the same, skip mapping",
+        {
+          sessionId: originalSessionId,
+        }
+      );
       return false;
     }
 
