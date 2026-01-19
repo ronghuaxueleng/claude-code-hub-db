@@ -1935,7 +1935,26 @@ export async function finalizeRequestStats(
     return;
   }
 
-  // 4. 更新成本
+  // 4. 记录成功会话映射（请求成功完成时）
+  // 如果原始会话ID与最终会话ID不同，记录映射关系以供下次复用
+  if (
+    statusCode >= 200 &&
+    statusCode < 300 &&
+    session.originalClientSessionId &&
+    session.sessionId &&
+    session.originalClientSessionId !== session.sessionId
+  ) {
+    void SessionManager.recordSuccessfulSessionMapping(
+      session.originalClientSessionId,
+      session.sessionId,
+      messageContext.user.id,
+      provider.id
+    ).catch((error) => {
+      logger.error("[ResponseHandler] Failed to record successful session mapping:", error);
+    });
+  }
+
+  // 5. 更新成本
   const resolvedCacheTtl = usageMetrics.cache_ttl ?? session.getCacheTtlResolved?.() ?? null;
   const cache5m =
     usageMetrics.cache_creation_5m_input_tokens ??
@@ -1963,10 +1982,10 @@ export async function finalizeRequestStats(
     session.getContext1mApplied()
   );
 
-  // 5. 追踪消费到 Redis（用于限流）
+  // 6. 追踪消费到 Redis（用于限流）
   await trackCostToRedis(session, normalizedUsage);
 
-  // 6. 更新 session usage
+  // 7. 更新 session usage
   if (session.sessionId) {
     let costUsdStr: string | undefined;
     try {
@@ -2003,7 +2022,7 @@ export async function finalizeRequestStats(
     });
   }
 
-  // 7. 更新请求详情
+  // 8. 更新请求详情
   await updateMessageRequestDetails(messageContext.id, {
     statusCode: statusCode,
     inputTokens: normalizedUsage.input_tokens,

@@ -71,6 +71,9 @@ export class ProxySession {
   // Session ID（用于会话粘性和并发限流）
   sessionId: string | null;
 
+  // 原始客户端 Session ID（用于记录成功会话映射）
+  originalClientSessionId: string | null = null;
+
   // Request Sequence（Session 内请求序号）
   requestSequence: number = 1;
 
@@ -357,6 +360,13 @@ export class ProxySession {
    */
   setSessionId(sessionId: string): void {
     this.sessionId = sessionId;
+  }
+
+  /**
+   * 设置原始客户端 Session ID（用于记录成功会话映射）
+   */
+  setOriginalClientSessionId(originalSessionId: string): void {
+    this.originalClientSessionId = originalSessionId;
   }
 
   /**

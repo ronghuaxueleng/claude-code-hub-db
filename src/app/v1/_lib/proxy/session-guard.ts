@@ -92,17 +92,38 @@ export class ProxySessionGuard {
           session.userAgent
         ) || session.generateDeterministicSessionId();
 
-      // 1.5 检查会话映射（如果客户端使用旧会话ID，自动映射到新会话ID）
+      // 1.5 检查成功会话映射（优先级最高）
+      // 如果客户端使用的是原始会话ID，且该会话之前成功完成过，则直接复用成功的sessionId
+      // 好处：避免同一原始会话每次都创建新sessionId，减少provider切换，保持会话连续性
       let effectiveSessionId = clientSessionId;
       if (clientSessionId) {
-        const mappedSessionId = await getMappedSessionId(clientSessionId);
-        if (mappedSessionId) {
-          effectiveSessionId = mappedSessionId;
-          logger.info("Session mapping applied", {
-            oldSessionId: clientSessionId,
-            newSessionId: mappedSessionId,
+        // 优先查询成功会话映射
+        const successfulSessionId =
+          await SessionManager.getSuccessfulSessionMapping(clientSessionId);
+        if (successfulSessionId) {
+          effectiveSessionId = successfulSessionId;
+          logger.info("SessionManager: Applied successful session mapping", {
+            originalSessionId: clientSessionId,
+            successfulSessionId,
             keyId,
           });
+
+          // 记录原始sessionId，用于后续在响应成功时更新映射的TTL
+          session.setOriginalClientSessionId(clientSessionId);
+        } else {
+          // 没有成功映射，再检查用户手动创建的会话映射（故障转移等场景）
+          const mappedSessionId = await getMappedSessionId(clientSessionId);
+          if (mappedSessionId) {
+            effectiveSessionId = mappedSessionId;
+            logger.info("Session mapping applied", {
+              oldSessionId: clientSessionId,
+              newSessionId: mappedSessionId,
+              keyId,
+            });
+          }
+
+          // 记录原始sessionId
+          session.setOriginalClientSessionId(clientSessionId);
         }
       }
 
