@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createSensitiveWordAction } from "@/actions/sensitive-words";
@@ -28,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function AddWordDialog() {
   const t = useTranslations("settings");
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [word, setWord] = useState("");
@@ -58,6 +60,7 @@ export function AddWordDialog() {
         setWord("");
         setMatchType("contains");
         setDescription("");
+        router.refresh();
       } else {
         toast.error(result.error);
       }

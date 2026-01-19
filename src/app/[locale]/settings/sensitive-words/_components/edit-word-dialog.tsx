@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { updateSensitiveWordAction } from "@/actions/sensitive-words";
@@ -33,6 +34,7 @@ interface EditWordDialogProps {
 
 export function EditWordDialog({ word, open, onOpenChange }: EditWordDialogProps) {
   const t = useTranslations("settings");
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wordText, setWordText] = useState("");
   const [matchType, setMatchType] = useState<string>("");
@@ -67,6 +69,7 @@ export function EditWordDialog({ word, open, onOpenChange }: EditWordDialogProps
       if (result.ok) {
         toast.success(t("sensitiveWords.editSuccess"));
         onOpenChange(false);
+        router.refresh();
       } else {
         toast.error(result.error);
       }

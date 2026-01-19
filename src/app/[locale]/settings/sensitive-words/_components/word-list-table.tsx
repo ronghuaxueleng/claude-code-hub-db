@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteSensitiveWordAction, updateSensitiveWordAction } from "@/actions/sensitive-words";
@@ -23,6 +24,7 @@ const matchTypeColors = {
 
 export function WordListTable({ words }: WordListTableProps) {
   const t = useTranslations("settings");
+  const router = useRouter();
   const [selectedWord, setSelectedWord] = useState<SensitiveWord | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -37,6 +39,7 @@ export function WordListTable({ words }: WordListTableProps) {
 
     if (result.ok) {
       toast.success(isEnabled ? t("sensitiveWords.enable") : t("sensitiveWords.disable"));
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -51,6 +54,7 @@ export function WordListTable({ words }: WordListTableProps) {
 
     if (result.ok) {
       toast.success(t("sensitiveWords.deleteSuccess"));
+      router.refresh();
     } else {
       toast.error(result.error);
     }
