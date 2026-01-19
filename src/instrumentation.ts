@@ -16,6 +16,7 @@ const instrumentationState = globalThis as unknown as {
   __CCH_CLOUD_PRICE_SYNC_STARTED__?: boolean;
   __CCH_CLOUD_PRICE_SYNC_INTERVAL_ID__?: ReturnType<typeof setInterval>;
   __CCH_CF_IP_AUTO_TEST_STARTED__?: boolean;
+  __CCH_PROVIDER_HEARTBEAT_STARTED__?: boolean;
 };
 
 /**
@@ -163,6 +164,16 @@ export async function register() {
             error: error instanceof Error ? error.message : String(error),
           });
         }
+
+        try {
+          const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
+          ProviderHeartbeat.stop();
+          instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__ = false;
+        } catch (error) {
+          logger.warn("[Instrumentation] Failed to stop provider heartbeat", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       };
 
       process.once("SIGTERM", () => {
@@ -229,6 +240,14 @@ export async function register() {
       const { startCfIpAutoTestScheduler } = await import("@/lib/cf-ip-auto-test-scheduler");
       await startCfIpAutoTestScheduler();
 
+      // 启动供应商心跳任务
+      if (!instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__) {
+        const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
+        ProviderHeartbeat.start();
+        instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__ = true;
+        logger.info("[Instrumentation] Provider heartbeat task started");
+      }
+
       logger.info("Application ready");
     }
     // 开发环境: 执行迁移 + 初始化价格表（禁用 Bull Queue 避免 Turbopack 冲突）
@@ -284,6 +303,14 @@ export async function register() {
       if (isConnected) {
         const { startCfIpAutoTestScheduler } = await import("@/lib/cf-ip-auto-test-scheduler");
         await startCfIpAutoTestScheduler();
+      }
+
+      // 启动供应商心跳任务（开发环境也支持）
+      if (isConnected && !instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__) {
+        const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
+        ProviderHeartbeat.start();
+        instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__ = true;
+        logger.info("[Instrumentation] Provider heartbeat task started (development mode)");
       }
 
       logger.info("Development environment ready");

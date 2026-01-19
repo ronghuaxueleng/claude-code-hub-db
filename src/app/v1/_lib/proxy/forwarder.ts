@@ -20,6 +20,7 @@ import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
 import { SessionManager } from "@/lib/session-manager";
+import { ProviderActivityManager } from "@/lib/redis/provider-activity";
 import { CONTEXT_1M_BETA_HEADER, shouldApplyContext1m } from "@/lib/special-attributes";
 import { updateMessageRequestDetails } from "@/repository/message";
 import type { CacheTtlPreference, CacheTtlResolved } from "@/types/cache";
@@ -340,6 +341,22 @@ export class ProxyForwarder {
 
           // ========== 成功分支 ==========
           recordSuccess(currentProvider.id);
+
+          // ⭐ 记录供应商活跃状态（用于续期缓存）
+          void ProviderActivityManager.recordSuccess(
+            currentProvider.id,
+            currentProvider.url,
+            session.request.model,
+            session.requestUrl.pathname
+          ).catch((error) => {
+            logger.warn("ProxyForwarder: Failed to record provider activity", {
+              providerId: currentProvider.id,
+              url: currentProvider.url,
+              model: session.request.model,
+              endpoint: session.requestUrl.pathname,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          });
 
           // ⭐ 成功后绑定 session 到供应商（智能绑定策略）
           if (session.sessionId) {
