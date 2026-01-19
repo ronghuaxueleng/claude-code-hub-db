@@ -235,7 +235,10 @@ export class ProviderActivityManager {
    * - 管理员手动操作
    * - 定时任务刷新
    */
-  static async renew(providerId: number, ttlSeconds: number = this.DEFAULT_TTL_SECONDS): Promise<boolean> {
+  static async renew(
+    providerId: number,
+    ttlSeconds: number = this.DEFAULT_TTL_SECONDS
+  ): Promise<boolean> {
     const redis = getRedisClient();
     if (!redis) {
       return false;
@@ -327,7 +330,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const keys = providerIds.map(id => this.buildKey(id));
+      const keys = providerIds.map((id) => this.buildKey(id));
       const pipeline = redis.pipeline();
 
       for (const key of keys) {

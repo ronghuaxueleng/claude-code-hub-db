@@ -89,11 +89,7 @@ export class ProviderHeartbeat {
   /**
    * 向单个供应商发送心跳请求
    */
-  private static async sendHeartbeat(
-    providerId: number,
-    url: string,
-    key: string
-  ): Promise<void> {
+  private static async sendHeartbeat(providerId: number, url: string, key: string): Promise<void> {
     try {
       // 获取该供应商最近成功的模型和端点列表
       const activity = await ProviderActivityManager.getActivity(providerId);
