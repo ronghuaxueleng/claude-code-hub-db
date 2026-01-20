@@ -23,5 +23,20 @@
   "resetCircuitSuccess": "Batch reset circuit breakers successful",
   "resetCircuitSuccessDesc": "Reset circuit breakers for {count} provider(s)",
   "resetCircuitFailed": "Batch reset circuit breakers failed",
-  "unknownError": "Unknown error"
+  "unknownError": "Unknown error",
+  "modelRedirects": {
+    "button": "Model Redirects",
+    "title": "Batch Manage Model Redirects",
+    "description": "Set or clear model redirect rules for {count} selected provider(s)",
+    "selectedProviders": "Selected Providers",
+    "apply": "Apply Settings",
+    "clearAll": "Clear All",
+    "emptyRules": "Please add at least one model redirect rule",
+    "setSuccess": "Batch set model redirects successful",
+    "setSuccessDesc": "Set model redirects for {count} provider(s)",
+    "setFailed": "Batch set model redirects failed",
+    "clearSuccess": "Batch clear model redirects successful",
+    "clearSuccessDesc": "Cleared model redirects for {count} provider(s)",
+    "clearFailed": "Batch clear model redirects failed"
+  }
 }

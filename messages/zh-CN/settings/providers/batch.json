@@ -23,5 +23,20 @@
   "resetCircuitSuccess": "批量重置熔断器成功",
   "resetCircuitSuccessDesc": "已重置 {count} 个供应商的熔断器",
   "resetCircuitFailed": "批量重置熔断器失败",
-  "unknownError": "未知错误"
+  "unknownError": "未知错误",
+  "modelRedirects": {
+    "button": "模型映射",
+    "title": "批量管理模型映射",
+    "description": "为选中的 {count} 个供应商设置或清除模型映射规则",
+    "selectedProviders": "选中的供应商",
+    "apply": "应用设置",
+    "clearAll": "清除全部",
+    "emptyRules": "请至少添加一条模型映射规则",
+    "setSuccess": "批量设置模型映射成功",
+    "setSuccessDesc": "已为 {count} 个供应商设置模型映射",
+    "setFailed": "批量设置模型映射失败",
+    "clearSuccess": "批量清除模型映射成功",
+    "clearSuccessDesc": "已清除 {count} 个供应商的模型映射",
+    "clearFailed": "批量清除模型映射失败"
+  }
 }

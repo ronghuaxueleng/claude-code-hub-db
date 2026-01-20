@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CheckSquare,
   Loader2,
+  MapPin,
   RotateCcw,
   Search,
   Trash2,
@@ -45,6 +46,7 @@ import { useDebounce } from "@/lib/hooks/use-debounce";
 import type { CurrencyCode } from "@/lib/utils/currency";
 import type { ProviderDisplay, ProviderStatisticsMap, ProviderType } from "@/types/provider";
 import type { User } from "@/types/user";
+import { BatchModelRedirectsDialog } from "./batch-model-redirects-dialog";
 import { ProviderList } from "./provider-list";
 import { ProviderSortDropdown, type SortKey } from "./provider-sort-dropdown";
 import { ProviderTypeFilter } from "./provider-type-filter";
@@ -97,6 +99,7 @@ export function ProviderManager({
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showModelRedirectsDialog, setShowModelRedirectsDialog] = useState(false);
   const [batchEnablePending, startBatchEnable] = useTransition();
   const [batchDisablePending, startBatchDisable] = useTransition();
   const [batchDeletePending, startBatchDelete] = useTransition();
@@ -264,6 +267,13 @@ export function ProviderManager({
     return sortedGroups;
   }, [providers]);
 
+  // Get selected provider names
+  const selectedProviderNames = useMemo(() => {
+    return providers
+      .filter((p) => selectedIds.has(p.id))
+      .map((p) => p.name);
+  }, [providers, selectedIds]);
+
   // 统一过滤逻辑：搜索 + 类型筛选 + 排序
   const filteredProviders = useMemo(() => {
     let result = providers;
@@ -395,6 +405,16 @@ export function ProviderManager({
           >
             <RotateCcw className="h-4 w-4" />
             {tBatch("resetCircuit")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowModelRedirectsDialog(true)}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <MapPin className="h-4 w-4" />
+            {tBatch("modelRedirects.button")}
           </Button>
           <Button
             variant="destructive"
@@ -572,6 +592,14 @@ export function ProviderManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Batch model redirects dialog */}
+      <BatchModelRedirectsDialog
+        open={showModelRedirectsDialog}
+        onOpenChange={setShowModelRedirectsDialog}
+        selectedProviderIds={Array.from(selectedIds)}
+        selectedProviderNames={selectedProviderNames}
+      />
     </div>
   );
 }

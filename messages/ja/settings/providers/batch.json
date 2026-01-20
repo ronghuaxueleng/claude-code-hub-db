@@ -23,5 +23,20 @@
   "resetCircuitSuccess": "一括サーキットブレーカーリセットに成功しました",
   "resetCircuitSuccessDesc": "{count} 件のプロバイダーのサーキットブレーカーをリセットしました",
   "resetCircuitFailed": "一括サーキットブレーカーリセットに失敗しました",
-  "unknownError": "不明なエラー"
+  "unknownError": "不明なエラー",
+  "modelRedirects": {
+    "button": "モデルリダイレクト",
+    "title": "モデルリダイレクトを一括管理",
+    "description": "選択した {count} 件のプロバイダーのモデルリダイレクトルールを設定またはクリアします",
+    "selectedProviders": "選択したプロバイダー",
+    "apply": "設定を適用",
+    "clearAll": "すべてクリア",
+    "emptyRules": "少なくとも1つのモデルリダイレクトルールを追加してください",
+    "setSuccess": "モデルリダイレクトの一括設定に成功しました",
+    "setSuccessDesc": "{count} 件のプロバイダーにモデルリダイレクトを設定しました",
+    "setFailed": "モデルリダイレクトの一括設定に失敗しました",
+    "clearSuccess": "モデルリダイレクトの一括クリアに成功しました",
+    "clearSuccessDesc": "{count} 件のプロバイダーのモデルリダイレクトをクリアしました",
+    "clearFailed": "モデルリダイレクトの一括クリアに失敗しました"
+  }
 }

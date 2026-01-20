@@ -639,6 +639,50 @@ export async function batchDeleteProviders(ids: number[]): Promise<number> {
 }
 
 /**
+ * 批量更新供应商的模型映射
+ *
+ * @param ids - 供应商 ID 数组
+ * @param modelRedirects - 模型映射配置
+ * @returns 更新的记录数
+ */
+export async function batchUpdateModelRedirects(
+  ids: number[],
+  modelRedirects: Record<string, string>
+): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+
+  const result = await db
+    .update(providers)
+    .set({ modelRedirects, updatedAt: new Date() })
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
+    .returning({ id: providers.id });
+
+  return result.length;
+}
+
+/**
+ * 批量清除供应商的模型映射
+ *
+ * @param ids - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchClearModelRedirects(ids: number[]): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+
+  const result = await db
+    .update(providers)
+    .set({ modelRedirects: null, updatedAt: new Date() })
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
+    .returning({ id: providers.id });
+
+  return result.length;
+}
+
+/**
  * 获取所有供应商的统计信息
  * 包括：今天的总金额、今天的调用次数、最近一次调用时间和模型
  *

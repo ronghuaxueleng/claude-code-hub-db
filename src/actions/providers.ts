@@ -36,6 +36,8 @@ import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/sch
 import {
   batchDeleteProviders as batchDeleteProvidersRepo,
   batchUpdateProvidersEnabled,
+  batchUpdateModelRedirects,
+  batchClearModelRedirects as batchClearModelRedirectsRepo,
   createProvider,
   deleteProvider,
   findAllProviders,
@@ -3538,6 +3540,90 @@ export async function batchResetCircuitBreakers(
   } catch (error) {
     logger.error("批量重置熔断器失败:", error);
     const message = error instanceof Error ? error.message : "批量重置熔断器失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量设置供应商的模型映射
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @param modelRedirects - 模型映射配置
+ * @returns 更新的记录数
+ */
+export async function batchSetModelRedirects(
+  providerIds: number[],
+  modelRedirects: Record<string, string>
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    if (!modelRedirects || Object.keys(modelRedirects).length === 0) {
+      return { ok: false, error: "请至少添加一条模型映射规则" };
+    }
+
+    const updatedCount = await batchUpdateModelRedirects(providerIds, modelRedirects);
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量设置模型映射成功", { providerIds, updatedCount, modelRedirects });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量设置模型映射失败:", error);
+    const message = error instanceof Error ? error.message : "批量设置模型映射失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量清除供应商的模型映射
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchClearModelRedirects(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const updatedCount = await batchClearModelRedirectsRepo(providerIds);
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量清除模型映射成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量清除模型映射失败:", error);
+    const message = error instanceof Error ? error.message : "批量清除模型映射失败";
     return { ok: false, error: message };
   }
 }
