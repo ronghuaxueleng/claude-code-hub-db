@@ -130,11 +130,28 @@ export class ProviderHeartbeat {
    */
   private static async sendHeartbeat(config: HeartbeatUrlConfig): Promise<void> {
     try {
+      // 验证配置完整性
+      if (!config.headers || Object.keys(config.headers).length === 0) {
+        logger.warn("ProviderHeartbeat: Skipping heartbeat - headers not configured", {
+          configId: config.id,
+          name: config.name,
+        });
+        return;
+      }
+
+      if (!config.body || config.body.trim() === "") {
+        logger.warn("ProviderHeartbeat: Skipping heartbeat - body not configured", {
+          configId: config.id,
+          name: config.name,
+        });
+        return;
+      }
+
       // 发送心跳请求
       const response = await fetch(config.url, {
         method: config.method,
         headers: config.headers,
-        body: config.body ?? undefined,
+        body: config.body,
         signal: AbortSignal.timeout(10000), // 10秒超时
       });
 

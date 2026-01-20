@@ -1630,6 +1630,37 @@ export class ProxyForwarder {
       }, 500);
     }
 
+    // ⭐ 自动保存请求信息到心跳配置（仅当headers和body为空时）
+    try {
+      const { updateHeartbeatConfigFromRequest } = await import(
+        "@/repository/heartbeat-url-configs"
+      );
+
+      // 提取认证相关的headers
+      const headersForHeartbeat: Record<string, string> = {};
+      const headersToSave = ["authorization", "anthropic-version", "x-api-key", "content-type"];
+      for (const headerName of headersToSave) {
+        const value = processedHeaders.get(headerName);
+        if (value) {
+          headersForHeartbeat[headerName] = value;
+        }
+      }
+
+      // 提取body
+      const bodyForHeartbeat =
+        typeof requestBody === "string"
+          ? requestBody
+          : requestBody
+            ? new TextDecoder().decode(requestBody as ArrayBuffer)
+            : null;
+
+      // 保存到心跳配置
+      void updateHeartbeatConfigFromRequest(proxyUrl, headersForHeartbeat, bodyForHeartbeat);
+    } catch (error) {
+      // 忽略错误，不影响主流程
+      logger.debug("ProxyForwarder: Failed to update heartbeat config", { error });
+    }
+
     let response: Response;
     const fetchStartTime = Date.now();
     try {

@@ -228,3 +228,45 @@ export async function recordHeartbeatFailure(id: number, errorMessage: string): 
     logger.error("记录心跳失败失败", { error, id });
   }
 }
+
+/**
+ * 根据URL更新心跳配置的headers和body（仅当为空时）
+ */
+export async function updateHeartbeatConfigFromRequest(
+  url: string,
+  headers: Record<string, string>,
+  body: string | null
+): Promise<void> {
+  try {
+    // 查找匹配URL的配置
+    const configs = await db
+      .select()
+      .from(heartbeatUrlConfigs)
+      .where(eq(heartbeatUrlConfigs.url, url));
+
+    for (const config of configs) {
+      // 只有当headers和body都为空时才更新
+      const needsUpdate =
+        (!config.headers || Object.keys(config.headers as Record<string, string>).length === 0) &&
+        (!config.body || config.body.trim() === "");
+
+      if (needsUpdate) {
+        await db
+          .update(heartbeatUrlConfigs)
+          .set({
+            headers,
+            body,
+            updatedAt: new Date(),
+          })
+          .where(eq(heartbeatUrlConfigs.id, config.id));
+
+        logger.info("自动更新心跳配置的headers和body", {
+          configId: config.id,
+          url,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error("更新心跳配置失败", { error, url });
+  }
+}
