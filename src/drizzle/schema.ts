@@ -663,6 +663,38 @@ export const cfIpBlacklist = pgTable(
   })
 );
 
+// Heartbeat Settings table - 心跳配置（用于向上游供应商发送心跳保持缓存）
+export const heartbeatSettings = pgTable('heartbeat_settings', {
+  id: serial('id').primaryKey(),
+
+  // 全局开关
+  enabled: boolean('enabled').notNull().default(false),
+
+  // 心跳间隔（秒），默认30秒
+  intervalSeconds: integer('interval_seconds').notNull().default(30),
+
+  // 保存的成功请求 curl 命令列表（最多保留20条）
+  savedCurls: jsonb('saved_curls')
+    .$type<
+      Array<{
+        curl: string;
+        providerId: number;
+        providerName: string;
+        url: string;
+        endpoint: string;
+        model: string | null;
+        timestamp: number;
+      }>
+    >()
+    .default([]),
+
+  // 当前选中的 curl 索引（用于心跳发送）
+  selectedCurlIndex: integer('selected_curl_index'),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   keys: many(keys),

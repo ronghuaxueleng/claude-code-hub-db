@@ -4,6 +4,7 @@ import config from "./config.json";
 import data from "./data.json";
 import errorRules from "./errorRules.json";
 import errors from "./errors.json";
+import heartbeat from "./heartbeat.json";
 import logs from "./logs.json";
 import nav from "./nav.json";
 import notifications from "./notifications.json";
@@ -101,5 +102,6 @@ export default {
   notifications,
   errors,
   errorRules,
+  heartbeat,
   ...strings,
 };

@@ -1,0 +1,34 @@
+{
+  "title": "心跳配置",
+  "description": "配置向上游供应商发送的心跳请求，保持供应商缓存不过期。",
+  "section": {
+    "config": {
+      "title": "心跳配置",
+      "description": "系统会自动保存成功的请求为curl命令，你可以选择一个用于心跳发送。"
+    }
+  },
+  "form": {
+    "description": "心跳功能会定期发送选中的curl命令，保持上游Token缓存不过期。",
+    "enabled": {
+      "label": "启用心跳",
+      "description": "开启后，系统将定期发送选中的curl命令作为心跳。"
+    },
+    "intervalSeconds": {
+      "label": "心跳间隔（秒）",
+      "description": "心跳请求的发送间隔时间，范围 10-3600 秒。"
+    },
+    "savedCurls": {
+      "label": "保存的请求",
+      "description": "选择一个成功的请求用于心跳发送（最多保留20条）。"
+    },
+    "modelFilter": {
+      "label": "筛选模型",
+      "all": "全部模型"
+    },
+    "intervalOutOfRange": "心跳间隔必须在 10-3600 秒之间",
+    "noCurlSelected": "请选择一个curl命令用于心跳",
+    "noCurls": "暂无保存的请求，请先发送一次成功的请求。",
+    "saveFailed": "保存失败",
+    "saveSuccess": "保存成功"
+  }
+}

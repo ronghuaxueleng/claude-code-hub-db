@@ -1,0 +1,34 @@
+{
+  "title": "Heartbeat Configuration",
+  "description": "Configure heartbeat requests sent to upstream providers to keep their caches alive.",
+  "section": {
+    "config": {
+      "title": "Heartbeat Configuration",
+      "description": "The system automatically saves successful requests as curl commands. You can select one for heartbeat sending."
+    }
+  },
+  "form": {
+    "description": "The heartbeat feature periodically sends the selected curl command to keep upstream token caches alive.",
+    "enabled": {
+      "label": "Enable Heartbeat",
+      "description": "When enabled, the system will periodically send the selected curl command as heartbeat."
+    },
+    "intervalSeconds": {
+      "label": "Heartbeat Interval (seconds)",
+      "description": "Interval between heartbeat requests, range: 10-3600 seconds."
+    },
+    "savedCurls": {
+      "label": "Saved Requests",
+      "description": "Select a successful request for heartbeat sending (up to 20 saved)."
+    },
+    "modelFilter": {
+      "label": "Filter by Model",
+      "all": "All Models"
+    },
+    "intervalOutOfRange": "Heartbeat interval must be between 10-3600 seconds",
+    "noCurlSelected": "Please select a curl command for heartbeat",
+    "noCurls": "No saved requests yet. Please send a successful request first.",
+    "saveFailed": "Save failed",
+    "saveSuccess": "Saved successfully"
+  }
+}

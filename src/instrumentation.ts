@@ -243,7 +243,7 @@ export async function register() {
       // 启动供应商心跳任务
       if (!instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__) {
         const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
-        ProviderHeartbeat.start();
+        await ProviderHeartbeat.start();
         instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__ = true;
         logger.info("[Instrumentation] Provider heartbeat task started");
       }
@@ -308,7 +308,7 @@ export async function register() {
       // 启动供应商心跳任务（开发环境也支持）
       if (isConnected && !instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__) {
         const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
-        ProviderHeartbeat.start();
+        await ProviderHeartbeat.start();
         instrumentationState.__CCH_PROVIDER_HEARTBEAT_STARTED__ = true;
         logger.info("[Instrumentation] Provider heartbeat task started (development mode)");
       }

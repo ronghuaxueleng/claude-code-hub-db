@@ -12,6 +12,7 @@ export interface ProviderActivity {
   firstSuccessAt: number; // 首次成功时间
   models: string[]; // 最近成功的模型列表（用于心跳）
   endpoints: string[]; // 最近成功的端点列表（用于心跳）
+  headers?: Record<string, string>; // 最近成功请求的请求头（用于心跳）
 }
 
 /**
@@ -51,6 +52,7 @@ export class ProviderActivityManager {
    * @param url 供应商 URL
    * @param model 成功的模型名称
    * @param endpoint 成功的端点路径（如 /v1/chat/completions）
+   * @param headers 成功请求的请求头（用于心跳复用）
    * @param ttlSeconds 过期时间（秒），默认 300 秒
    *
    * 使用场景：
@@ -62,6 +64,7 @@ export class ProviderActivityManager {
     url: string,
     model?: string,
     endpoint?: string,
+    headers?: Record<string, string>,
     ttlSeconds: number = this.DEFAULT_TTL_SECONDS
   ): Promise<void> {
     const redis = getRedisClient();
@@ -103,6 +106,7 @@ export class ProviderActivityManager {
           url, // 更新 URL（防止配置变更）
           models: modelArray,
           endpoints: endpointArray,
+          headers: headers || parsed.headers, // 更新请求头（用于心跳）
         };
       } else {
         // 首次记录
@@ -114,6 +118,7 @@ export class ProviderActivityManager {
           firstSuccessAt: now,
           models: model ? [model] : [],
           endpoints: endpoint ? [endpoint] : [],
+          headers: headers, // 保存请求头（用于心跳）
         };
       }
 

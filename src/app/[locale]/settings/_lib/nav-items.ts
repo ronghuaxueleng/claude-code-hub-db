@@ -13,6 +13,11 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
   { href: "/settings/prices", labelKey: "nav.prices", label: "价格表" },
   { href: "/settings/providers", labelKey: "nav.providers", label: "供应商" },
   {
+    href: "/settings/heartbeat",
+    labelKey: "nav.heartbeat",
+    label: "心跳",
+  },
+  {
     href: "/settings/sensitive-words",
     labelKey: "nav.sensitiveWords",
     label: "敏感词",

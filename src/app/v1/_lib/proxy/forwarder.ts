@@ -23,6 +23,8 @@ import { SessionManager } from "@/lib/session-manager";
 import { ProviderActivityManager } from "@/lib/redis/provider-activity";
 import { CONTEXT_1M_BETA_HEADER, shouldApplyContext1m } from "@/lib/special-attributes";
 import { updateMessageRequestDetails } from "@/repository/message";
+import { generateCurlCommand } from "@/lib/utils/curl-generator";
+import { addSuccessfulCurl } from "@/repository/heartbeat-settings";
 import type { CacheTtlPreference, CacheTtlResolved } from "@/types/cache";
 import { isOfficialCodexClient, sanitizeCodexRequest } from "../codex/utils/request-sanitizer";
 import { defaultRegistry } from "../converters";
@@ -342,12 +344,54 @@ export class ProxyForwarder {
           // ========== 成功分支 ==========
           recordSuccess(currentProvider.id);
 
+          // ⭐ 生成并保存成功请求的 curl 命令
+          try {
+            const upstreamUrl = buildProxyUrl(currentProvider.url, session.requestUrl);
+            const curlCommand = generateCurlCommand(
+              upstreamUrl.toString(),
+              "POST",
+              session.headers,
+              session.request.buffer ? new TextDecoder().decode(session.request.buffer) : null
+            );
+
+            void addSuccessfulCurl({
+              curl: curlCommand,
+              providerId: currentProvider.id,
+              providerName: currentProvider.name,
+              url: currentProvider.url,
+              endpoint: session.requestUrl.pathname,
+              model: session.request.model,
+              timestamp: Date.now(),
+            }).catch((error) => {
+              logger.warn("ProxyForwarder: Failed to save curl command", {
+                providerId: currentProvider.id,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            });
+          } catch (error) {
+            logger.warn("ProxyForwarder: Failed to generate curl command", {
+              providerId: currentProvider.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+
           // ⭐ 记录供应商活跃状态（用于续期缓存）
+          // 提取关键请求头（用于心跳）
+          const headersForHeartbeat: Record<string, string> = {};
+          const headersToSave = ["authorization", "anthropic-version", "x-api-key"];
+          for (const headerName of headersToSave) {
+            const value = session.headers.get(headerName);
+            if (value) {
+              headersForHeartbeat[headerName] = value;
+            }
+          }
+
           void ProviderActivityManager.recordSuccess(
             currentProvider.id,
             currentProvider.url,
-            session.request.model,
-            session.requestUrl.pathname
+            session.request.model ?? undefined,
+            session.requestUrl.pathname,
+            headersForHeartbeat
           ).catch((error) => {
             logger.warn("ProxyForwarder: Failed to record provider activity", {
               providerId: currentProvider.id,

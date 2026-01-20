@@ -2,6 +2,7 @@
   "config": "配置",
   "prices": "价格表",
   "providers": "供应商",
+  "heartbeat": "心跳",
   "sensitiveWords": "敏感词",
   "requestFilters": "请求过滤",
   "blockedUrls": "禁用 URL",
