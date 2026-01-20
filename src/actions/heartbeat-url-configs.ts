@@ -18,9 +18,7 @@ import type { ActionResult } from "./types";
 /**
  * 获取所有心跳URL配置
  */
-export async function fetchHeartbeatUrlConfigs(): Promise<
-  ActionResult<HeartbeatUrlConfig[]>
-> {
+export async function fetchHeartbeatUrlConfigs(): Promise<ActionResult<HeartbeatUrlConfig[]>> {
   try {
     const session = await getSession();
     if (!session || session.user.role !== "admin") {
@@ -161,9 +159,7 @@ export async function updateHeartbeatUrlConfigAction(
 /**
  * 删除心跳URL配置
  */
-export async function deleteHeartbeatUrlConfigAction(
-  id: number
-): Promise<ActionResult<void>> {
+export async function deleteHeartbeatUrlConfigAction(id: number): Promise<ActionResult<void>> {
   try {
     const session = await getSession();
     if (!session || session.user.role !== "admin") {

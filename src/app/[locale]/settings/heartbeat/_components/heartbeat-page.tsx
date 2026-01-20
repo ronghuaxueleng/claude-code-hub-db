@@ -4,7 +4,10 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { HeartbeatSettings } from "@/repository/heartbeat-settings";
-import type { HeartbeatUrlConfig, CreateHeartbeatUrlConfigInput } from "@/repository/heartbeat-url-configs";
+import type {
+  HeartbeatUrlConfig,
+  CreateHeartbeatUrlConfigInput,
+} from "@/repository/heartbeat-url-configs";
 import { saveHeartbeatSettings } from "@/actions/heartbeat-settings";
 import {
   createHeartbeatUrlConfigAction,
@@ -20,7 +23,10 @@ interface HeartbeatPageProps {
   configs: HeartbeatUrlConfig[];
 }
 
-export function HeartbeatPage({ settings: initialSettings, configs: initialConfigs }: HeartbeatPageProps) {
+export function HeartbeatPage({
+  settings: initialSettings,
+  configs: initialConfigs,
+}: HeartbeatPageProps) {
   const t = useTranslations("settings.heartbeat");
   const [settings, setSettings] = useState(initialSettings);
   const [configs, setConfigs] = useState(initialConfigs);
@@ -66,9 +72,7 @@ export function HeartbeatPage({ settings: initialSettings, configs: initialConfi
         // 编辑
         const result = await updateHeartbeatUrlConfigAction(editingConfig.id, data);
         if (result.ok) {
-          setConfigs((prev) =>
-            prev.map((c) => (c.id === editingConfig.id ? result.data : c))
-          );
+          setConfigs((prev) => prev.map((c) => (c.id === editingConfig.id ? result.data : c)));
           toast.success(t("form.saveSuccess"));
           setDialogOpen(false);
         } else {
@@ -116,9 +120,7 @@ export function HeartbeatPage({ settings: initialSettings, configs: initialConfi
     try {
       const result = await updateHeartbeatUrlConfigAction(id, { isEnabled: enabled });
       if (result.ok) {
-        setConfigs((prev) =>
-          prev.map((c) => (c.id === id ? result.data : c))
-        );
+        setConfigs((prev) => prev.map((c) => (c.id === id ? result.data : c)));
         toast.success(t("form.saveSuccess"));
       } else {
         toast.error(result.error || t("form.saveFailed"));

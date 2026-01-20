@@ -3627,3 +3627,86 @@ export async function batchClearModelRedirects(
     return { ok: false, error: message };
   }
 }
+
+
+/**
+ * 批量删除供应商
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 删除的记录数
+ */
+export async function batchDeleteProviders(
+  providerIds: number[]
+): Promise<ActionResult<{ deletedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const deletedCount = await batchDeleteProvidersRepo(providerIds);
+
+    // 清除内存缓存（无论 Redis 是否成功都要执行）
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+      await clearProviderState(providerId);
+
+      // 删除 Redis 缓存（非关键路径，失败时记录警告）
+      try {
+        await deleteProviderCircuitConfig(providerId);
+        logger.debug("batchDeleteProviders:cache_cleared", { providerId });
+      } catch (error) {
+        logger.warn("batchDeleteProviders:redis_cache_clear_failed", {
+          providerId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    logger.info("批量删除供应商成功", { providerIds, deletedCount });
+
+    return { ok: true, data: { deletedCount } };
+  } catch (error) {
+    logger.error("批量删除供应商失败:", error);
+    const message = error instanceof Error ? error.message : "批量删除供应商失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量重置熔断器
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 重置的记录数
+ */
+export async function batchResetCircuitBreakers(
+  providerIds: number[]
+): Promise<ActionResult<{ resetCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const resetCount = batchResetCircuits(providerIds);
+
+    logger.info("批量重置熔断器成功", { providerIds, resetCount });
+
+    return { ok: true, data: { resetCount } };
+  } catch (error) {
+    logger.error("批量重置熔断器失败:", error);
+    const message = error instanceof Error ? error.message : "批量重置熔断器失败";
+    return { ok: false, error: message };
+  }
+}
