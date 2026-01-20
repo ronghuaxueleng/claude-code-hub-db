@@ -97,9 +97,7 @@ export async function findEnabledHeartbeatUrlConfigs(): Promise<HeartbeatUrlConf
 /**
  * 根据ID获取心跳URL配置
  */
-export async function findHeartbeatUrlConfigById(
-  id: number
-): Promise<HeartbeatUrlConfig | null> {
+export async function findHeartbeatUrlConfigById(id: number): Promise<HeartbeatUrlConfig | null> {
   try {
     const [row] = await db
       .select()
@@ -215,10 +213,7 @@ export async function recordHeartbeatSuccess(id: number): Promise<void> {
 /**
  * 记录心跳失败
  */
-export async function recordHeartbeatFailure(
-  id: number,
-  errorMessage: string
-): Promise<void> {
+export async function recordHeartbeatFailure(id: number, errorMessage: string): Promise<void> {
   try {
     await db
       .update(heartbeatUrlConfigs)

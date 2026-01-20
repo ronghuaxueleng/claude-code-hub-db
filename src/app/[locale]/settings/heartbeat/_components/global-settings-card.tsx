@@ -26,12 +26,7 @@ export function GlobalSettingsCard({ enabled, onToggle, isLoading }: GlobalSetti
             <Label htmlFor="enabled">{t("form.enabled.label")}</Label>
             <p className="text-sm text-muted-foreground">{t("form.enabled.description")}</p>
           </div>
-          <Switch
-            id="enabled"
-            checked={enabled}
-            onCheckedChange={onToggle}
-            disabled={isLoading}
-          />
+          <Switch id="enabled" checked={enabled} onCheckedChange={onToggle} disabled={isLoading} />
         </div>
       </CardContent>
     </Card>

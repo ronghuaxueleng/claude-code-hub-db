@@ -27,7 +27,13 @@ interface UrlConfigCardProps {
   isLoading?: boolean;
 }
 
-export function UrlConfigCard({ config, onEdit, onDelete, onToggle, isLoading }: UrlConfigCardProps) {
+export function UrlConfigCard({
+  config,
+  onEdit,
+  onDelete,
+  onToggle,
+  isLoading,
+}: UrlConfigCardProps) {
   const t = useTranslations("settings.heartbeat");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -121,9 +127,7 @@ export function UrlConfigCard({ config, onEdit, onDelete, onToggle, isLoading }:
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("form.deleteConfirm")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {config.name}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{config.name}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("form.cancelButton")}</AlertDialogCancel>

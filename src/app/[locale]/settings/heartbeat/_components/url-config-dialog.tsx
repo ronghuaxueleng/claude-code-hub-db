@@ -111,7 +111,11 @@ export function UrlConfigDialog({
     if (headersError) {
       return;
     }
-    if (!formData.intervalSeconds || formData.intervalSeconds < 10 || formData.intervalSeconds > 3600) {
+    if (
+      !formData.intervalSeconds ||
+      formData.intervalSeconds < 10 ||
+      formData.intervalSeconds > 3600
+    ) {
       return;
     }
 
@@ -125,9 +129,7 @@ export function UrlConfigDialog({
           <DialogTitle>
             {isEdit ? t("form.editDialogTitle") : t("form.createDialogTitle")}
           </DialogTitle>
-          <DialogDescription>
-            {t("section.urlConfigs.description")}
-          </DialogDescription>
+          <DialogDescription>{t("section.urlConfigs.description")}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -195,9 +197,7 @@ export function UrlConfigDialog({
             <Textarea
               id="body"
               value={formData.body || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, body: e.target.value || null }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, body: e.target.value || null }))}
               placeholder={t("form.body.placeholder")}
               rows={4}
             />
@@ -220,9 +220,7 @@ export function UrlConfigDialog({
               }
               required
             />
-            <p className="text-sm text-muted-foreground">
-              {t("form.intervalSeconds.description")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("form.intervalSeconds.description")}</p>
           </div>
 
           {/* 启用开关 */}

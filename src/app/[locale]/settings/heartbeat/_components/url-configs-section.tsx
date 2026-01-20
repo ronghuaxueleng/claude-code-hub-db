@@ -42,9 +42,7 @@ export function UrlConfigsSection({
       </CardHeader>
       <CardContent>
         {configs.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {t("form.noConfigs")}
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t("form.noConfigs")}</p>
         ) : (
           <div className="space-y-4">
             {configs.map((config) => (
