@@ -147,11 +147,29 @@ export class ProviderHeartbeat {
         return;
       }
 
+      // 准备请求body，如果有sessionId则添加到metadata中
+      let requestBody = config.body;
+      if (config.sessionId) {
+        try {
+          const bodyObj = JSON.parse(config.body);
+          if (!bodyObj.metadata) {
+            bodyObj.metadata = {};
+          }
+          bodyObj.metadata.session_id = config.sessionId;
+          requestBody = JSON.stringify(bodyObj);
+        } catch (error) {
+          logger.warn("ProviderHeartbeat: Failed to parse body JSON, using original body", {
+            configId: config.id,
+            error,
+          });
+        }
+      }
+
       // 发送心跳请求
       const response = await fetch(config.url, {
         method: config.method,
         headers: config.headers,
-        body: config.body,
+        body: requestBody,
         signal: AbortSignal.timeout(10000), // 10秒超时
       });
 

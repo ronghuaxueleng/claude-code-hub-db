@@ -699,6 +699,12 @@ export const heartbeatUrlConfigs = pgTable('heartbeat_url_configs', {
   // 是否启用此配置
   isEnabled: boolean('is_enabled').notNull().default(true),
 
+  // Session ID（用于保持上游会话）
+  sessionId: varchar('session_id', { length: 200 }),
+
+  // 心跳状态：initial（初始）、success（成功）、failure（失败）
+  status: varchar('status', { length: 20 }).notNull().default('initial'),
+
   // 统计：上次成功时间
   lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
 

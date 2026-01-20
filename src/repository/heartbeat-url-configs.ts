@@ -14,6 +14,8 @@ export interface HeartbeatUrlConfig {
   body: string | null;
   intervalSeconds: number;
   isEnabled: boolean;
+  sessionId: string | null;
+  status: string;
   lastSuccessAt: Date | null;
   lastErrorAt: Date | null;
   lastErrorMessage: string | null;
@@ -202,6 +204,7 @@ export async function recordHeartbeatSuccess(id: number): Promise<void> {
       .set({
         lastSuccessAt: new Date(),
         successCount: sql`${heartbeatUrlConfigs.successCount} + 1`,
+        status: 'success',
         updatedAt: new Date(),
       })
       .where(eq(heartbeatUrlConfigs.id, id));
@@ -221,6 +224,7 @@ export async function recordHeartbeatFailure(id: number, errorMessage: string): 
         lastErrorAt: new Date(),
         lastErrorMessage: errorMessage,
         failureCount: sql`${heartbeatUrlConfigs.failureCount} + 1`,
+        status: 'failure',
         updatedAt: new Date(),
       })
       .where(eq(heartbeatUrlConfigs.id, id));
