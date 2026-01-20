@@ -1,34 +1,71 @@
 {
   "title": "Heartbeat Configuration",
-  "description": "Configure heartbeat requests sent to upstream providers to keep their caches alive.",
+  "description": "Configure heartbeat requests sent to upstream providers to keep provider caches from expiring.",
   "section": {
-    "config": {
-      "title": "Heartbeat Configuration",
-      "description": "The system automatically saves successful requests as curl commands. You can select one for heartbeat sending."
+    "global": {
+      "title": "Global Settings",
+      "description": "Control the global switch for heartbeat functionality."
+    },
+    "urlConfigs": {
+      "title": "URL Configurations",
+      "description": "Configure the list of URLs to send heartbeats to, each URL can have independent interval settings."
     }
   },
   "form": {
-    "description": "The heartbeat feature periodically sends the selected curl command to keep upstream token caches alive.",
     "enabled": {
       "label": "Enable Heartbeat",
-      "description": "When enabled, the system will periodically send the selected curl command as heartbeat."
+      "description": "When enabled, the system will periodically send heartbeat requests to configured URLs."
+    },
+    "name": {
+      "label": "Configuration Name",
+      "placeholder": "e.g., Claude API Heartbeat"
+    },
+    "url": {
+      "label": "URL",
+      "placeholder": "https://api.anthropic.com/v1/messages"
+    },
+    "method": {
+      "label": "HTTP Method"
+    },
+    "headers": {
+      "label": "Request Headers (JSON format)",
+      "placeholder": "x-api-key: your-key"
+    },
+    "body": {
+      "label": "Request Body (Optional)",
+      "placeholder": "model: claude-3-5-sonnet-20241022"
     },
     "intervalSeconds": {
       "label": "Heartbeat Interval (seconds)",
-      "description": "Interval between heartbeat requests, range: 10-3600 seconds."
+      "description": "Heartbeat request interval, range 10-3600 seconds."
     },
-    "savedCurls": {
-      "label": "Saved Requests",
-      "description": "Select a successful request for heartbeat sending (up to 20 saved)."
+    "isEnabled": {
+      "label": "Enable this configuration"
     },
-    "modelFilter": {
-      "label": "Filter by Model",
-      "all": "All Models"
+    "enabledStatus": "Enabled",
+    "disabledStatus": "Disabled",
+    "stats": {
+      "success": "Success Count",
+      "failure": "Failure Count",
+      "lastSuccess": "Last Success",
+      "lastError": "Last Error",
+      "never": "Never"
     },
-    "intervalOutOfRange": "Heartbeat interval must be between 10-3600 seconds",
-    "noCurlSelected": "Please select a curl command for heartbeat",
-    "noCurls": "No saved requests yet. Please send a successful request first.",
+    "createButton": "New Configuration",
+    "editButton": "Edit",
+    "deleteButton": "Delete",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "noConfigs": "No configurations yet, click the New Configuration button to add one.",
+    "createDialogTitle": "New Heartbeat Configuration",
+    "editDialogTitle": "Edit Heartbeat Configuration",
+    "deleteConfirm": "Are you sure you want to delete this configuration?",
     "saveFailed": "Save failed",
-    "saveSuccess": "Saved successfully"
+    "saveSuccess": "Save successful",
+    "deleteFailed": "Delete failed",
+    "deleteSuccess": "Delete successful",
+    "invalidUrl": "Invalid URL format",
+    "invalidHeaders": "Invalid headers format, must be a valid JSON object",
+    "intervalOutOfRange": "Heartbeat interval must be between 10-3600 seconds"
   }
 }

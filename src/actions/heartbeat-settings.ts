@@ -41,28 +41,16 @@ export async function saveHeartbeatSettings(
       return { ok: false, error: "无权限执行此操作" };
     }
 
-    // 验证间隔时间
-    if (formData.intervalSeconds !== undefined) {
-      if (formData.intervalSeconds < 10 || formData.intervalSeconds > 3600) {
-        return { ok: false, error: "心跳间隔必须在10-3600秒之间" };
-      }
-    }
-
     const updated = await updateHeartbeatSettings(formData);
 
     // 如果启用/禁用心跳，重启心跳任务
-    if (formData.enabled !== undefined || formData.intervalSeconds !== undefined) {
+    if (formData.enabled !== undefined) {
       try {
         const { ProviderHeartbeat } = await import("@/lib/provider-heartbeat");
-        ProviderHeartbeat.stop();
-        if (updated.enabled) {
-          await ProviderHeartbeat.start();
-          logger.info("心跳任务已重启", {
-            intervalSeconds: updated.intervalSeconds,
-          });
-        } else {
-          logger.info("心跳任务已停止");
-        }
+        await ProviderHeartbeat.restart();
+        logger.info("心跳任务已重启", {
+          enabled: updated.enabled,
+        });
       } catch (error) {
         logger.warn("重启心跳任务失败", { error });
       }

@@ -1,34 +1,71 @@
 {
   "title": "ハートビート設定",
-  "description": "上流プロバイダーに送信するハートビートリクエストを設定し、キャッシュを維持します。",
+  "description": "上流プロバイダーに送信するハートビートリクエストを設定し、プロバイダーのキャッシュが期限切れにならないようにします。",
   "section": {
-    "config": {
-      "title": "ハートビート設定",
-      "description": "システムは成功したリクエストをcurlコマンドとして自動保存します。ハートビート送信用に1つ選択できます。"
+    "global": {
+      "title": "グローバル設定",
+      "description": "ハートビート機能のグローバルスイッチを制御します。"
+    },
+    "urlConfigs": {
+      "title": "URL設定",
+      "description": "ハートビートを送信するURLのリストを設定します。各URLは独立した間隔設定が可能です。"
     }
   },
   "form": {
-    "description": "ハートビート機能は、選択したcurlコマンドを定期的に送信し、上流トークンキャッシュを維持します。",
     "enabled": {
-      "label": "ハートビートを有効化",
-      "description": "有効にすると、選択したcurlコマンドをハートビートとして定期的に送信します。"
+      "label": "ハートビートを有効にする",
+      "description": "有効にすると、システムは設定されたURLに定期的にハートビートリクエストを送信します。"
+    },
+    "name": {
+      "label": "設定名",
+      "placeholder": "例：Claude APIハートビート"
+    },
+    "url": {
+      "label": "URL",
+      "placeholder": "https://api.anthropic.com/v1/messages"
+    },
+    "method": {
+      "label": "HTTPメソッド"
+    },
+    "headers": {
+      "label": "リクエストヘッダー（JSON形式）",
+      "placeholder": "x-api-key: your-key"
+    },
+    "body": {
+      "label": "リクエストボディ（オプション）",
+      "placeholder": "model: claude-3-5-sonnet-20241022"
     },
     "intervalSeconds": {
       "label": "ハートビート間隔（秒）",
-      "description": "ハートビートリクエストの送信間隔、範囲: 10-3600秒。"
+      "description": "ハートビートリクエストの送信間隔、範囲は10〜3600秒です。"
     },
-    "savedCurls": {
-      "label": "保存されたリクエスト",
-      "description": "ハートビート送信用の成功したリクエストを選択（最大20件保存）。"
+    "isEnabled": {
+      "label": "この設定を有効にする"
     },
-    "modelFilter": {
-      "label": "モデルでフィルター",
-      "all": "すべてのモデル"
+    "enabledStatus": "有効",
+    "disabledStatus": "無効",
+    "stats": {
+      "success": "成功回数",
+      "failure": "失敗回数",
+      "lastSuccess": "最後の成功",
+      "lastError": "最後のエラー",
+      "never": "なし"
     },
-    "intervalOutOfRange": "ハートビート間隔は10〜3600秒の範囲内である必要があります",
-    "noCurlSelected": "ハートビート用のcurlコマンドを選択してください",
-    "noCurls": "保存されたリクエストがありません。まず成功したリクエストを送信してください。",
+    "createButton": "新規設定",
+    "editButton": "編集",
+    "deleteButton": "削除",
+    "saveButton": "保存",
+    "cancelButton": "キャンセル",
+    "noConfigs": "設定がありません。新規設定ボタンをクリックして追加してください。",
+    "createDialogTitle": "新規ハートビート設定",
+    "editDialogTitle": "ハートビート設定を編集",
+    "deleteConfirm": "この設定を削除してもよろしいですか？",
     "saveFailed": "保存に失敗しました",
-    "saveSuccess": "保存に成功しました"
+    "saveSuccess": "保存に成功しました",
+    "deleteFailed": "削除に失敗しました",
+    "deleteSuccess": "削除に成功しました",
+    "invalidUrl": "無効なURL形式",
+    "invalidHeaders": "無効なヘッダー形式、有効なJSONオブジェクトである必要があります",
+    "intervalOutOfRange": "ハートビート間隔は10〜3600秒の範囲内である必要があります"
   }
 }

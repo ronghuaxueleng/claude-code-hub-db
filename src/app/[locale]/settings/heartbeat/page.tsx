@@ -1,9 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { Section } from "@/components/section";
 import { getHeartbeatSettings } from "@/repository/heartbeat-settings";
+import { findAllHeartbeatUrlConfigs } from "@/repository/heartbeat-url-configs";
 import { SettingsPageHeader } from "../_components/settings-page-header";
-import { HeartbeatForm } from "./_components/heartbeat-form";
+import { HeartbeatPage } from "./_components/heartbeat-page";
 import { HeartbeatSkeleton } from "./_components/heartbeat-skeleton";
 
 export const dynamic = "force-dynamic";
@@ -22,15 +22,8 @@ export default async function HeartbeatSettingsPage() {
 }
 
 async function HeartbeatContent() {
-  const t = await getTranslations("settings");
   const settings = await getHeartbeatSettings();
+  const configs = await findAllHeartbeatUrlConfigs();
 
-  return (
-    <Section
-      title={t("heartbeat.section.config.title")}
-      description={t("heartbeat.section.config.description")}
-    >
-      <HeartbeatForm settings={settings} />
-    </Section>
-  );
+  return <HeartbeatPage settings={settings} configs={configs} />;
 }

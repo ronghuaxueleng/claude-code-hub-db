@@ -670,30 +670,65 @@ export const heartbeatSettings = pgTable('heartbeat_settings', {
   // 全局开关
   enabled: boolean('enabled').notNull().default(false),
 
-  // 心跳间隔（秒），默认30秒
-  intervalSeconds: integer('interval_seconds').notNull().default(30),
-
-  // 保存的成功请求 curl 命令列表（最多保留20条）
-  savedCurls: jsonb('saved_curls')
-    .$type<
-      Array<{
-        curl: string;
-        providerId: number;
-        providerName: string;
-        url: string;
-        endpoint: string;
-        model: string | null;
-        timestamp: number;
-      }>
-    >()
-    .default([]),
-
-  // 当前选中的 curl 索引（用于心跳发送）
-  selectedCurlIndex: integer('selected_curl_index'),
-
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
+
+// 心跳URL配置表
+export const heartbeatUrlConfigs = pgTable('heartbeat_url_configs', {
+  id: serial('id').primaryKey(),
+
+  // URL配置名称
+  name: varchar('name', { length: 200 }).notNull(),
+
+  // 目标URL
+  url: text('url').notNull(),
+
+  // HTTP方法
+  method: varchar('method', { length: 10 }).notNull().default('POST'),
+
+  // 请求头（JSONB）
+  headers: jsonb('headers').$type<Record<string, string>>().default({}),
+
+  // 请求体
+  body: text('body'),
+
+  // 独立的心跳间隔（秒），范围10-3600
+  intervalSeconds: integer('interval_seconds').notNull().default(30),
+
+  // 是否启用此配置
+  isEnabled: boolean('is_enabled').notNull().default(true),
+
+  // 统计：上次成功时间
+  lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
+
+  // 统计：上次失败时间
+  lastErrorAt: timestamp('last_error_at', { withTimezone: true }),
+
+  // 统计：上次错误信息
+  lastErrorMessage: text('last_error_message'),
+
+  // 统计：成功次数
+  successCount: integer('success_count').notNull().default(0),
+
+  // 统计：失败次数
+  failureCount: integer('failure_count').notNull().default(0),
+
+  // 关联的供应商ID（可选，用于展示）
+  providerId: integer('provider_id'),
+
+  // 模型名称（展示用）
+  model: varchar('model', { length: 200 }),
+
+  // 端点路径（展示用）
+  endpoint: varchar('endpoint', { length: 200 }),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  // 索引：查询启用的配置
+  enabledIdx: index('idx_heartbeat_url_configs_enabled').on(table.isEnabled),
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

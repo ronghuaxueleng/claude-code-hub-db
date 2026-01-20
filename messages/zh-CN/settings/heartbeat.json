@@ -2,33 +2,70 @@
   "title": "心跳配置",
   "description": "配置向上游供应商发送的心跳请求，保持供应商缓存不过期。",
   "section": {
-    "config": {
-      "title": "心跳配置",
-      "description": "系统会自动保存成功的请求为curl命令，你可以选择一个用于心跳发送。"
+    "global": {
+      "title": "全局设置",
+      "description": "控制心跳功能的全局开关。"
+    },
+    "urlConfigs": {
+      "title": "URL配置",
+      "description": "配置需要发送心跳的URL列表，每个URL可以独立设置间隔时间。"
     }
   },
   "form": {
-    "description": "心跳功能会定期发送选中的curl命令，保持上游Token缓存不过期。",
     "enabled": {
       "label": "启用心跳",
-      "description": "开启后，系统将定期发送选中的curl命令作为心跳。"
+      "description": "开启后，系统将定期向配置的URL发送心跳请求。"
+    },
+    "name": {
+      "label": "配置名称",
+      "placeholder": "例如：Claude API 心跳"
+    },
+    "url": {
+      "label": "URL",
+      "placeholder": "https://api.anthropic.com/v1/messages"
+    },
+    "method": {
+      "label": "HTTP方法"
+    },
+    "headers": {
+      "label": "请求头（JSON格式）",
+      "placeholder": "x-api-key: your-key"
+    },
+    "body": {
+      "label": "请求体（可选）",
+      "placeholder": "model: claude-3-5-sonnet-20241022"
     },
     "intervalSeconds": {
       "label": "心跳间隔（秒）",
       "description": "心跳请求的发送间隔时间，范围 10-3600 秒。"
     },
-    "savedCurls": {
-      "label": "保存的请求",
-      "description": "选择一个成功的请求用于心跳发送（最多保留20条）。"
+    "isEnabled": {
+      "label": "启用此配置"
     },
-    "modelFilter": {
-      "label": "筛选模型",
-      "all": "全部模型"
+    "enabledStatus": "启用",
+    "disabledStatus": "禁用",
+    "stats": {
+      "success": "成功次数",
+      "failure": "失败次数",
+      "lastSuccess": "最后成功",
+      "lastError": "最后失败",
+      "never": "从未"
     },
-    "intervalOutOfRange": "心跳间隔必须在 10-3600 秒之间",
-    "noCurlSelected": "请选择一个curl命令用于心跳",
-    "noCurls": "暂无保存的请求，请先发送一次成功的请求。",
+    "createButton": "新建配置",
+    "editButton": "编辑",
+    "deleteButton": "删除",
+    "saveButton": "保存",
+    "cancelButton": "取消",
+    "noConfigs": "暂无配置，请点击新建配置按钮添加。",
+    "createDialogTitle": "新建心跳配置",
+    "editDialogTitle": "编辑心跳配置",
+    "deleteConfirm": "确定要删除此配置吗？",
     "saveFailed": "保存失败",
-    "saveSuccess": "保存成功"
+    "saveSuccess": "保存成功",
+    "deleteFailed": "删除失败",
+    "deleteSuccess": "删除成功",
+    "invalidUrl": "URL格式不正确",
+    "invalidHeaders": "请求头格式不正确，必须是有效的JSON对象",
+    "intervalOutOfRange": "心跳间隔必须在 10-3600 秒之间"
   }
 }

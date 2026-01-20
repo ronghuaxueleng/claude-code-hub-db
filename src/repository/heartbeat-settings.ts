@@ -5,30 +5,15 @@ import { db } from "@/drizzle/db";
 import { heartbeatSettings } from "@/drizzle/schema";
 import { logger } from "@/lib/logger";
 
-export interface SavedCurl {
-  curl: string;
-  providerId: number;
-  providerName: string;
-  url: string;
-  endpoint: string;
-  model: string | null;
-  timestamp: number;
-}
-
 export interface HeartbeatSettings {
   id: number;
   enabled: boolean;
-  intervalSeconds: number;
-  savedCurls: SavedCurl[];
-  selectedCurlIndex: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface UpdateHeartbeatSettingsInput {
   enabled?: boolean;
-  intervalSeconds?: number;
-  selectedCurlIndex?: number | null;
 }
 
 /**
@@ -39,9 +24,6 @@ function createDefaultSettings(): HeartbeatSettings {
   return {
     id: 1,
     enabled: false,
-    intervalSeconds: 30,
-    savedCurls: [],
-    selectedCurlIndex: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -61,16 +43,12 @@ export async function getHeartbeatSettings(): Promise<HeartbeatSettings> {
           .insert(heartbeatSettings)
           .values({
             enabled: false,
-            intervalSeconds: 30,
-            savedCurls: [],
-            selectedCurlIndex: null,
           })
           .returning();
 
         logger.info("Heartbeat settings created with default values");
         return {
           ...created,
-          savedCurls: (created.savedCurls as SavedCurl[]) || [],
           createdAt: created.createdAt ?? new Date(),
           updatedAt: created.updatedAt ?? new Date(),
         };
@@ -82,7 +60,6 @@ export async function getHeartbeatSettings(): Promise<HeartbeatSettings> {
 
     return {
       ...row,
-      savedCurls: (row.savedCurls as SavedCurl[]) || [],
       createdAt: row.createdAt ?? new Date(),
       updatedAt: row.updatedAt ?? new Date(),
     };
@@ -115,7 +92,6 @@ export async function updateHeartbeatSettings(
       logger.info("Heartbeat settings updated", { input });
       return {
         ...updated,
-        savedCurls: (updated.savedCurls as SavedCurl[]) || [],
         createdAt: updated.createdAt ?? new Date(),
         updatedAt: updated.updatedAt ?? new Date(),
       };
@@ -126,65 +102,17 @@ export async function updateHeartbeatSettings(
       .insert(heartbeatSettings)
       .values({
         enabled: input.enabled ?? false,
-        intervalSeconds: input.intervalSeconds ?? 30,
-        savedCurls: [],
-        selectedCurlIndex: input.selectedCurlIndex ?? null,
       })
       .returning();
 
     logger.info("Heartbeat settings created", { input });
     return {
       ...created,
-      savedCurls: (created.savedCurls as SavedCurl[]) || [],
       createdAt: created.createdAt ?? new Date(),
       updatedAt: created.updatedAt ?? new Date(),
     };
   } catch (error) {
     logger.error("Failed to update heartbeat settings", { error, input });
     throw error;
-  }
-}
-
-/**
- * 添加成功的 curl 命令到列表（最多保留20条）
- */
-export async function addSuccessfulCurl(curl: SavedCurl): Promise<void> {
-  try {
-    const settings = await getHeartbeatSettings();
-
-    // 添加新的 curl 到列表开头，最多保留20条
-    const newCurls = [curl, ...settings.savedCurls].slice(0, 20);
-
-    // 如果是默认配置，先创建记录
-    if (settings.id === 1) {
-      try {
-        await db.insert(heartbeatSettings).values({
-          enabled: settings.enabled,
-          intervalSeconds: settings.intervalSeconds,
-          savedCurls: newCurls,
-          selectedCurlIndex: settings.selectedCurlIndex,
-        });
-        return;
-      } catch (insertError) {
-        // 记录已存在，继续更新
-      }
-    }
-
-    // 更新列表
-    await db
-      .update(heartbeatSettings)
-      .set({
-        savedCurls: newCurls,
-        updatedAt: new Date(),
-      })
-      .where(eq(heartbeatSettings.id, settings.id));
-
-    logger.debug("Added successful curl to heartbeat settings", {
-      providerId: curl.providerId,
-      endpoint: curl.endpoint,
-      totalCurls: newCurls.length,
-    });
-  } catch (error) {
-    logger.warn("Failed to add successful curl", { error });
   }
 }
