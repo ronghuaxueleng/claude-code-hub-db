@@ -17,13 +17,7 @@ export function generateCurlCommand(
   // 添加 headers
   headers.forEach((value, key) => {
     // 跳过一些不需要的 headers
-    const skipHeaders = [
-      "host",
-      "connection",
-      "content-length",
-      "accept-encoding",
-      "user-agent",
-    ];
+    const skipHeaders = ["host", "connection", "content-length", "accept-encoding", "user-agent"];
     if (!skipHeaders.includes(key.toLowerCase())) {
       curlParts.push(`-H '${key}: ${value.replace(/'/g, "'\"'\"'")}'`);
     }

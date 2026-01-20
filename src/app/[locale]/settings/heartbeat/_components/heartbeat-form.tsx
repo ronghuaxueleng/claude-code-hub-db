@@ -162,7 +162,10 @@ export function HeartbeatForm({ settings }: HeartbeatFormProps) {
                   />
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor={`curl-${originalIndex}`} className="cursor-pointer font-medium">
+                      <Label
+                        htmlFor={`curl-${originalIndex}`}
+                        className="cursor-pointer font-medium"
+                      >
                         {curl.providerName}
                       </Label>
                       {selectedCurlIndex === originalIndex && (
