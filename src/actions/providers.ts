@@ -614,6 +614,7 @@ export async function editProvider(
     join_claude_pool?: boolean;
     limit_5h_usd?: number | null;
     limit_daily_usd?: number | null;
+    daily_reset_mode?: "fixed" | "rolling";
     daily_reset_time?: string;
     limit_weekly_usd?: number | null;
     limit_monthly_usd?: number | null;

@@ -100,54 +100,44 @@ export async function updateHeartbeatSettings(
   input: UpdateHeartbeatSettingsInput
 ): Promise<HeartbeatSettings> {
   try {
-    // 先获取现有配置
-    const existing = await getHeartbeatSettings();
-
-    // 如果是默认配置（id=1且表不存在），先创建记录
-    if (existing.id === 1) {
-      try {
-        const [created] = await db
-          .insert(heartbeatSettings)
-          .values({
-            enabled: input.enabled ?? false,
-            intervalSeconds: input.intervalSeconds ?? 30,
-            savedCurls: [],
-            selectedCurlIndex: input.selectedCurlIndex ?? null,
-          })
-          .returning();
-
-        return {
-          ...created,
-          savedCurls: (created.savedCurls as SavedCurl[]) || [],
-          createdAt: created.createdAt ?? new Date(),
-          updatedAt: created.updatedAt ?? new Date(),
-        };
-      } catch (insertError) {
-        // 如果插入失败（可能记录已存在），尝试更新
-      }
-    }
-
-    // 更新现有记录
+    // 先尝试更新现有记录
     const [updated] = await db
       .update(heartbeatSettings)
       .set({
         ...input,
         updatedAt: new Date(),
       })
-      .where(eq(heartbeatSettings.id, existing.id))
+      .where(eq(heartbeatSettings.id, 1))
       .returning();
 
-    if (!updated) {
-      throw new Error("Failed to update heartbeat settings");
+    // 如果更新成功，返回结果
+    if (updated) {
+      logger.info("Heartbeat settings updated", { input });
+      return {
+        ...updated,
+        savedCurls: (updated.savedCurls as SavedCurl[]) || [],
+        createdAt: updated.createdAt ?? new Date(),
+        updatedAt: updated.updatedAt ?? new Date(),
+      };
     }
 
-    logger.info("Heartbeat settings updated", { input });
+    // 如果没有记录被更新，说明记录不存在，创建新记录
+    const [created] = await db
+      .insert(heartbeatSettings)
+      .values({
+        enabled: input.enabled ?? false,
+        intervalSeconds: input.intervalSeconds ?? 30,
+        savedCurls: [],
+        selectedCurlIndex: input.selectedCurlIndex ?? null,
+      })
+      .returning();
 
+    logger.info("Heartbeat settings created", { input });
     return {
-      ...updated,
-      savedCurls: (updated.savedCurls as SavedCurl[]) || [],
-      createdAt: updated.createdAt ?? new Date(),
-      updatedAt: updated.updatedAt ?? new Date(),
+      ...created,
+      savedCurls: (created.savedCurls as SavedCurl[]) || [],
+      createdAt: created.createdAt ?? new Date(),
+      updatedAt: created.updatedAt ?? new Date(),
     };
   } catch (error) {
     logger.error("Failed to update heartbeat settings", { error, input });
