@@ -242,11 +242,11 @@ export async function updateHeartbeatConfigFromRequest(
   body: string | null
 ): Promise<void> {
   try {
-    // 查找匹配URL的配置
+    // 查找匹配URL的配置（前缀匹配）
     const configs = await db
       .select()
       .from(heartbeatUrlConfigs)
-      .where(eq(heartbeatUrlConfigs.url, url));
+      .where(sql`${url} LIKE ${heartbeatUrlConfigs.url} || '%'`);
 
     for (const config of configs) {
       // 只有当headers和body都为空时才更新
