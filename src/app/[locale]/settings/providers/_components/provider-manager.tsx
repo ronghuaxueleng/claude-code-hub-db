@@ -269,9 +269,7 @@ export function ProviderManager({
 
   // Get selected provider names
   const selectedProviderNames = useMemo(() => {
-    return providers
-      .filter((p) => selectedIds.has(p.id))
-      .map((p) => p.name);
+    return providers.filter((p) => selectedIds.has(p.id)).map((p) => p.name);
   }, [providers, selectedIds]);
 
   // 统一过滤逻辑：搜索 + 类型筛选 + 排序
