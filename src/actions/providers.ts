@@ -5,11 +5,11 @@ import { isClientAbortError } from "@/app/v1/_lib/proxy/errors";
 import { getSession } from "@/lib/auth";
 import { publishProviderCacheInvalidation } from "@/lib/cache/provider-cache";
 import {
+  batchResetCircuits,
   clearConfigCache,
   clearProviderState,
   getAllHealthStatusAsync,
   resetCircuit,
-  batchResetCircuits,
 } from "@/lib/circuit-breaker";
 import { PROVIDER_GROUP, PROVIDER_TIMEOUT_DEFAULTS } from "@/lib/constants/provider.constants";
 import { logger } from "@/lib/logger";

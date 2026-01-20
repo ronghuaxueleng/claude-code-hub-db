@@ -3,10 +3,10 @@
  * 用于在代理请求时自动使用配置的优选 IP
  */
 
-import { getActiveCfOptimizedDomains } from "@/repository/cf-optimized-domains";
-import { getBlacklistedIps } from "@/repository/cf-ip-blacklist";
-import { getSystemSettings } from "@/repository/system-config";
 import { logger } from "@/lib/logger";
+import { getBlacklistedIps } from "@/repository/cf-ip-blacklist";
+import { getActiveCfOptimizedDomains } from "@/repository/cf-optimized-domains";
+import { getSystemSettings } from "@/repository/system-config";
 
 // 优选 IP 缓存（域名 -> IP 列表）
 let optimizedIpCache: Map<string, string[]> = new Map();
@@ -164,7 +164,7 @@ export async function createOptimizedLookup(targetDomain: string) {
       callback(null, optimizedIp, 4); // 4 表示 IPv4
     } else {
       // 其他域名使用默认 DNS
-      require("dns").lookup(hostname, options, callback);
+      require("node:dns").lookup(hostname, options, callback);
     }
   };
 }

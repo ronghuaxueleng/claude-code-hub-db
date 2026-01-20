@@ -1,8 +1,8 @@
-import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { getSystemSettings } from "@/repository/system-config";
-import { CfOptimizedDomainsTable } from "./_components/cf-optimized-domains-table";
 import { CfOptimizationGlobalSwitch } from "./_components/cf-optimization-global-switch";
+import { CfOptimizedDomainsTable } from "./_components/cf-optimized-domains-table";
 
 export default async function CfOptimizedDomainsPage() {
   const t = await getTranslations("cfOptimizedDomains");

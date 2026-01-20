@@ -1,7 +1,7 @@
 "use server";
 
-import { Agent, request } from "undici";
 import { connect as tlsConnect } from "node:tls";
+import { Agent, request } from "undici";
 import { getBlacklistedIps, recordIpFailure } from "@/repository/cf-ip-blacklist";
 
 export interface CfIpTestResult {
@@ -15,7 +15,7 @@ export interface CfIpTestResult {
  */
 function createTestAgent(domain: string, ip: string): Agent {
   // 创建自定义 connect 函数，将域名解析到指定 IP
-  const customConnect = function (opts: any, callback: any) {
+  const customConnect = (opts: any, callback: any) => {
     // 如果是目标域名，使用指定 IP
     if (opts.hostname === domain || opts.servername === domain) {
       // 使用 Node.js 原生 tls 模块创建连接

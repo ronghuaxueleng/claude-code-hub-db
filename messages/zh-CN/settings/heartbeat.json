@@ -1,34 +1,101 @@
 {
   "title": "心跳配置",
-  "description": "配置向上游供应商发送的心跳请求，保持供应商缓存不过期。",
+  "description": "配置向上游供应商发送的心跳请求，保持供应商缓存活跃。",
   "section": {
-    "config": {
-      "title": "心跳配置",
-      "description": "系统会自动保存成功的请求为curl命令，你可以选择一个用于心跳发送。"
+    "global": {
+      "title": "全局设置",
+      "description": "控制心跳功能的总开关。"
+    },
+    "curlHistory": {
+      "title": "Curl 历史记录",
+      "description": "查看历史成功请求，可以导入为心跳配置。",
+      "empty": "暂无历史记录"
+    },
+    "urlConfigs": {
+      "title": "心跳URL配置",
+      "description": "配置多个URL地址，每个配置可独立设置心跳间隔。",
+      "empty": "暂无配置，点击下方按钮新建",
+      "createButton": "新建配置"
     }
   },
   "form": {
-    "description": "心跳功能会定期发送选中的curl命令，保持上游Token缓存不过期。",
     "enabled": {
       "label": "启用心跳",
-      "description": "开启后，系统将定期发送选中的curl命令作为心跳。"
+      "description": "开启后，系统将定期向配置的URL发送心跳请求。"
+    },
+    "name": {
+      "label": "配置名称",
+      "placeholder": "例如：Anthropic 主节点",
+      "description": "为此配置起一个易于识别的名称"
+    },
+    "url": {
+      "label": "URL地址",
+      "placeholder": "https://api.anthropic.com/v1/messages",
+      "description": "心跳请求的目标地址"
+    },
+    "method": {
+      "label": "HTTP方法",
+      "description": "请求方法"
+    },
+    "headers": {
+      "label": "请求头",
+      "placeholder": "{\n  \"authorization\": \"Bearer sk-xxx\",\n  \"anthropic-version\": \"2023-06-01\"\n}",
+      "description": "JSON格式的请求头"
+    },
+    "body": {
+      "label": "请求体（可选）",
+      "placeholder": "{\n  \"model\": \"claude-3-5-sonnet-20241022\",\n  \"messages\": [...]\n}",
+      "description": "请求的JSON内容"
     },
     "intervalSeconds": {
       "label": "心跳间隔（秒）",
-      "description": "心跳请求的发送间隔时间，范围 10-3600 秒。"
+      "description": "心跳请求的发送间隔时间，范围 10-3600 秒"
     },
-    "savedCurls": {
-      "label": "保存的请求",
-      "description": "选择一个成功的请求用于心跳发送（最多保留20条）。"
+    "isEnabled": {
+      "label": "启用此配置",
+      "description": "关闭后不会发送此配置的心跳"
     },
-    "modelFilter": {
-      "label": "筛选模型",
-      "all": "全部模型"
+    "stats": {
+      "title": "统计信息",
+      "successCount": "成功次数",
+      "failureCount": "失败次数",
+      "lastSuccess": "最后成功",
+      "lastError": "最后失败",
+      "never": "从未",
+      "errorMessage": "错误信息"
     },
-    "intervalOutOfRange": "心跳间隔必须在 10-3600 秒之间",
-    "noCurlSelected": "请选择一个curl命令用于心跳",
-    "noCurls": "暂无保存的请求，请先发送一次成功的请求。",
-    "saveFailed": "保存失败",
-    "saveSuccess": "保存成功"
+    "actions": {
+      "import": "导入",
+      "edit": "编辑",
+      "delete": "删除",
+      "save": "保存",
+      "cancel": "取消",
+      "confirmDelete": "确认删除？",
+      "deleteConfirmMessage": "删除后无法恢复，确定要删除此配置吗？"
+    },
+    "validation": {
+      "nameRequired": "配置名称不能为空",
+      "urlRequired": "URL不能为空",
+      "urlInvalid": "URL格式不正确",
+      "intervalsOutOfRange": "心跳间隔必须在 10-3600 秒之间",
+      "headersInvalid": "请求头必须是有效的JSON格式"
+    },
+    "toast": {
+      "createSuccess": "配置创建成功",
+      "createFailed": "配置创建失败",
+      "updateSuccess": "配置更新成功",
+      "updateFailed": "配置更新失败",
+      "deleteSuccess": "配置删除成功",
+      "deleteFailed": "配置删除失败",
+      "importSuccess": "导入成功",
+      "importFailed": "导入失败"
+    }
+  },
+  "curl": {
+    "title": "Curl命令",
+    "provider": "供应商",
+    "endpoint": "端点",
+    "model": "模型",
+    "timestamp": "时间"
   }
 }

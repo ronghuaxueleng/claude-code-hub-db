@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { saveSystemSettings } from "@/actions/system-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface CfOptimizationGlobalSwitchProps {
   initialEnabled: boolean;

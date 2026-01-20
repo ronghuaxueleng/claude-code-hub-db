@@ -16,7 +16,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { hasSessionMessages } from "@/actions/active-sessions";
-import { cancelPendingRequest } from "@/actions/cancel-request";
 import { getCurlCommand } from "@/actions/copy-curl";
 import { getSessionMapping, switchToNewSession } from "@/actions/switch-session";
 import { Badge } from "@/components/ui/badge";
@@ -152,7 +151,7 @@ export function ErrorDetailsDialog({
       } else {
         toast.error(result.error || t("logs.details.sessionSwitch.failed"));
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("logs.details.sessionSwitch.failed"));
     } finally {
       setIsSwitchingSession(false);
@@ -173,7 +172,7 @@ export function ErrorDetailsDialog({
       } else {
         toast.error(result.error || t("logs.details.copyCurl.failed"));
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("logs.details.copyCurl.failed"));
     } finally {
       setIsCopyingCurl(false);

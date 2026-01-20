@@ -5,10 +5,10 @@
  * 参考 dns-cleaner 的实现，使用 undici Agent 的 connect.lookup 选项
  */
 
-import { Agent } from "undici";
 import { lookup as dnsLookup } from "node:dns";
-import { getOptimizedIp } from "./cf-optimized-ip-resolver";
+import { Agent } from "undici";
 import { logger } from "@/lib/logger";
+import { getOptimizedIp } from "./cf-optimized-ip-resolver";
 
 export interface CfOptimizedAgentResult {
   agent: Agent;

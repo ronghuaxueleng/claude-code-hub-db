@@ -2,8 +2,10 @@ import { STATUS_CODES } from "node:http";
 import type { Readable } from "node:stream";
 import { createGunzip, constants as zlibConstants } from "node:zlib";
 import type { Dispatcher } from "undici";
-import { Agent, request as undiciRequest } from "undici";
+import { request as undiciRequest } from "undici";
 import { isRequestCancelled } from "@/actions/cancel-request";
+import { createCfOptimizedAgent } from "@/lib/cf-optimized-agent";
+import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
 import {
   getCircuitState,
   getProviderHealthInfo,
@@ -14,17 +16,13 @@ import { applyCodexProviderOverridesWithAudit } from "@/lib/codex/provider-overr
 import { getCachedSystemSettings, isHttp2Enabled } from "@/lib/config";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { PROVIDER_DEFAULTS, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
-import { createCfOptimizedAgent, createSingleIpAgent } from "@/lib/cf-optimized-agent";
-import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
-import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
-import { SessionManager } from "@/lib/session-manager";
 import { ProviderActivityManager } from "@/lib/redis/provider-activity";
+import { SessionManager } from "@/lib/session-manager";
 import { CONTEXT_1M_BETA_HEADER, shouldApplyContext1m } from "@/lib/special-attributes";
+import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { updateMessageRequestDetails } from "@/repository/message";
-import { generateCurlCommand } from "@/lib/utils/curl-generator";
-import { addSuccessfulCurl } from "@/repository/heartbeat-settings";
 import type { CacheTtlPreference, CacheTtlResolved } from "@/types/cache";
 import { isOfficialCodexClient, sanitizeCodexRequest } from "../codex/utils/request-sanitizer";
 import { defaultRegistry } from "../converters";
@@ -343,37 +341,6 @@ export class ProxyForwarder {
 
           // ========== 成功分支 ==========
           recordSuccess(currentProvider.id);
-
-          // ⭐ 生成并保存成功请求的 curl 命令
-          try {
-            const upstreamUrl = buildProxyUrl(currentProvider.url, session.requestUrl);
-            const curlCommand = generateCurlCommand(
-              upstreamUrl.toString(),
-              "POST",
-              session.headers,
-              session.request.buffer ? new TextDecoder().decode(session.request.buffer) : null
-            );
-
-            void addSuccessfulCurl({
-              curl: curlCommand,
-              providerId: currentProvider.id,
-              providerName: currentProvider.name,
-              url: currentProvider.url,
-              endpoint: session.requestUrl.pathname,
-              model: session.request.model,
-              timestamp: Date.now(),
-            }).catch((error) => {
-              logger.warn("ProxyForwarder: Failed to save curl command", {
-                providerId: currentProvider.id,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            });
-          } catch (error) {
-            logger.warn("ProxyForwarder: Failed to generate curl command", {
-              providerId: currentProvider.id,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
 
           // ⭐ 记录供应商活跃状态（用于续期缓存）
           // 提取关键请求头（用于心跳）

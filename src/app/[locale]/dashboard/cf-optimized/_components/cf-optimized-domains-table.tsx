@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { listCfOptimizedDomains } from "@/actions/cf-optimized-domains";
+import { Button } from "@/components/ui/button";
 import type { CfOptimizedDomain } from "@/repository/cf-optimized-domains";
 import { AddDomainDialog } from "./add-domain-dialog";
-import { EditDomainDialog } from "./edit-domain-dialog";
 import { DeleteDomainDialog } from "./delete-domain-dialog";
+import { EditDomainDialog } from "./edit-domain-dialog";
 
 export function CfOptimizedDomainsTable() {
   const t = useTranslations("cfOptimizedDomains.table");
@@ -21,7 +21,7 @@ export function CfOptimizedDomainsTable() {
 
   useEffect(() => {
     loadDomains();
-  }, []);
+  }, [loadDomains]);
 
   async function loadDomains() {
     setLoading(true);

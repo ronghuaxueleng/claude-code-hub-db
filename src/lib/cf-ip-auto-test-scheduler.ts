@@ -3,13 +3,13 @@
  * 定期检查并测试启用了自动测速的域名
  */
 
+import { testCfOptimizedIps } from "@/actions/cf-ip-test";
+import { refreshCache } from "@/lib/cf-optimized-ip-resolver";
 import { logger } from "@/lib/logger";
 import {
   getAllCfOptimizedDomains,
   updateCfOptimizedDomain,
 } from "@/repository/cf-optimized-domains";
-import { testCfOptimizedIps } from "@/actions/cf-ip-test";
-import { refreshCache } from "@/lib/cf-optimized-ip-resolver";
 
 const schedulerState = globalThis as unknown as {
   __CCH_CF_IP_AUTO_TEST_STARTED__?: boolean;

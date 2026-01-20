@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { toast } from "sonner";
+import { deleteCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -11,9 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
+import { Button } from "@/components/ui/button";
 import type { CfOptimizedDomain } from "@/repository/cf-optimized-domains";
-import { toast } from "sonner";
 
 interface DeleteDomainDialogProps {
   open: boolean;

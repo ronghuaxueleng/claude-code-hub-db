@@ -12,13 +12,12 @@
  * - 优雅关闭处理
  */
 
-import { spawn } from "child_process";
-import { existsSync } from "fs";
-import { readFile } from "fs/promises";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
-import { platform } from "os";
-import { execSync } from "child_process";
+import { execSync, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { platform } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +30,7 @@ if (isWindows) {
   try {
     // 设置控制台代码页为 UTF-8 (65001)
     execSync("chcp 65001 >nul 2>&1", { stdio: "pipe" });
-  } catch (error) {
+  } catch (_error) {
     // 忽略错误，继续执行
   }
 }
@@ -161,7 +160,7 @@ async function checkPlatformDependencies() {
   }
 
   // 检查 .bin 目录中的可执行文件类型
-  const { readdirSync } = await import("fs");
+  const { readdirSync } = await import("node:fs");
   const binFiles = readdirSync(binPath);
 
   if (binFiles.length === 0) {
@@ -301,7 +300,7 @@ async function reinstallDependencies() {
 }
 
 // 检查必需的环境变量 (保持原有函数名以兼容后续代码)
-function checkRequiredEnvLegacy() {
+function _checkRequiredEnvLegacy() {
   // SQLite 不需要必需的环境变量，使用默认路径即可
   log.info("环境变量检查通过");
 }
@@ -312,8 +311,8 @@ async function checkDatabase() {
   log.step(`检查数据库路径: ${dbPath}`);
 
   try {
-    const { mkdirSync, existsSync } = await import("fs");
-    const { dirname } = await import("path");
+    const { mkdirSync, existsSync } = await import("node:fs");
+    const { dirname } = await import("node:path");
 
     // 确保数据目录存在
     const dbDir = dirname(dbPath);
@@ -331,7 +330,7 @@ async function checkDatabase() {
 }
 
 // 检查并生成 SQLite 迁移文件
-async function checkAndGenerateMigrations() {
+async function _checkAndGenerateMigrations() {
   const journalPath = join(__dirname, "drizzle-sqlite/meta/_journal.json");
 
   try {
@@ -351,7 +350,7 @@ async function checkAndGenerateMigrations() {
         generationReason = `检测到旧的 ${journal.dialect} 迁移文件`;
 
         // 备份旧的迁移文件
-        const { renameSync, mkdirSync } = await import("fs");
+        const { renameSync, mkdirSync } = await import("node:fs");
         const backupDir = join(__dirname, "drizzle_backup");
 
         if (!existsSync(backupDir)) {
@@ -519,7 +518,7 @@ async function getVersion() {
       const version = await readFile(versionPath, "utf-8");
       return version.trim();
     }
-  } catch (error) {
+  } catch (_error) {
     // 忽略错误
   }
   return "unknown";
@@ -536,7 +535,7 @@ async function cleanNextCache() {
   log.step("检测到 .next 构建缓存，正在清理以确保使用最新代码...");
 
   try {
-    const { rmSync } = await import("fs");
+    const { rmSync } = await import("node:fs");
     rmSync(nextDir, { recursive: true, force: true });
     log.success(".next 缓存已清理");
     return true;
@@ -552,7 +551,7 @@ async function copyStaticAssets() {
   log.step("正在复制静态资源到 standalone 目录...");
 
   try {
-    const { cpSync, existsSync, mkdirSync, copyFileSync } = await import("fs");
+    const { cpSync, existsSync, mkdirSync, copyFileSync } = await import("node:fs");
 
     const staticSrc = join(__dirname, ".next/static");
     const staticDest = join(__dirname, ".next/standalone/.next/static");

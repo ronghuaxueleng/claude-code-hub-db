@@ -1,5 +1,5 @@
-import { getRedisClient } from "./client";
 import { logger } from "@/lib/logger";
+import { getRedisClient } from "./client";
 
 /**
  * 供应商活跃状态数据结构
@@ -42,7 +42,7 @@ export class ProviderActivityManager {
    * 构建 Redis Key
    */
   private static buildKey(providerId: number): string {
-    return `${this.KEY_PREFIX}:${providerId}`;
+    return `${ProviderActivityManager.KEY_PREFIX}:${providerId}`;
   }
 
   /**
@@ -65,7 +65,7 @@ export class ProviderActivityManager {
     model?: string,
     endpoint?: string,
     headers?: Record<string, string>,
-    ttlSeconds: number = this.DEFAULT_TTL_SECONDS
+    ttlSeconds: number = ProviderActivityManager.DEFAULT_TTL_SECONDS
   ): Promise<void> {
     const redis = getRedisClient();
     if (!redis) {
@@ -73,7 +73,7 @@ export class ProviderActivityManager {
       return;
     }
 
-    const key = this.buildKey(providerId);
+    const key = ProviderActivityManager.buildKey(providerId);
     const now = Date.now();
 
     try {
@@ -162,7 +162,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const key = this.buildKey(providerId);
+      const key = ProviderActivityManager.buildKey(providerId);
       const exists = await redis.exists(key);
       return exists === 1;
     } catch (error) {
@@ -188,7 +188,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const key = this.buildKey(providerId);
+      const key = ProviderActivityManager.buildKey(providerId);
       const value = await redis.get(key);
 
       if (!value) {
@@ -218,7 +218,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const key = this.buildKey(providerId);
+      const key = ProviderActivityManager.buildKey(providerId);
       return await redis.ttl(key);
     } catch (error) {
       logger.warn("[ProviderActivity] Failed to get TTL", {
@@ -242,7 +242,7 @@ export class ProviderActivityManager {
    */
   static async renew(
     providerId: number,
-    ttlSeconds: number = this.DEFAULT_TTL_SECONDS
+    ttlSeconds: number = ProviderActivityManager.DEFAULT_TTL_SECONDS
   ): Promise<boolean> {
     const redis = getRedisClient();
     if (!redis) {
@@ -250,7 +250,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const key = this.buildKey(providerId);
+      const key = ProviderActivityManager.buildKey(providerId);
       const exists = await redis.exists(key);
 
       if (exists === 0) {
@@ -298,7 +298,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const key = this.buildKey(providerId);
+      const key = ProviderActivityManager.buildKey(providerId);
       await redis.del(key);
 
       logger.debug("[ProviderActivity] Activity cleared", {
@@ -335,7 +335,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const keys = providerIds.map((id) => this.buildKey(id));
+      const keys = providerIds.map((id) => ProviderActivityManager.buildKey(id));
       const pipeline = redis.pipeline();
 
       for (const key of keys) {
@@ -386,7 +386,7 @@ export class ProviderActivityManager {
     }
 
     try {
-      const pattern = `${this.KEY_PREFIX}:*`;
+      const pattern = `${ProviderActivityManager.KEY_PREFIX}:*`;
       const keys = await redis.keys(pattern);
 
       if (keys.length === 0) {

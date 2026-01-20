@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
 import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
+import { logger } from "@/lib/logger";
 import * as repo from "@/repository/cf-optimized-domains";
 import type { ActionResult } from "./types";
 

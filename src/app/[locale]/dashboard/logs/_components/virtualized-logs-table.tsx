@@ -95,7 +95,7 @@ export function VirtualizedLogsTable({
       } else {
         toast.error(result.error || t("logs.actions.cancelFailed"));
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("logs.actions.cancelFailed"));
     } finally {
       setCancellingIds((prev) => {

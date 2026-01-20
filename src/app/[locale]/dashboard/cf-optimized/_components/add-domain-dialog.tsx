@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Loader2, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { toast } from "sonner";
+import { testCfOptimizedIps } from "@/actions/cf-ip-test";
+import { createCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,12 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Zap } from "lucide-react";
-import { createCfOptimizedDomainAction } from "@/actions/cf-optimized-domains";
-import { testCfOptimizedIps } from "@/actions/cf-ip-test";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AddDomainDialogProps {
   open: boolean;

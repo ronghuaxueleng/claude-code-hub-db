@@ -1,65 +1,54 @@
 import { logger } from "@/lib/logger";
-import { findAllProviders } from "@/repository/provider";
 import { getHeartbeatSettings } from "@/repository/heartbeat-settings";
-import { parseCurlCommand } from "@/lib/utils/curl-parser";
+import {
+  findEnabledHeartbeatUrlConfigs,
+  type HeartbeatUrlConfig,
+  recordHeartbeatFailure,
+  recordHeartbeatSuccess,
+} from "@/repository/heartbeat-url-configs";
 
 /**
  * 供应商心跳发送器
  *
- * 功能：定期向活跃的上游供应商发送心跳请求，保持上游 Token 缓存不过期
+ * 功能：定期向配置的 URL 发送心跳请求，保持上游服务缓存活跃
  * 策略：
- * - 使用数据库中保存的成功请求 curl 命令
- * - 从 curl 命令中解析出 URL、headers、body 等信息
- * - 定期发送心跳请求
+ * - 支持多个 URL 同时发送心跳
+ * - 每个 URL 配置独立的间隔时间和定时器
+ * - 记录成功/失败统计信息
  */
 export class ProviderHeartbeat {
-  private static intervalId: NodeJS.Timeout | null = null;
-  private static currentIntervalSeconds: number = 30; // 当前使用的间隔时间
+  private static timers: Map<number, NodeJS.Timeout> = new Map();
+  private static isRunning = false;
 
   /**
    * 启动心跳任务
    */
   static async start(): Promise<void> {
-    if (this.intervalId) {
-      logger.warn("ProviderHeartbeat: Already running");
-      return;
-    }
-
     try {
-      // 从数据库读取配置
       const settings = await getHeartbeatSettings();
 
-      // 如果未启用，不启动
       if (!settings.enabled) {
         logger.info("ProviderHeartbeat: Disabled in settings, not starting");
         return;
       }
 
-      // 如果没有选中的 curl，不启动
-      if (settings.selectedCurlIndex === null || !settings.savedCurls[settings.selectedCurlIndex]) {
-        logger.warn("ProviderHeartbeat: No curl selected, not starting");
+      const configs = await findEnabledHeartbeatUrlConfigs();
+
+      if (configs.length === 0) {
+        logger.info("ProviderHeartbeat: No enabled URL configs, not starting");
         return;
       }
 
-      this.currentIntervalSeconds = settings.intervalSeconds;
-      const intervalMs = settings.intervalSeconds * 1000;
+      ProviderHeartbeat.isRunning = true;
 
-      logger.info("ProviderHeartbeat: Starting heartbeat task", {
-        intervalSeconds: settings.intervalSeconds,
-        selectedCurlIndex: settings.selectedCurlIndex,
+      for (const config of configs) {
+        ProviderHeartbeat.startConfigTimer(config);
+      }
+
+      logger.info("ProviderHeartbeat: Started", {
+        configCount: configs.length,
+        configs: configs.map((c) => ({ id: c.id, name: c.name, interval: c.intervalSeconds })),
       });
-
-      // 立即发送一次心跳
-      void this.sendHeartbeat().catch((error) => {
-        logger.error("ProviderHeartbeat: Failed to send initial heartbeat", { error });
-      });
-
-      // 定期发送心跳
-      this.intervalId = setInterval(() => {
-        void this.sendHeartbeat().catch((error) => {
-          logger.error("ProviderHeartbeat: Failed to send heartbeat", { error });
-        });
-      }, intervalMs);
     } catch (error) {
       logger.error("ProviderHeartbeat: Failed to start", { error });
     }
@@ -69,77 +58,110 @@ export class ProviderHeartbeat {
    * 停止心跳任务
    */
   static stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-      logger.info("ProviderHeartbeat: Stopped");
+    if (!ProviderHeartbeat.isRunning) {
+      return;
     }
+
+    for (const [configId, timer] of ProviderHeartbeat.timers.entries()) {
+      clearInterval(timer);
+      logger.debug("ProviderHeartbeat: Timer stopped", { configId });
+    }
+
+    ProviderHeartbeat.timers.clear();
+    ProviderHeartbeat.isRunning = false;
+    logger.info("ProviderHeartbeat: Stopped");
+  }
+
+  /**
+   * 重启心跳任务（用于配置变更后重新加载）
+   */
+  static async restart(): Promise<void> {
+    logger.info("ProviderHeartbeat: Restarting");
+    ProviderHeartbeat.stop();
+    await ProviderHeartbeat.start();
+  }
+
+  /**
+   * 启动单个配置的定时器
+   */
+  private static startConfigTimer(config: HeartbeatUrlConfig): void {
+    if (ProviderHeartbeat.timers.has(config.id)) {
+      logger.warn("ProviderHeartbeat: Timer already exists", { configId: config.id });
+      return;
+    }
+
+    const intervalMs = config.intervalSeconds * 1000;
+
+    void ProviderHeartbeat.sendHeartbeat(config).catch((error) => {
+      logger.error("ProviderHeartbeat: Failed to send initial heartbeat", {
+        configId: config.id,
+        error,
+      });
+    });
+
+    const timer = setInterval(() => {
+      void ProviderHeartbeat.sendHeartbeat(config).catch((error) => {
+        logger.error("ProviderHeartbeat: Failed to send heartbeat", {
+          configId: config.id,
+          error,
+        });
+      });
+    }, intervalMs);
+
+    ProviderHeartbeat.timers.set(config.id, timer);
+
+    logger.debug("ProviderHeartbeat: Timer started", {
+      configId: config.id,
+      name: config.name,
+      intervalSeconds: config.intervalSeconds,
+    });
   }
 
   /**
    * 发送心跳请求
    */
-  private static async sendHeartbeat(): Promise<void> {
+  private static async sendHeartbeat(config: HeartbeatUrlConfig): Promise<void> {
+    const startTime = Date.now();
+
     try {
-      // 从数据库读取配置
-      const settings = await getHeartbeatSettings();
-
-      // 如果已禁用，停止任务
-      if (!settings.enabled) {
-        logger.info("ProviderHeartbeat: Disabled in settings, stopping task");
-        this.stop();
-        return;
-      }
-
-      // 如果没有选中的 curl，停止任务
-      if (settings.selectedCurlIndex === null) {
-        logger.warn("ProviderHeartbeat: No curl selected, stopping task");
-        this.stop();
-        return;
-      }
-
-      const selectedCurl = settings.savedCurls[settings.selectedCurlIndex];
-      if (!selectedCurl) {
-        logger.warn("ProviderHeartbeat: Selected curl not found, stopping task");
-        this.stop();
-        return;
-      }
-
-      // 解析 curl 命令
-      const parsed = parseCurlCommand(selectedCurl.curl);
-      if (!parsed) {
-        logger.error("ProviderHeartbeat: Failed to parse curl command", {
-          providerId: selectedCurl.providerId,
-        });
-        return;
-      }
-
-      // 发送心跳请求
-      const response = await fetch(parsed.url, {
-        method: parsed.method,
-        headers: parsed.headers,
-        body: parsed.body,
-        signal: AbortSignal.timeout(10000), // 10秒超时
+      const response = await fetch(config.url, {
+        method: config.method,
+        headers: config.headers,
+        body: config.body ?? undefined,
+        signal: AbortSignal.timeout(10000),
       });
 
+      const duration = Date.now() - startTime;
+
       if (response.ok) {
+        await recordHeartbeatSuccess(config.id);
         logger.debug("ProviderHeartbeat: Heartbeat sent successfully", {
-          providerId: selectedCurl.providerId,
-          providerName: selectedCurl.providerName,
-          endpoint: selectedCurl.endpoint,
+          configId: config.id,
+          name: config.name,
           statusCode: response.status,
+          duration,
         });
       } else {
+        const errorMessage = `HTTP ${response.status} ${response.statusText}`;
+        await recordHeartbeatFailure(config.id, errorMessage);
         logger.warn("ProviderHeartbeat: Heartbeat failed", {
-          providerId: selectedCurl.providerId,
-          providerName: selectedCurl.providerName,
-          endpoint: selectedCurl.endpoint,
+          configId: config.id,
+          name: config.name,
           statusCode: response.status,
+          duration,
         });
       }
     } catch (error) {
-      logger.debug("ProviderHeartbeat: Heartbeat error (ignored)", {
-        error: error instanceof Error ? error.message : String(error),
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      await recordHeartbeatFailure(config.id, errorMessage);
+
+      logger.debug("ProviderHeartbeat: Heartbeat error", {
+        configId: config.id,
+        name: config.name,
+        error: errorMessage,
+        duration,
       });
     }
   }

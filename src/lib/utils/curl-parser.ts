@@ -41,8 +41,7 @@ export function parseCurlCommand(curlCommand: string): ParsedCurlRequest | null 
       const bodyMatch = line.match(/-d\s+'(.+)'$/);
       if (bodyMatch) {
         // 反转义单引号
-        body = bodyMatch[1].replace(/'\"'\"'/g, "'");
-        continue;
+        body = bodyMatch[1].replace(/'"'"'/g, "'");
       }
     }
 
@@ -56,7 +55,7 @@ export function parseCurlCommand(curlCommand: string): ParsedCurlRequest | null 
       headers,
       body,
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

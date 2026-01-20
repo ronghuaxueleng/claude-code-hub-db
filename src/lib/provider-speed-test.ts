@@ -217,7 +217,7 @@ export function generateOptimizationRecommendations(
   });
 
   // 根据排名分配优先级
-  sortedResults.forEach((result, index) => {
+  sortedResults.forEach((result, _index) => {
     const provider = providers.find((p) => p.id === result.providerId);
     if (!provider) return;
 

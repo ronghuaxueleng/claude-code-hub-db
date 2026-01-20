@@ -3,7 +3,7 @@ import { PROVIDER_GROUP } from "@/lib/constants/provider.constants";
 import { logger } from "@/lib/logger";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
-import { findAllProviders, findProviderById } from "@/repository/provider";
+import { findAllProviders } from "@/repository/provider";
 import { getSystemSettings } from "@/repository/system-config";
 import type { ProviderChainItem } from "@/types/message";
 import type { Provider } from "@/types/provider";
