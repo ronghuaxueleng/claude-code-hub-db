@@ -315,7 +315,9 @@ export function ProviderManager({
         const result = await batchEnableAutoCircuitBreaker(Array.from(selectedIds));
         if (result.ok) {
           toast.success(tBatch("enableAutoCircuitSuccess"), {
-            description: tBatch("enableAutoCircuitSuccessDesc", { count: result.data.updatedCount }),
+            description: tBatch("enableAutoCircuitSuccessDesc", {
+              count: result.data.updatedCount,
+            }),
           });
           setSelectedIds(new Set());
           queryClient.invalidateQueries({ queryKey: ["providers"] });
@@ -339,7 +341,9 @@ export function ProviderManager({
         const result = await batchDisableAutoCircuitBreaker(Array.from(selectedIds));
         if (result.ok) {
           toast.success(tBatch("disableAutoCircuitSuccess"), {
-            description: tBatch("disableAutoCircuitSuccessDesc", { count: result.data.updatedCount }),
+            description: tBatch("disableAutoCircuitSuccessDesc", {
+              count: result.data.updatedCount,
+            }),
           });
           setSelectedIds(new Set());
           queryClient.invalidateQueries({ queryKey: ["providers"] });
