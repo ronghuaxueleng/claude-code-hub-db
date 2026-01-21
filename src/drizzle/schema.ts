@@ -210,6 +210,7 @@ export const providers = pgTable('providers', {
   circuitBreakerFailureThreshold: integer('circuit_breaker_failure_threshold').default(5),
   circuitBreakerOpenDuration: integer('circuit_breaker_open_duration').default(1800000), // 30分钟（毫秒）
   circuitBreakerHalfOpenSuccessThreshold: integer('circuit_breaker_half_open_success_threshold').default(2),
+  circuitBreakerDisabled: boolean('circuit_breaker_disabled').notNull().default(false), // 禁用自动熔断
 
   // 代理配置（支持 HTTP/HTTPS/SOCKS5）
   proxyUrl: varchar('proxy_url', { length: 512 }),

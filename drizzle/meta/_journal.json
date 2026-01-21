@@ -435,6 +435,13 @@
       "when": 1768903047567,
       "tag": "0061_salty_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1769007284831,
+      "tag": "0062_salty_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

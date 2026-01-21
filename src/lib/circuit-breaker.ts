@@ -19,6 +19,7 @@ import { logger } from "@/lib/logger";
 import {
   type CircuitBreakerConfig,
   DEFAULT_CIRCUIT_BREAKER_CONFIG,
+  deleteProviderCircuitConfig,
   loadProviderCircuitConfig,
 } from "@/lib/redis/circuit-breaker-config";
 import {
@@ -246,7 +247,12 @@ export async function recordFailure(providerId: number, error: Error): Promise<v
 
   // 检查是否需要打开熔断器
   // failureThreshold = 0 表示禁用熔断器
-  if (config.failureThreshold > 0 && health.failureCount >= config.failureThreshold) {
+  // disabled = true 表示禁用自动熔断
+  if (
+    !config.disabled &&
+    config.failureThreshold > 0 &&
+    health.failureCount >= config.failureThreshold
+  ) {
     health.circuitState = "open";
     health.circuitOpenUntil = Date.now() + config.openDuration;
     health.halfOpenSuccessCount = 0;
@@ -533,14 +539,40 @@ export async function getAllHealthStatusAsync(
 }
 
 /**
- * 手动重置熔断器（用于运维手动恢复）
+ * 手动打开熔断器（用于运维手动熔断）
  */
-export function resetCircuit(providerId: number): void {
+export function openCircuit(providerId: number, durationMs?: number): void {
   const health = getOrCreateHealthSync(providerId);
-
   const oldState = health.circuitState;
 
-  // 重置所有状态
+  // 如果未指定持续时间，使用默认值（30分钟）
+  const openDuration = durationMs || DEFAULT_CIRCUIT_BREAKER_CONFIG.openDuration;
+
+  health.circuitState = "open";
+  health.circuitOpenUntil = Date.now() + openDuration;
+  health.halfOpenSuccessCount = 0;
+
+  logger.info(
+    `[CircuitBreaker] Provider ${providerId} circuit manually opened from ${oldState} to open`,
+    {
+      providerId,
+      previousState: oldState,
+      newState: "open",
+      openDuration,
+      circuitOpenUntil: health.circuitOpenUntil,
+    }
+  );
+
+  persistStateToRedis(providerId, health);
+}
+
+/**
+ * 手动关闭熔断器（用于运维手动恢复）
+ */
+export function closeCircuit(providerId: number): void {
+  const health = getOrCreateHealthSync(providerId);
+  const oldState = health.circuitState;
+
   health.circuitState = "closed";
   health.failureCount = 0;
   health.lastFailureTime = null;
@@ -548,7 +580,7 @@ export function resetCircuit(providerId: number): void {
   health.halfOpenSuccessCount = 0;
 
   logger.info(
-    `[CircuitBreaker] Provider ${providerId} circuit manually reset from ${oldState} to closed`,
+    `[CircuitBreaker] Provider ${providerId} circuit manually closed from ${oldState} to closed`,
     {
       providerId,
       previousState: oldState,
@@ -556,38 +588,87 @@ export function resetCircuit(providerId: number): void {
     }
   );
 
-  // 持久化状态变更到 Redis
   persistStateToRedis(providerId, health);
 }
 
 /**
- * 批量重置熔断器（用于运维批量恢复）
+ * 手动重置熔断器（用于运维手动恢复）
+ * @deprecated 使用 closeCircuit 代替
+ */
+export function resetCircuit(providerId: number): void {
+  closeCircuit(providerId);
+}
+
+/**
+ * 批量打开熔断器（用于运维批量熔断）
  *
  * @param providerIds - 供应商 ID 数组
- * @returns 成功重置的供应商数量
+ * @param durationMs - 熔断持续时间（毫秒），不指定则使用默认值
+ * @returns 成功打开的供应商数量
  */
-export function batchResetCircuits(providerIds: number[]): number {
-  let resetCount = 0;
+export function batchOpenCircuits(providerIds: number[], durationMs?: number): number {
+  let openCount = 0;
 
   for (const providerId of providerIds) {
     try {
-      resetCircuit(providerId);
-      resetCount++;
+      openCircuit(providerId, durationMs);
+      openCount++;
     } catch (error) {
-      logger.error(`[CircuitBreaker] Failed to reset circuit for provider ${providerId}`, {
+      logger.error(`[CircuitBreaker] Failed to open circuit for provider ${providerId}`, {
         providerId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
-  logger.info(`[CircuitBreaker] Batch reset completed: ${resetCount}/${providerIds.length}`, {
+  logger.info(`[CircuitBreaker] Batch open completed: ${openCount}/${providerIds.length}`, {
     providerIds,
-    resetCount,
+    openCount,
     total: providerIds.length,
   });
 
-  return resetCount;
+  return openCount;
+}
+
+/**
+ * 批量关闭熔断器（用于运维批量恢复）
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 成功关闭的供应商数量
+ */
+export function batchCloseCircuits(providerIds: number[]): number {
+  let closeCount = 0;
+
+  for (const providerId of providerIds) {
+    try {
+      closeCircuit(providerId);
+      closeCount++;
+    } catch (error) {
+      logger.error(`[CircuitBreaker] Failed to close circuit for provider ${providerId}`, {
+        providerId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  logger.info(`[CircuitBreaker] Batch close completed: ${closeCount}/${providerIds.length}`, {
+    providerIds,
+    closeCount,
+    total: providerIds.length,
+  });
+
+  return closeCount;
+}
+
+/**
+ * 批量重置熔断器（用于运维批量恢复）
+ * @deprecated 使用 batchCloseCircuits 代替
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 成功重置的供应商数量
+ */
+export function batchResetCircuits(providerIds: number[]): number {
+  return batchCloseCircuits(providerIds);
 }
 
 /**
@@ -641,6 +722,14 @@ export function clearConfigCache(providerId: number): void {
     health.configLoadedAt = null;
     logger.debug(`[CircuitBreaker] Cleared config cache for provider ${providerId}`);
   }
+
+  // 同时删除 Redis 中的配置缓存
+  deleteProviderCircuitConfig(providerId).catch((error) => {
+    logger.warn(`[CircuitBreaker] Failed to delete Redis config cache for provider ${providerId}`, {
+      providerId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
 }
 
 /**

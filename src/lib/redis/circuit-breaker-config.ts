@@ -17,6 +17,7 @@ export interface CircuitBreakerConfig {
   failureThreshold: number;
   openDuration: number; // 毫秒
   halfOpenSuccessThreshold: number;
+  disabled: boolean; // 禁用自动熔断
 }
 
 // 默认配置（向后兼容）
@@ -24,6 +25,7 @@ export const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
   failureThreshold: 5,
   openDuration: 1800000, // 30 分钟
   halfOpenSuccessThreshold: 2,
+  disabled: false,
 };
 
 /**
@@ -55,6 +57,7 @@ export async function loadProviderCircuitConfig(providerId: number): Promise<Cir
           failureThreshold: parseInt(cached.failureThreshold || "5", 10),
           openDuration: parseInt(cached.openDuration || "1800000", 10),
           halfOpenSuccessThreshold: parseInt(cached.halfOpenSuccessThreshold || "2", 10),
+          disabled: cached.disabled === "true",
         };
       }
     }
@@ -74,6 +77,7 @@ export async function loadProviderCircuitConfig(providerId: number): Promise<Cir
       failureThreshold: provider.circuitBreakerFailureThreshold,
       openDuration: provider.circuitBreakerOpenDuration,
       halfOpenSuccessThreshold: provider.circuitBreakerHalfOpenSuccessThreshold,
+      disabled: provider.circuitBreakerDisabled,
     };
 
     // 保存到 Redis（异步，不阻塞）
@@ -119,6 +123,7 @@ export async function saveProviderCircuitConfig(
       failureThreshold: config.failureThreshold.toString(),
       openDuration: config.openDuration.toString(),
       halfOpenSuccessThreshold: config.halfOpenSuccessThreshold.toString(),
+      disabled: config.disabled.toString(),
     });
 
     // 设置 TTL：永久或 24 小时（根据需求调整）
@@ -184,6 +189,7 @@ export async function loadAllProvidersCircuitConfig(): Promise<void> {
         failureThreshold: provider.circuitBreakerFailureThreshold,
         openDuration: provider.circuitBreakerOpenDuration,
         halfOpenSuccessThreshold: provider.circuitBreakerHalfOpenSuccessThreshold,
+        disabled: provider.circuitBreakerDisabled,
       };
       return saveProviderCircuitConfig(provider.id, config);
     });

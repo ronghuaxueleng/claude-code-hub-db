@@ -5,6 +5,8 @@ import { isClientAbortError } from "@/app/v1/_lib/proxy/errors";
 import { getSession } from "@/lib/auth";
 import { publishProviderCacheInvalidation } from "@/lib/cache/provider-cache";
 import {
+  batchCloseCircuits,
+  batchOpenCircuits,
   batchResetCircuits,
   clearConfigCache,
   clearProviderState,
@@ -35,6 +37,7 @@ import { validateProviderUrlForConnectivity } from "@/lib/validation/provider-ur
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import {
   batchDeleteProviders as batchDeleteProvidersRepo,
+  batchUpdateProvidersCircuitBreakerDisabled,
   batchUpdateProvidersEnabled,
   createProvider,
   deleteProvider,
@@ -258,6 +261,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         circuitBreakerFailureThreshold: provider.circuitBreakerFailureThreshold,
         circuitBreakerOpenDuration: provider.circuitBreakerOpenDuration,
         circuitBreakerHalfOpenSuccessThreshold: provider.circuitBreakerHalfOpenSuccessThreshold,
+        circuitBreakerDisabled: provider.circuitBreakerDisabled,
         proxyUrl: provider.proxyUrl,
         proxyFallbackToDirect: provider.proxyFallbackToDirect,
         firstByteTimeoutStreamingMs: provider.firstByteTimeoutStreamingMs,
@@ -568,6 +572,7 @@ export async function addProvider(data: {
         failureThreshold: provider.circuitBreakerFailureThreshold,
         openDuration: provider.circuitBreakerOpenDuration,
         halfOpenSuccessThreshold: provider.circuitBreakerHalfOpenSuccessThreshold,
+        disabled: provider.circuitBreakerDisabled,
       });
       logger.debug("addProvider:config_synced_to_redis", {
         providerId: provider.id,
@@ -707,6 +712,7 @@ export async function editProvider(
           failureThreshold: provider.circuitBreakerFailureThreshold,
           openDuration: provider.circuitBreakerOpenDuration,
           halfOpenSuccessThreshold: provider.circuitBreakerHalfOpenSuccessThreshold,
+          disabled: provider.circuitBreakerDisabled,
         });
         // 清除内存缓存，强制下次读取最新配置
         clearConfigCache(providerId);
@@ -3538,6 +3544,146 @@ export async function batchResetCircuitBreakers(
   } catch (error) {
     logger.error("批量重置熔断器失败:", error);
     const message = error instanceof Error ? error.message : "批量重置熔断器失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量打开熔断器
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 打开的记录数
+ */
+export async function batchOpenCircuitBreakers(
+  providerIds: number[]
+): Promise<ActionResult<{ openCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const openCount = batchOpenCircuits(providerIds);
+
+    logger.info("批量打开熔断器成功", { providerIds, openCount });
+
+    return { ok: true, data: { openCount } };
+  } catch (error) {
+    logger.error("批量打开熔断器失败:", error);
+    const message = error instanceof Error ? error.message : "批量打开熔断器失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量关闭熔断器
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 关闭的记录数
+ */
+export async function batchCloseCircuitBreakers(
+  providerIds: number[]
+): Promise<ActionResult<{ closeCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const closeCount = batchCloseCircuits(providerIds);
+
+    logger.info("批量关闭熔断器成功", { providerIds, closeCount });
+
+    return { ok: true, data: { closeCount } };
+  } catch (error) {
+    logger.error("批量关闭熔断器失败:", error);
+    const message = error instanceof Error ? error.message : "批量关闭熔断器失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量启用自动熔断
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchEnableAutoCircuitBreaker(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const updatedCount = await batchUpdateProvidersCircuitBreakerDisabled(providerIds, false);
+
+    // 清除熔断器配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    // 广播缓存更新
+    await publishProviderCacheInvalidation();
+
+    logger.info("批量启用自动熔断成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量启用自动熔断失败:", error);
+    const message = error instanceof Error ? error.message : "批量启用自动熔断失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量禁用自动熔断
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchDisableAutoCircuitBreaker(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const updatedCount = await batchUpdateProvidersCircuitBreakerDisabled(providerIds, true);
+
+    // 清除熔断器配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    // 广播缓存更新
+    await publishProviderCacheInvalidation();
+
+    logger.info("批量禁用自动熔断成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量禁用自动熔断失败:", error);
+    const message = error instanceof Error ? error.message : "批量禁用自动熔断失败";
     return { ok: false, error: message };
   }
 }

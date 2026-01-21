@@ -4,9 +4,13 @@ import {
   AlertTriangle,
   CheckSquare,
   Loader2,
+  LockKeyhole,
   RotateCcw,
   Search,
+  ShieldCheck,
+  ShieldOff,
   Trash2,
+  Unlock,
   XSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -14,9 +18,13 @@ import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+  batchCloseCircuitBreakers,
   batchDeleteProviders,
+  batchDisableAutoCircuitBreaker,
   batchDisableProviders,
+  batchEnableAutoCircuitBreaker,
   batchEnableProviders,
+  batchOpenCircuitBreakers,
   batchResetCircuitBreakers,
 } from "@/actions/providers";
 import {
@@ -101,9 +109,20 @@ export function ProviderManager({
   const [batchDisablePending, startBatchDisable] = useTransition();
   const [batchDeletePending, startBatchDelete] = useTransition();
   const [batchResetPending, startBatchReset] = useTransition();
+  const [batchOpenCircuitPending, startBatchOpenCircuit] = useTransition();
+  const [batchCloseCircuitPending, startBatchCloseCircuit] = useTransition();
+  const [batchEnableAutoCBPending, startBatchEnableAutoCB] = useTransition();
+  const [batchDisableAutoCBPending, startBatchDisableAutoCB] = useTransition();
 
   const isBatchPending =
-    batchEnablePending || batchDisablePending || batchDeletePending || batchResetPending;
+    batchEnablePending ||
+    batchDisablePending ||
+    batchDeletePending ||
+    batchResetPending ||
+    batchOpenCircuitPending ||
+    batchCloseCircuitPending ||
+    batchEnableAutoCBPending ||
+    batchDisableAutoCBPending;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -240,6 +259,102 @@ export function ProviderManager({
     });
   };
 
+  const handleBatchOpenCircuitBreakers = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchOpenCircuit(async () => {
+      try {
+        const result = await batchOpenCircuitBreakers(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("openCircuitSuccess"), {
+            description: tBatch("openCircuitSuccessDesc", { count: result.data.openCount }),
+          });
+          setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("openCircuitFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch open circuit breakers failed:", error);
+        toast.error(tBatch("openCircuitFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchCloseCircuitBreakers = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchCloseCircuit(async () => {
+      try {
+        const result = await batchCloseCircuitBreakers(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("closeCircuitSuccess"), {
+            description: tBatch("closeCircuitSuccessDesc", { count: result.data.closeCount }),
+          });
+          setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("closeCircuitFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch close circuit breakers failed:", error);
+        toast.error(tBatch("closeCircuitFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchEnableAutoCircuitBreaker = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchEnableAutoCB(async () => {
+      try {
+        const result = await batchEnableAutoCircuitBreaker(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("enableAutoCircuitSuccess"), {
+            description: tBatch("enableAutoCircuitSuccessDesc", { count: result.data.updatedCount }),
+          });
+          setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("enableAutoCircuitFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch enable auto circuit breaker failed:", error);
+        toast.error(tBatch("enableAutoCircuitFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
+  const handleBatchDisableAutoCircuitBreaker = () => {
+    if (selectedIds.size === 0) return;
+
+    startBatchDisableAutoCB(async () => {
+      try {
+        const result = await batchDisableAutoCircuitBreaker(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(tBatch("disableAutoCircuitSuccess"), {
+            description: tBatch("disableAutoCircuitSuccessDesc", { count: result.data.updatedCount }),
+          });
+          setSelectedIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("disableAutoCircuitFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch disable auto circuit breaker failed:", error);
+        toast.error(tBatch("disableAutoCircuitFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
   // Extract unique groups from all providers
   const allGroups = useMemo(() => {
     const groups = new Set<string>();
@@ -355,6 +470,21 @@ export function ProviderManager({
     healthStatus,
   ]);
 
+  // 计算选中服务商的自动熔断状态
+  const selectedAutoCircuitStatus = useMemo(() => {
+    const selectedProviders = providers.filter((p) => selectedIds.has(p.id));
+    const disabledCount = selectedProviders.filter((p) => p.circuitBreakerDisabled).length;
+    const totalCount = selectedProviders.length;
+
+    // 如果大部分（>50%）是禁用的，显示"启用"按钮
+    // 否则显示"禁用"按钮
+    return {
+      shouldEnable: disabledCount > totalCount / 2,
+      disabledCount,
+      totalCount,
+    };
+  }, [providers, selectedIds]);
+
   return (
     <div className="space-y-4">
       {addDialogSlot ? <div className="flex justify-end">{addDialogSlot}</div> : null}
@@ -395,6 +525,29 @@ export function ProviderManager({
           >
             <RotateCcw className="h-4 w-4" />
             {tBatch("resetCircuit")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={
+              selectedAutoCircuitStatus.shouldEnable
+                ? handleBatchEnableAutoCircuitBreaker
+                : handleBatchDisableAutoCircuitBreaker
+            }
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            {selectedAutoCircuitStatus.shouldEnable ? (
+              <>
+                <ShieldCheck className="h-4 w-4" />
+                {tBatch("enableAutoCircuit")}
+              </>
+            ) : (
+              <>
+                <ShieldOff className="h-4 w-4" />
+                {tBatch("disableAutoCircuit")}
+              </>
+            )}
           </Button>
           <Button
             variant="destructive"

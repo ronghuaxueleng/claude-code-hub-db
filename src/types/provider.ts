@@ -100,6 +100,7 @@ export interface Provider {
   circuitBreakerFailureThreshold: number;
   circuitBreakerOpenDuration: number; // 毫秒
   circuitBreakerHalfOpenSuccessThreshold: number;
+  circuitBreakerDisabled: boolean; // 禁用自动熔断
 
   // 代理配置（支持 HTTP/HTTPS/SOCKS5）
   proxyUrl: string | null;
@@ -182,6 +183,7 @@ export interface ProviderDisplay {
   circuitBreakerFailureThreshold: number;
   circuitBreakerOpenDuration: number; // 毫秒
   circuitBreakerHalfOpenSuccessThreshold: number;
+  circuitBreakerDisabled: boolean; // 禁用自动熔断
   // 代理配置
   proxyUrl: string | null;
   proxyFallbackToDirect: boolean;

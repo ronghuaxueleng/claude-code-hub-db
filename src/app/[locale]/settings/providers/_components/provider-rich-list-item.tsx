@@ -8,6 +8,7 @@ import {
   Globe,
   Key,
   RotateCcw,
+  ShieldOff,
   Trash,
   XCircle,
 } from "lucide-react";
@@ -437,6 +438,14 @@ export function ProviderRichListItem({
               <Badge variant="destructive" className="flex items-center gap-1 flex-shrink-0">
                 <AlertTriangle className="h-3 w-3" />
                 {tList("circuitBroken")}
+              </Badge>
+            )}
+
+            {/* 禁用自动熔断标志 */}
+            {provider.circuitBreakerDisabled && (
+              <Badge variant="secondary" className="flex items-center gap-1 flex-shrink-0">
+                <ShieldOff className="h-3 w-3" />
+                {tList("autoCircuitDisabled")}
               </Badge>
             )}
           </div>

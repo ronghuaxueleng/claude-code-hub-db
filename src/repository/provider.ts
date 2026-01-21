@@ -156,6 +156,7 @@ export async function findProviderList(
       circuitBreakerFailureThreshold: providers.circuitBreakerFailureThreshold,
       circuitBreakerOpenDuration: providers.circuitBreakerOpenDuration,
       circuitBreakerHalfOpenSuccessThreshold: providers.circuitBreakerHalfOpenSuccessThreshold,
+      circuitBreakerDisabled: providers.circuitBreakerDisabled,
       proxyUrl: providers.proxyUrl,
       proxyFallbackToDirect: providers.proxyFallbackToDirect,
       firstByteTimeoutStreamingMs: providers.firstByteTimeoutStreamingMs,
@@ -231,6 +232,7 @@ export async function findAllProvidersFresh(): Promise<Provider[]> {
       circuitBreakerFailureThreshold: providers.circuitBreakerFailureThreshold,
       circuitBreakerOpenDuration: providers.circuitBreakerOpenDuration,
       circuitBreakerHalfOpenSuccessThreshold: providers.circuitBreakerHalfOpenSuccessThreshold,
+      circuitBreakerDisabled: providers.circuitBreakerDisabled,
       proxyUrl: providers.proxyUrl,
       proxyFallbackToDirect: providers.proxyFallbackToDirect,
       firstByteTimeoutStreamingMs: providers.firstByteTimeoutStreamingMs,
@@ -310,6 +312,7 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       circuitBreakerFailureThreshold: providers.circuitBreakerFailureThreshold,
       circuitBreakerOpenDuration: providers.circuitBreakerOpenDuration,
       circuitBreakerHalfOpenSuccessThreshold: providers.circuitBreakerHalfOpenSuccessThreshold,
+      circuitBreakerDisabled: providers.circuitBreakerDisabled,
       proxyUrl: providers.proxyUrl,
       proxyFallbackToDirect: providers.proxyFallbackToDirect,
       firstByteTimeoutStreamingMs: providers.firstByteTimeoutStreamingMs,
@@ -469,6 +472,7 @@ export async function updateProvider(
       circuitBreakerFailureThreshold: providers.circuitBreakerFailureThreshold,
       circuitBreakerOpenDuration: providers.circuitBreakerOpenDuration,
       circuitBreakerHalfOpenSuccessThreshold: providers.circuitBreakerHalfOpenSuccessThreshold,
+      circuitBreakerDisabled: providers.circuitBreakerDisabled,
       proxyUrl: providers.proxyUrl,
       proxyFallbackToDirect: providers.proxyFallbackToDirect,
       firstByteTimeoutStreamingMs: providers.firstByteTimeoutStreamingMs,
@@ -612,6 +616,30 @@ export async function batchUpdateProvidersEnabled(
   const result = await db
     .update(providers)
     .set({ isEnabled, updatedAt: new Date() })
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
+    .returning({ id: providers.id });
+
+  return result.length;
+}
+
+/**
+ * 批量更新供应商的自动熔断禁用状态
+ *
+ * @param ids - 供应商 ID 数组
+ * @param disabled - 是否禁用自动熔断
+ * @returns 更新的记录数
+ */
+export async function batchUpdateProvidersCircuitBreakerDisabled(
+  ids: number[],
+  disabled: boolean
+): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+
+  const result = await db
+    .update(providers)
+    .set({ circuitBreakerDisabled: disabled, updatedAt: new Date() })
     .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
     .returning({ id: providers.id });
 

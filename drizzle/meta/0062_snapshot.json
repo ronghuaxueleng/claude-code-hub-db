@@ -1,6 +1,6 @@
 {
-  "id": "abaee052-64c1-4930-ad03-ee28d89c5e8b",
-  "prevId": "2b60da48-7f74-4630-9702-86c16c783d71",
+  "id": "e7fa3750-a942-4d85-abee-23dcd58bc575",
+  "prevId": "abaee052-64c1-4930-ad03-ee28d89c5e8b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -467,7 +467,7 @@
         },
         "url": {
           "name": "url",
-          "type": "text",
+          "type": "varchar(1024)",
           "primaryKey": false,
           "notNull": true
         },
@@ -504,19 +504,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "session_id": {
-          "name": "session_id",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'initial'"
         },
         "last_success_at": {
           "name": "last_success_at",
@@ -558,13 +545,13 @@
         },
         "model": {
           "name": "model",
-          "type": "varchar(200)",
+          "type": "varchar(128)",
           "primaryKey": false,
           "notNull": false
         },
         "endpoint": {
           "name": "endpoint",
-          "type": "varchar(200)",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false
         },
@@ -589,6 +576,21 @@
           "columns": [
             {
               "expression": "is_enabled",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_heartbeat_url_configs_provider": {
+          "name": "idx_heartbeat_url_configs_provider",
+          "columns": [
+            {
+              "expression": "provider_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1801,6 +1803,13 @@
           "primaryKey": false,
           "notNull": false,
           "default": 2
+        },
+        "circuit_breaker_disabled": {
+          "name": "circuit_breaker_disabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "proxy_url": {
           "name": "proxy_url",

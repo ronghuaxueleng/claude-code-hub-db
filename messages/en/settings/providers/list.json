@@ -1,6 +1,7 @@
 {
   "cancelButton": "Cancel",
   "circuitBroken": "Circuit Broken",
+  "autoCircuitDisabled": "Auto Circuit Breaker Disabled",
   "clickToCopyUrl": "Click to copy URL",
   "clipboardUnavailable": "Clipboard access is blocked in this environment. Select and copy the key manually.",
   "confirmDeleteMessage": "Are you sure you want to delete provider \"{name}\"? This action cannot be undone.",
