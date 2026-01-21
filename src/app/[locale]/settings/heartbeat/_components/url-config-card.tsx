@@ -48,7 +48,10 @@ export function UrlConfigCard({
     if (!config.lastSuccessAt && !config.lastErrorAt) {
       return { label: t("form.status.idle"), variant: "secondary" as const };
     }
-    if (!config.lastErrorAt || (config.lastSuccessAt && config.lastSuccessAt > config.lastErrorAt)) {
+    if (
+      !config.lastErrorAt ||
+      (config.lastSuccessAt && config.lastSuccessAt > config.lastErrorAt)
+    ) {
       return { label: t("form.status.healthy"), variant: "default" as const };
     }
     return { label: t("form.status.error"), variant: "destructive" as const };
