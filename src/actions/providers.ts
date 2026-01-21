@@ -3541,3 +3541,85 @@ export async function batchResetCircuitBreakers(
     return { ok: false, error: message };
   }
 }
+
+/**
+ * 批量设置供应商的模型重定向配置
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @param modelRedirects - 模型重定向配置
+ * @returns 更新的记录数
+ */
+export async function batchSetModelRedirects(
+  providerIds: number[],
+  modelRedirects: Record<string, string>
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const { batchUpdateProvidersModelRedirects } = await import("@/repository/provider");
+    const updatedCount = await batchUpdateProvidersModelRedirects(providerIds, modelRedirects);
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量设置模型重定向成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量设置模型重定向失败:", error);
+    const message = error instanceof Error ? error.message : "批量设置模型重定向失败";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * 批量清除供应商的模型重定向配置
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @returns 更新的记录数
+ */
+export async function batchClearModelRedirects(
+  providerIds: number[]
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "请选择至少一个供应商" };
+    }
+
+    const { batchUpdateProvidersModelRedirects } = await import("@/repository/provider");
+    const updatedCount = await batchUpdateProvidersModelRedirects(providerIds, {});
+
+    // 广播缓存更新（跨实例即时生效）
+    await publishProviderCacheInvalidation();
+
+    // 清除相关配置缓存
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("批量清除模型重定向成功", { providerIds, updatedCount });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("批量清除模型重定向失败:", error);
+    const message = error instanceof Error ? error.message : "批量清除模型重定向失败";
+    return { ok: false, error: message };
+  }
+}

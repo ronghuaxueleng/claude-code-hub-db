@@ -2,33 +2,124 @@
   "title": "Heartbeat Configuration",
   "description": "Configure heartbeat requests sent to upstream providers to keep their caches alive.",
   "section": {
-    "config": {
-      "title": "Heartbeat Configuration",
-      "description": "The system automatically saves successful requests as curl commands. You can select one for heartbeat sending."
+    "global": {
+      "title": "Global Settings",
+      "description": "Master switch for heartbeat functionality."
+    },
+    "curlHistory": {
+      "title": "Curl History",
+      "description": "View historical successful requests, can be imported as heartbeat configuration.",
+      "empty": "No history yet"
+    },
+    "urlConfigs": {
+      "title": "Heartbeat URL Configuration",
+      "description": "Configure multiple URLs, each with independent heartbeat interval.",
+      "empty": "No configurations yet, click the button below to create",
+      "createButton": "Create Configuration"
     }
   },
   "form": {
-    "description": "The heartbeat feature periodically sends the selected curl command to keep upstream token caches alive.",
     "enabled": {
       "label": "Enable Heartbeat",
-      "description": "When enabled, the system will periodically send the selected curl command as heartbeat."
+      "description": "When enabled, the system will periodically send heartbeat requests to configured URLs."
+    },
+    "name": {
+      "label": "Configuration Name",
+      "placeholder": "e.g.: Anthropic Main Node",
+      "description": "Give this configuration an easily identifiable name"
+    },
+    "url": {
+      "label": "URL Address",
+      "placeholder": "https://api.anthropic.com/v1/messages",
+      "description": "Target address for heartbeat requests"
+    },
+    "method": {
+      "label": "HTTP Method",
+      "description": "Request method"
+    },
+    "headers": {
+      "label": "Request Headers",
+      "placeholder": "{\n  \"authorization\": \"Bearer sk-xxx\",\n  \"anthropic-version\": \"2023-06-01\"\n}",
+      "description": "Request headers in JSON format"
+    },
+    "body": {
+      "label": "Request Body (Optional)",
+      "placeholder": "{\n  \"model\": \"claude-3-5-sonnet-20241022\",\n  \"messages\": [...]\n}",
+      "description": "Request JSON content"
     },
     "intervalSeconds": {
       "label": "Heartbeat Interval (seconds)",
-      "description": "Interval between heartbeat requests, range: 10-3600 seconds."
+      "description": "Interval between heartbeat requests, range: 10-3600 seconds"
     },
-    "savedCurls": {
-      "label": "Saved Requests",
-      "description": "Select a successful request for heartbeat sending (up to 20 saved)."
+    "isEnabled": {
+      "label": "Enable this configuration",
+      "description": "When disabled, heartbeat for this configuration will not be sent"
     },
-    "modelFilter": {
-      "label": "Filter by Model",
-      "all": "All Models"
+    "status": {
+      "idle": "Idle",
+      "healthy": "Healthy",
+      "error": "Error"
     },
-    "intervalOutOfRange": "Heartbeat interval must be between 10-3600 seconds",
-    "noCurlSelected": "Please select a curl command for heartbeat",
-    "noCurls": "No saved requests yet. Please send a successful request first.",
-    "saveFailed": "Save failed",
-    "saveSuccess": "Saved successfully"
+    "stats": {
+      "title": "Statistics",
+      "success": "Success",
+      "failure": "Failure",
+      "successCount": "Success Count",
+      "failureCount": "Failure Count",
+      "lastSuccess": "Last Success",
+      "lastError": "Last Error",
+      "never": "Never",
+      "errorMessage": "Error Message"
+    },
+    "actions": {
+      "import": "Import",
+      "edit": "Edit",
+      "delete": "Delete",
+      "copy": "Copy",
+      "copyLabel": "Copy",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirmDelete": "Confirm Delete?",
+      "deleteConfirmMessage": "This action cannot be undone. Are you sure you want to delete this configuration?"
+    },
+    "validation": {
+      "nameRequired": "Configuration name cannot be empty",
+      "urlRequired": "URL cannot be empty",
+      "urlInvalid": "Invalid URL format",
+      "intervalsOutOfRange": "Heartbeat interval must be between 10-3600 seconds",
+      "headersInvalid": "Request headers must be valid JSON format"
+    },
+    "toast": {
+      "createSuccess": "Configuration created successfully",
+      "createFailed": "Failed to create configuration",
+      "updateSuccess": "Configuration updated successfully",
+      "updateFailed": "Failed to update configuration",
+      "deleteSuccess": "Configuration deleted successfully",
+      "deleteFailed": "Failed to delete configuration",
+      "importSuccess": "Import successful",
+      "importFailed": "Import failed"
+    },
+    "enabledStatus": "Enabled",
+    "disabledStatus": "Disabled",
+    "noConfigs": "No configurations yet",
+    "createButton": "Create Configuration",
+    "createDialogTitle": "Create Heartbeat Configuration",
+    "editDialogTitle": "Edit Heartbeat Configuration",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "deleteButton": "Delete",
+    "deleteConfirm": "Confirm Delete",
+    "deleteSuccess": "Deleted successfully",
+    "deleteFailed": "Failed to delete",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Failed to save",
+    "invalidHeaders": "Invalid JSON format"
+  },
+  "curl": {
+    "title": "Curl Command",
+    "provider": "Provider",
+    "endpoint": "Endpoint",
+    "model": "Model",
+    "timestamp": "Timestamp"
   }
 }

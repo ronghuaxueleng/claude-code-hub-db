@@ -2,33 +2,124 @@
   "title": "Настройка Heartbeat",
   "description": "Настройте heartbeat-запросы к вышестоящим провайдерам для поддержания их кеша.",
   "section": {
-    "config": {
-      "title": "Настройка Heartbeat",
-      "description": "Система автоматически сохраняет успешные запросы как curl-команды. Вы можете выбрать одну для отправки heartbeat."
+    "global": {
+      "title": "Глобальные настройки",
+      "description": "Главный переключатель функции heartbeat."
+    },
+    "curlHistory": {
+      "title": "История Curl",
+      "description": "Просмотр истории успешных запросов, можно импортировать как конфигурацию heartbeat.",
+      "empty": "История пуста"
+    },
+    "urlConfigs": {
+      "title": "Конфигурация URL Heartbeat",
+      "description": "Настройте несколько URL, каждый с независимым интервалом heartbeat.",
+      "empty": "Конфигураций пока нет, нажмите кнопку ниже для создания",
+      "createButton": "Создать конфигурацию"
     }
   },
   "form": {
-    "description": "Функция heartbeat периодически отправляет выбранную curl-команду для поддержания кеша токенов.",
     "enabled": {
       "label": "Включить Heartbeat",
-      "description": "При включении система будет периодически отправлять выбранную curl-команду как heartbeat."
+      "description": "При включении система будет периодически отправлять heartbeat-запросы на настроенные URL."
+    },
+    "name": {
+      "label": "Имя конфигурации",
+      "placeholder": "например: Anthropic Основной узел",
+      "description": "Дайте этой конфигурации легко узнаваемое имя"
+    },
+    "url": {
+      "label": "URL адрес",
+      "placeholder": "https://api.anthropic.com/v1/messages",
+      "description": "Целевой адрес для heartbeat-запросов"
+    },
+    "method": {
+      "label": "HTTP метод",
+      "description": "Метод запроса"
+    },
+    "headers": {
+      "label": "Заголовки запроса",
+      "placeholder": "{\n  \"authorization\": \"Bearer sk-xxx\",\n  \"anthropic-version\": \"2023-06-01\"\n}",
+      "description": "Заголовки запроса в формате JSON"
+    },
+    "body": {
+      "label": "Тело запроса (необязательно)",
+      "placeholder": "{\n  \"model\": \"claude-3-5-sonnet-20241022\",\n  \"messages\": [...]\n}",
+      "description": "JSON содержимое запроса"
     },
     "intervalSeconds": {
       "label": "Интервал Heartbeat (секунды)",
-      "description": "Интервал между heartbeat-запросами, диапазон: 10-3600 секунд."
+      "description": "Интервал между heartbeat-запросами, диапазон: 10-3600 секунд"
     },
-    "savedCurls": {
-      "label": "Сохраненные запросы",
-      "description": "Выберите успешный запрос для отправки heartbeat (сохраняется до 20)."
+    "isEnabled": {
+      "label": "Включить эту конфигурацию",
+      "description": "При отключении heartbeat для этой конфигурации не будет отправляться"
     },
-    "modelFilter": {
-      "label": "Фильтр по модели",
-      "all": "Все модели"
+    "status": {
+      "idle": "Простой",
+      "healthy": "Здоров",
+      "error": "Ошибка"
     },
-    "intervalOutOfRange": "Интервал heartbeat должен быть между 10-3600 секундами",
-    "noCurlSelected": "Пожалуйста, выберите curl-команду для heartbeat",
-    "noCurls": "Нет сохраненных запросов. Пожалуйста, сначала отправьте успешный запрос.",
+    "stats": {
+      "title": "Статистика",
+      "success": "Успех",
+      "failure": "Неудача",
+      "successCount": "Количество успехов",
+      "failureCount": "Количество неудач",
+      "lastSuccess": "Последний успех",
+      "lastError": "Последняя ошибка",
+      "never": "Никогда",
+      "errorMessage": "Сообщение об ошибке"
+    },
+    "actions": {
+      "import": "Импорт",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "copy": "Копировать",
+      "copyLabel": "Копия",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "confirmDelete": "Подтвердить удаление?",
+      "deleteConfirmMessage": "Это действие нельзя отменить. Вы уверены, что хотите удалить эту конфигурацию?"
+    },
+    "validation": {
+      "nameRequired": "Имя конфигурации не может быть пустым",
+      "urlRequired": "URL не может быть пустым",
+      "urlInvalid": "Неверный формат URL",
+      "intervalsOutOfRange": "Интервал heartbeat должен быть между 10-3600 секундами",
+      "headersInvalid": "Заголовки запроса должны быть в правильном формате JSON"
+    },
+    "toast": {
+      "createSuccess": "Конфигурация успешно создана",
+      "createFailed": "Не удалось создать конфигурацию",
+      "updateSuccess": "Конфигурация успешно обновлена",
+      "updateFailed": "Не удалось обновить конфигурацию",
+      "deleteSuccess": "Конфигурация успешно удалена",
+      "deleteFailed": "Не удалось удалить конфигурацию",
+      "importSuccess": "Импорт успешен",
+      "importFailed": "Импорт не удался"
+    },
+    "enabledStatus": "Включено",
+    "disabledStatus": "Отключено",
+    "noConfigs": "Конфигураций пока нет",
+    "createButton": "Создать конфигурацию",
+    "createDialogTitle": "Создать конфигурацию Heartbeat",
+    "editDialogTitle": "Редактировать конфигурацию Heartbeat",
+    "saveButton": "Сохранить",
+    "cancelButton": "Отмена",
+    "deleteButton": "Удалить",
+    "deleteConfirm": "Подтвердить удаление",
+    "deleteSuccess": "Успешно удалено",
+    "deleteFailed": "Не удалось удалить",
+    "saveSuccess": "Успешно сохранено",
     "saveFailed": "Не удалось сохранить",
-    "saveSuccess": "Успешно сохранено"
+    "invalidHeaders": "Неверный формат JSON"
+  },
+  "curl": {
+    "title": "Curl команда",
+    "provider": "Провайдер",
+    "endpoint": "Конечная точка",
+    "model": "Модель",
+    "timestamp": "Временная метка"
   }
 }

@@ -1,34 +1,125 @@
 {
   "title": "心跳配置",
-  "description": "配置向上游供應商發送的心跳請求，保持供應商緩存不過期。",
+  "description": "配置向上游供應商發送的心跳請求，保持供應商緩存活躍。",
   "section": {
-    "config": {
-      "title": "心跳配置",
-      "description": "系統會自動保存成功的請求為curl命令，你可以選擇一個用於心跳發送。"
+    "global": {
+      "title": "全局設置",
+      "description": "控制心跳功能的總開關。"
+    },
+    "curlHistory": {
+      "title": "Curl 歷史記錄",
+      "description": "查看歷史成功請求，可以導入為心跳配置。",
+      "empty": "暫無歷史記錄"
+    },
+    "urlConfigs": {
+      "title": "心跳URL配置",
+      "description": "配置多個URL地址，每個配置可獨立設置心跳間隔。",
+      "empty": "暫無配置，點擊下方按鈕新建",
+      "createButton": "新建配置"
     }
   },
   "form": {
-    "description": "心跳功能會定期發送選中的curl命令，保持上游Token緩存不過期。",
     "enabled": {
       "label": "啟用心跳",
-      "description": "開啟後，系統將定期發送選中的curl命令作為心跳。"
+      "description": "開啟後，系統將定期向配置的URL發送心跳請求。"
+    },
+    "name": {
+      "label": "配置名稱",
+      "placeholder": "例如：Anthropic 主節點",
+      "description": "為此配置起一個易於識別的名稱"
+    },
+    "url": {
+      "label": "URL地址",
+      "placeholder": "https://api.anthropic.com/v1/messages",
+      "description": "心跳請求的目標地址"
+    },
+    "method": {
+      "label": "HTTP方法",
+      "description": "請求方法"
+    },
+    "headers": {
+      "label": "請求頭",
+      "placeholder": "{\n  \"authorization\": \"Bearer sk-xxx\",\n  \"anthropic-version\": \"2023-06-01\"\n}",
+      "description": "JSON格式的請求頭"
+    },
+    "body": {
+      "label": "請求體（可選）",
+      "placeholder": "{\n  \"model\": \"claude-3-5-sonnet-20241022\",\n  \"messages\": [...]\n}",
+      "description": "請求的JSON內容"
     },
     "intervalSeconds": {
       "label": "心跳間隔（秒）",
-      "description": "心跳請求的發送間隔時間，範圍 10-3600 秒。"
+      "description": "心跳請求的發送間隔時間，範圍 10-3600 秒"
     },
-    "savedCurls": {
-      "label": "保存的請求",
-      "description": "選擇一個成功的請求用於心跳發送（最多保留20條）。"
+    "isEnabled": {
+      "label": "啟用此配置",
+      "description": "關閉後不會發送此配置的心跳"
     },
-    "modelFilter": {
-      "label": "篩選模型",
-      "all": "全部模型"
+    "status": {
+      "idle": "空閒",
+      "healthy": "健康",
+      "error": "異常"
     },
-    "intervalOutOfRange": "心跳間隔必須在 10-3600 秒之間",
-    "noCurlSelected": "請選擇一個curl命令用於心跳",
-    "noCurls": "暫無保存的請求，請先發送一次成功的請求。",
+    "stats": {
+      "title": "統計信息",
+      "success": "成功",
+      "failure": "失敗",
+      "successCount": "成功次數",
+      "failureCount": "失敗次數",
+      "lastSuccess": "最後成功",
+      "lastError": "最後失敗",
+      "never": "從未",
+      "errorMessage": "錯誤信息"
+    },
+    "actions": {
+      "import": "導入",
+      "edit": "編輯",
+      "delete": "刪除",
+      "copy": "複製",
+      "copyLabel": "副本",
+      "save": "保存",
+      "cancel": "取消",
+      "confirmDelete": "確認刪除？",
+      "deleteConfirmMessage": "刪除後無法恢復，確定要刪除此配置嗎？"
+    },
+    "validation": {
+      "nameRequired": "配置名稱不能為空",
+      "urlRequired": "URL不能為空",
+      "urlInvalid": "URL格式不正確",
+      "intervalsOutOfRange": "心跳間隔必須在 10-3600 秒之間",
+      "headersInvalid": "請求頭必須是有效的JSON格式"
+    },
+    "toast": {
+      "createSuccess": "配置創建成功",
+      "createFailed": "配置創建失敗",
+      "updateSuccess": "配置更新成功",
+      "updateFailed": "配置更新失敗",
+      "deleteSuccess": "配置刪除成功",
+      "deleteFailed": "配置刪除失敗",
+      "importSuccess": "導入成功",
+      "importFailed": "導入失敗"
+    },
+    "enabledStatus": "已啟用",
+    "disabledStatus": "已禁用",
+    "noConfigs": "暫無配置",
+    "createButton": "新建配置",
+    "createDialogTitle": "新建心跳配置",
+    "editDialogTitle": "編輯心跳配置",
+    "saveButton": "保存",
+    "cancelButton": "取消",
+    "deleteButton": "刪除",
+    "deleteConfirm": "確認刪除",
+    "deleteSuccess": "刪除成功",
+    "deleteFailed": "刪除失敗",
+    "saveSuccess": "保存成功",
     "saveFailed": "保存失敗",
-    "saveSuccess": "保存成功"
+    "invalidHeaders": "無效的JSON格式"
+  },
+  "curl": {
+    "title": "Curl命令",
+    "provider": "供應商",
+    "endpoint": "端點",
+    "model": "模型",
+    "timestamp": "時間"
   }
 }

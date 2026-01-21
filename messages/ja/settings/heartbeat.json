@@ -2,33 +2,124 @@
   "title": "ハートビート設定",
   "description": "上流プロバイダーに送信するハートビートリクエストを設定し、キャッシュを維持します。",
   "section": {
-    "config": {
-      "title": "ハートビート設定",
-      "description": "システムは成功したリクエストをcurlコマンドとして自動保存します。ハートビート送信用に1つ選択できます。"
+    "global": {
+      "title": "グローバル設定",
+      "description": "ハートビート機能のマスタースイッチ。"
+    },
+    "curlHistory": {
+      "title": "Curl履歴",
+      "description": "過去の成功したリクエストを表示し、ハートビート設定としてインポートできます。",
+      "empty": "履歴がありません"
+    },
+    "urlConfigs": {
+      "title": "ハートビートURL設定",
+      "description": "複数のURLを設定し、それぞれ独立したハートビート間隔を設定できます。",
+      "empty": "設定がありません。下のボタンをクリックして作成してください",
+      "createButton": "設定を作成"
     }
   },
   "form": {
-    "description": "ハートビート機能は、選択したcurlコマンドを定期的に送信し、上流トークンキャッシュを維持します。",
     "enabled": {
       "label": "ハートビートを有効化",
-      "description": "有効にすると、選択したcurlコマンドをハートビートとして定期的に送信します。"
+      "description": "有効にすると、設定されたURLに定期的にハートビートリクエストを送信します。"
+    },
+    "name": {
+      "label": "設定名",
+      "placeholder": "例：Anthropic メインノード",
+      "description": "この設定に識別しやすい名前を付けます"
+    },
+    "url": {
+      "label": "URLアドレス",
+      "placeholder": "https://api.anthropic.com/v1/messages",
+      "description": "ハートビートリクエストの送信先アドレス"
+    },
+    "method": {
+      "label": "HTTPメソッド",
+      "description": "リクエストメソッド"
+    },
+    "headers": {
+      "label": "リクエストヘッダー",
+      "placeholder": "{\n  \"authorization\": \"Bearer sk-xxx\",\n  \"anthropic-version\": \"2023-06-01\"\n}",
+      "description": "JSON形式のリクエストヘッダー"
+    },
+    "body": {
+      "label": "リクエストボディ（オプション）",
+      "placeholder": "{\n  \"model\": \"claude-3-5-sonnet-20241022\",\n  \"messages\": [...]\n}",
+      "description": "リクエストのJSON内容"
     },
     "intervalSeconds": {
       "label": "ハートビート間隔（秒）",
-      "description": "ハートビートリクエストの送信間隔、範囲: 10-3600秒。"
+      "description": "ハートビートリクエストの送信間隔、範囲：10-3600秒"
     },
-    "savedCurls": {
-      "label": "保存されたリクエスト",
-      "description": "ハートビート送信用の成功したリクエストを選択（最大20件保存）。"
+    "isEnabled": {
+      "label": "この設定を有効化",
+      "description": "無効にすると、この設定のハートビートは送信されません"
     },
-    "modelFilter": {
-      "label": "モデルでフィルター",
-      "all": "すべてのモデル"
+    "status": {
+      "idle": "アイドル",
+      "healthy": "正常",
+      "error": "エラー"
     },
-    "intervalOutOfRange": "ハートビート間隔は10〜3600秒の範囲内である必要があります",
-    "noCurlSelected": "ハートビート用のcurlコマンドを選択してください",
-    "noCurls": "保存されたリクエストがありません。まず成功したリクエストを送信してください。",
+    "stats": {
+      "title": "統計情報",
+      "success": "成功",
+      "failure": "失敗",
+      "successCount": "成功回数",
+      "failureCount": "失敗回数",
+      "lastSuccess": "最後の成功",
+      "lastError": "最後のエラー",
+      "never": "なし",
+      "errorMessage": "エラーメッセージ"
+    },
+    "actions": {
+      "import": "インポート",
+      "edit": "編集",
+      "delete": "削除",
+      "copy": "コピー",
+      "copyLabel": "コピー",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "confirmDelete": "削除を確認しますか？",
+      "deleteConfirmMessage": "この操作は元に戻せません。この設定を削除してもよろしいですか？"
+    },
+    "validation": {
+      "nameRequired": "設定名を入力してください",
+      "urlRequired": "URLを入力してください",
+      "urlInvalid": "無効なURL形式です",
+      "intervalsOutOfRange": "ハートビート間隔は10〜3600秒の範囲内である必要があります",
+      "headersInvalid": "リクエストヘッダーは有効なJSON形式である必要があります"
+    },
+    "toast": {
+      "createSuccess": "設定が正常に作成されました",
+      "createFailed": "設定の作成に失敗しました",
+      "updateSuccess": "設定が正常に更新されました",
+      "updateFailed": "設定の更新に失敗しました",
+      "deleteSuccess": "設定が正常に削除されました",
+      "deleteFailed": "設定の削除に失敗しました",
+      "importSuccess": "インポートに成功しました",
+      "importFailed": "インポートに失敗しました"
+    },
+    "enabledStatus": "有効",
+    "disabledStatus": "無効",
+    "noConfigs": "設定がありません",
+    "createButton": "設定を作成",
+    "createDialogTitle": "ハートビート設定を作成",
+    "editDialogTitle": "ハートビート設定を編集",
+    "saveButton": "保存",
+    "cancelButton": "キャンセル",
+    "deleteButton": "削除",
+    "deleteConfirm": "削除を確認",
+    "deleteSuccess": "正常に削除されました",
+    "deleteFailed": "削除に失敗しました",
+    "saveSuccess": "正常に保存されました",
     "saveFailed": "保存に失敗しました",
-    "saveSuccess": "保存に成功しました"
+    "invalidHeaders": "無効なJSON形式"
+  },
+  "curl": {
+    "title": "Curlコマンド",
+    "provider": "プロバイダー",
+    "endpoint": "エンドポイント",
+    "model": "モデル",
+    "timestamp": "タイムスタンプ"
   }
 }

@@ -55,6 +55,11 @@
       "label": "启用此配置",
       "description": "关闭后不会发送此配置的心跳"
     },
+    "status": {
+      "idle": "空闲",
+      "healthy": "健康",
+      "error": "异常"
+    },
     "stats": {
       "title": "统计信息",
       "successCount": "成功次数",
@@ -68,6 +73,8 @@
       "import": "导入",
       "edit": "编辑",
       "delete": "删除",
+      "copy": "复制",
+      "copyLabel": "副本",
       "save": "保存",
       "cancel": "取消",
       "confirmDelete": "确认删除？",

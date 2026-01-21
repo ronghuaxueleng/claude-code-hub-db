@@ -619,6 +619,30 @@ export async function batchUpdateProvidersEnabled(
 }
 
 /**
+ * 批量更新供应商的模型重定向配置
+ *
+ * @param ids - 供应商 ID 数组
+ * @param modelRedirects - 模型重定向配置
+ * @returns 更新的记录数
+ */
+export async function batchUpdateProvidersModelRedirects(
+  ids: number[],
+  modelRedirects: Record<string, string>
+): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+
+  const result = await db
+    .update(providers)
+    .set({ modelRedirects, updatedAt: new Date() })
+    .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
+    .returning({ id: providers.id });
+
+  return result.length;
+}
+
+/**
  * 批量删除供应商（软删除）
  *
  * @param ids - 供应商 ID 数组
