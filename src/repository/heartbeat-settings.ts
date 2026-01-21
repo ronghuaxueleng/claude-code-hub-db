@@ -89,17 +89,21 @@ export async function updateHeartbeatSettings(
   input: UpdateHeartbeatSettingsInput
 ): Promise<HeartbeatSettings> {
   try {
-    const [updated] = await db
-      .update(heartbeatSettings)
-      .set({
-        ...input,
-        updatedAt: new Date(),
-      })
-      .where(eq(heartbeatSettings.id, 1))
-      .returning();
+    // 先获取当前记录
+    const [current] = await db.select().from(heartbeatSettings).limit(1);
 
-    if (updated) {
-      logger.info("Heartbeat settings updated", { input });
+    if (current) {
+      // 更新现有记录
+      const [updated] = await db
+        .update(heartbeatSettings)
+        .set({
+          ...input,
+          updatedAt: new Date(),
+        })
+        .where(eq(heartbeatSettings.id, current.id))
+        .returning();
+
+      logger.info("Heartbeat settings updated", { input, id: current.id });
       return {
         ...updated,
         savedCurls: [],
@@ -108,9 +112,11 @@ export async function updateHeartbeatSettings(
       };
     }
 
+    // 如果没有记录，创建新记录（指定 id=1）
     const [created] = await db
       .insert(heartbeatSettings)
       .values({
+        id: 1,
         enabled: input.enabled ?? false,
       })
       .returning();
