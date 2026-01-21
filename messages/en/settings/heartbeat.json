@@ -77,6 +77,7 @@
       "delete": "Delete",
       "copy": "Copy",
       "copyLabel": "Copy",
+      "copyCurl": "Copy curl",
       "save": "Save",
       "cancel": "Cancel",
       "confirmDelete": "Confirm Delete?",
@@ -97,7 +98,9 @@
       "deleteSuccess": "Configuration deleted successfully",
       "deleteFailed": "Failed to delete configuration",
       "importSuccess": "Import successful",
-      "importFailed": "Import failed"
+      "importFailed": "Import failed",
+      "copyCurlSuccess": "curl command copied",
+      "copyCurlFailed": "Failed to copy"
     },
     "enabledStatus": "Enabled",
     "disabledStatus": "Disabled",

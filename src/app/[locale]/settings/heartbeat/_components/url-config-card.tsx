@@ -2,12 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Copy } from "lucide-react";
+import { Pencil, Trash2, Copy, Terminal } from "lucide-react";
 import type { HeartbeatUrlConfig } from "@/repository/heartbeat-url-configs";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +60,49 @@ export function UrlConfigCard({
   };
 
   const status = getStatus();
+
+  const generateCurlCommand = (config: HeartbeatUrlConfig): string => {
+    let curl = `curl -X ${config.method}`;
+    curl += ` \\\n  '${config.url}'`;
+
+    if (config.headers && Object.keys(config.headers).length > 0) {
+      for (const [key, value] of Object.entries(config.headers)) {
+        const escapedValue = value.replace(/'/g, "'\\''");
+        curl += ` \\\n  -H '${key}: ${escapedValue}'`;
+      }
+    }
+
+    if (config.body && config.method !== "GET" && config.method !== "HEAD") {
+      let body = config.body;
+
+      try {
+        const bodyObj = JSON.parse(body);
+        if (bodyObj.metadata && typeof bodyObj.metadata === "object") {
+          bodyObj.metadata.user_id =
+            bodyObj.metadata.user_id ||
+            "user_heartbeat_probe_account_heartbeat_session_00000000-0000-0000-0000-000000000000";
+          body = JSON.stringify(bodyObj, null, 2);
+        }
+      } catch {
+        // 如果不是有效的 JSON，保持原样
+      }
+
+      const escapedBody = body.replace(/'/g, "'\\''");
+      curl += ` \\\n  -d '${escapedBody}'`;
+    }
+
+    return curl;
+  };
+
+  const handleCopyCurl = async () => {
+    const curl = generateCurlCommand(config);
+    const success = await copyToClipboard(curl);
+    if (success) {
+      toast.success(t("form.toast.copyCurlSuccess"));
+    } else {
+      toast.error(t("form.toast.copyCurlFailed"));
+    }
+  };
 
   return (
     <>
@@ -118,6 +163,15 @@ export function UrlConfigCard({
                 disabled={isLoading}
               />
               <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyCurl}
+                  disabled={isLoading}
+                  title={t("form.actions.copyCurl")}
+                >
+                  <Terminal className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

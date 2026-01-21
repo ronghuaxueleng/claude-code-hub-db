@@ -62,6 +62,8 @@
     },
     "stats": {
       "title": "统计信息",
+      "success": "成功",
+      "failure": "失败",
       "successCount": "成功次数",
       "failureCount": "失败次数",
       "lastSuccess": "最后成功",
@@ -75,6 +77,7 @@
       "delete": "删除",
       "copy": "复制",
       "copyLabel": "副本",
+      "copyCurl": "复制 curl",
       "save": "保存",
       "cancel": "取消",
       "confirmDelete": "确认删除？",
@@ -95,8 +98,15 @@
       "deleteSuccess": "配置删除成功",
       "deleteFailed": "配置删除失败",
       "importSuccess": "导入成功",
-      "importFailed": "导入失败"
-    }
+      "importFailed": "导入失败",
+      "copyCurlSuccess": "curl 命令已复制",
+      "copyCurlFailed": "复制失败"
+    },
+    "enabledStatus": "已启用",
+    "disabledStatus": "已禁用",
+    "deleteConfirm": "确认删除",
+    "cancelButton": "取消",
+    "deleteButton": "删除"
   },
   "curl": {
     "title": "Curl命令",

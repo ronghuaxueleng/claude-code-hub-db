@@ -124,10 +124,26 @@ export class ProviderHeartbeat {
     const startTime = Date.now();
 
     try {
+      let body = config.body ?? undefined;
+
+      if (body && config.method !== "GET" && config.method !== "HEAD") {
+        try {
+          const bodyObj = JSON.parse(body);
+          if (bodyObj.metadata && typeof bodyObj.metadata === "object") {
+            bodyObj.metadata.user_id =
+              bodyObj.metadata.user_id ||
+              "user_heartbeat_probe_account_heartbeat_session_00000000-0000-0000-0000-000000000000";
+            body = JSON.stringify(bodyObj);
+          }
+        } catch {
+          // 如果不是有效的 JSON，保持原样
+        }
+      }
+
       const response = await fetch(config.url, {
         method: config.method,
         headers: config.headers,
-        body: config.body ?? undefined,
+        body,
         signal: AbortSignal.timeout(10000),
       });
 
