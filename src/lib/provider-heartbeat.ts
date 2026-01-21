@@ -25,6 +25,9 @@ export class ProviderHeartbeat {
    */
   static async start(): Promise<void> {
     try {
+      // 先清理旧的定时器（如果有）
+      ProviderHeartbeat.stop();
+
       const settings = await getHeartbeatSettings();
 
       if (!settings.enabled) {
@@ -58,18 +61,21 @@ export class ProviderHeartbeat {
    * 停止心跳任务
    */
   static stop(): void {
-    if (!ProviderHeartbeat.isRunning) {
-      return;
+    // 无论 isRunning 标志如何，都清理所有定时器
+    // 这样可以避免因为标志不正确而导致定时器泄漏
+    if (ProviderHeartbeat.timers.size > 0) {
+      for (const [configId, timer] of ProviderHeartbeat.timers.entries()) {
+        clearInterval(timer);
+        logger.debug("ProviderHeartbeat: Timer stopped", { configId });
+      }
+
+      ProviderHeartbeat.timers.clear();
+      logger.info("ProviderHeartbeat: Stopped", { timerCount: ProviderHeartbeat.timers.size });
+    } else if (ProviderHeartbeat.isRunning) {
+      logger.warn("ProviderHeartbeat: isRunning was true but no timers found");
     }
 
-    for (const [configId, timer] of ProviderHeartbeat.timers.entries()) {
-      clearInterval(timer);
-      logger.debug("ProviderHeartbeat: Timer stopped", { configId });
-    }
-
-    ProviderHeartbeat.timers.clear();
     ProviderHeartbeat.isRunning = false;
-    logger.info("ProviderHeartbeat: Stopped");
   }
 
   /**

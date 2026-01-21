@@ -104,9 +104,19 @@
     },
     "enabledStatus": "已启用",
     "disabledStatus": "已禁用",
-    "deleteConfirm": "确认删除",
+    "noConfigs": "暂无配置",
+    "createButton": "新建配置",
+    "createDialogTitle": "新建心跳配置",
+    "editDialogTitle": "编辑心跳配置",
+    "saveButton": "保存",
     "cancelButton": "取消",
-    "deleteButton": "删除"
+    "deleteButton": "删除",
+    "deleteConfirm": "确认删除",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "invalidHeaders": "无效的JSON格式"
   },
   "curl": {
     "title": "Curl命令",
