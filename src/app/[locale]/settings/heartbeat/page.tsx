@@ -12,10 +12,11 @@ export default async function HeartbeatSettingsPage() {
   return (
     <>
       <SettingsPageHeader title={t("heartbeat.title")} description={t("heartbeat.description")} />
-      <Section title={t("heartbeat.section.global.title")} description={t("heartbeat.section.global.description")}>
-        <div className="text-sm text-muted-foreground">
-          心跳配置功能重构中，前端UI待实现...
-        </div>
+      <Section
+        title={t("heartbeat.section.global.title")}
+        description={t("heartbeat.section.global.description")}
+      >
+        <div className="text-sm text-muted-foreground">心跳配置功能重构中，前端UI待实现...</div>
         <pre className="mt-4 rounded-md bg-muted p-4 text-xs">
           {JSON.stringify(settings, null, 2)}
         </pre>
