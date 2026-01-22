@@ -203,6 +203,12 @@ export async function getProviderHealthInfo(providerId: number): Promise<{
  */
 export async function isCircuitOpen(providerId: number): Promise<boolean> {
   const health = await getOrCreateHealth(providerId);
+  const config = await getProviderConfig(providerId);
+
+  // 如果禁用了自动熔断，忽略熔断器状态，始终允许请求
+  if (config.disabled) {
+    return false;
+  }
 
   if (health.circuitState === "closed") {
     return false;

@@ -3670,6 +3670,9 @@ export async function batchDisableAutoCircuitBreaker(
 
     const updatedCount = await batchUpdateProvidersCircuitBreakerDisabled(providerIds, true);
 
+    // 禁用自动熔断时，同时重置熔断器状态，让服务商立即可用
+    const resetCount = batchCloseCircuits(providerIds);
+
     // 清除熔断器配置缓存
     for (const providerId of providerIds) {
       clearConfigCache(providerId);
@@ -3678,7 +3681,7 @@ export async function batchDisableAutoCircuitBreaker(
     // 广播缓存更新
     await publishProviderCacheInvalidation();
 
-    logger.info("批量禁用自动熔断成功", { providerIds, updatedCount });
+    logger.info("批量禁用自动熔断成功", { providerIds, updatedCount, resetCount });
 
     return { ok: true, data: { updatedCount } };
   } catch (error) {
