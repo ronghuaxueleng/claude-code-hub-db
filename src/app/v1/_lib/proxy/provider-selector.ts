@@ -959,10 +959,13 @@ export class ProxyProviderResolver {
 
         // 如果禁用了自动熔断，跳过费用限制检查，确保服务商完全可用
         if (p.circuitBreakerDisabled) {
-          logger.debug("ProviderSelector: Provider has circuit breaker disabled, skipping cost limit checks", {
-            providerId: p.id,
-            providerName: p.name,
-          });
+          logger.debug(
+            "ProviderSelector: Provider has circuit breaker disabled, skipping cost limit checks",
+            {
+              providerId: p.id,
+              providerName: p.name,
+            }
+          );
           return p;
         }
 
