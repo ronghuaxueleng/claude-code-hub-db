@@ -2027,24 +2027,18 @@ export async function finalizeRequestStats(
   // 4.5 检查心跳 URL 匹配并绑定固定 provider
   // 如果请求 URL 匹配心跳配置，绑定 session 到固定 provider
   // 避免频繁切换，除非 provider 健康状态不好才切换
-  if (
-    statusCode >= 200 &&
-    statusCode < 300 &&
-    session.sessionId &&
-    provider.id
-  ) {
+  if (statusCode >= 200 && statusCode < 300 && session.sessionId && provider.id) {
     const heartbeatMatch = await checkHeartbeatUrlMatch(
       session.requestUrl?.toString() || null,
       provider.url || null
     );
 
     if (heartbeatMatch) {
-      void SessionManager.bindSessionToFixedProvider(
-        session.sessionId,
-        provider.id
-      ).catch((error) => {
-        logger.error("[ResponseHandler] Failed to bind fixed provider:", error);
-      });
+      void SessionManager.bindSessionToFixedProvider(session.sessionId, provider.id).catch(
+        (error) => {
+          logger.error("[ResponseHandler] Failed to bind fixed provider:", error);
+        }
+      );
     }
   }
 
