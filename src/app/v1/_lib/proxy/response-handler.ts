@@ -16,6 +16,7 @@ import {
   updateMessageRequestDetails,
   updateMessageRequestDuration,
 } from "@/repository/message";
+import { findEnabledHeartbeatUrlConfigs } from "@/repository/heartbeat-url-configs";
 import { findLatestPriceByModel } from "@/repository/model-price";
 import { getSystemSettings } from "@/repository/system-config";
 import type { SessionUsageUpdate } from "@/types/session";
@@ -36,6 +37,75 @@ export type UsageMetrics = {
   cache_ttl?: "5m" | "1h" | "mixed";
   cache_read_input_tokens?: number;
 };
+
+/**
+ * 检查请求 URL 是否匹配心跳配置
+ *
+ * 匹配规则：
+ * 1. 请求 URL 等于心跳配置的 URL
+ * 2. 请求 URL 包含心跳配置的 URL
+ * 3. 心跳配置的 URL 包含请求 URL
+ *
+ * @param requestUrl - 请求 URL
+ * @param providerUrl - 供应商 URL（用于判断包含关系）
+ * @returns 匹配的心跳配置，如果无匹配则返回 null
+ */
+async function checkHeartbeatUrlMatch(
+  requestUrl: string | null,
+  providerUrl: string | null
+): Promise<{ id: number; url: string } | null> {
+  if (!requestUrl) {
+    return null;
+  }
+
+  try {
+    // 获取所有启用的心跳配置
+    const heartbeatConfigs = await findEnabledHeartbeatUrlConfigs();
+
+    for (const config of heartbeatConfigs) {
+      const heartbeatUrl = config.url.trim();
+
+      // 规则 1: 请求 URL 等于心跳配置的 URL
+      if (requestUrl === heartbeatUrl) {
+        logger.info("[ResponseHandler] URL matches heartbeat config (exact match)", {
+          requestUrl,
+          heartbeatUrl,
+          configId: config.id,
+        });
+        return { id: config.id, url: heartbeatUrl };
+      }
+
+      // 规则 2: 请求 URL 包含心跳配置的 URL
+      if (requestUrl.includes(heartbeatUrl)) {
+        logger.info("[ResponseHandler] URL contains heartbeat URL", {
+          requestUrl,
+          heartbeatUrl,
+          configId: config.id,
+        });
+        return { id: config.id, url: heartbeatUrl };
+      }
+
+      // 规则 3: 心跳配置的 URL 包含请求 URL（仅在 providerUrl 存在时）
+      if (providerUrl && heartbeatUrl.includes(providerUrl)) {
+        logger.info("[ResponseHandler] Heartbeat URL contains provider URL", {
+          requestUrl,
+          providerUrl,
+          heartbeatUrl,
+          configId: config.id,
+        });
+        return { id: config.id, url: heartbeatUrl };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    logger.error("[ResponseHandler] Failed to check heartbeat URL match", {
+      error,
+      requestUrl,
+    });
+    return null;
+  }
+}
 
 /**
  * 清理 Response headers 中的传输相关 header
@@ -1952,6 +2022,30 @@ export async function finalizeRequestStats(
     ).catch((error) => {
       logger.error("[ResponseHandler] Failed to record successful session mapping:", error);
     });
+  }
+
+  // 4.5 检查心跳 URL 匹配并绑定固定 provider
+  // 如果请求 URL 匹配心跳配置，绑定 session 到固定 provider
+  // 避免频繁切换，除非 provider 健康状态不好才切换
+  if (
+    statusCode >= 200 &&
+    statusCode < 300 &&
+    session.sessionId &&
+    provider.id
+  ) {
+    const heartbeatMatch = await checkHeartbeatUrlMatch(
+      session.requestUrl?.toString() || null,
+      provider.url || null
+    );
+
+    if (heartbeatMatch) {
+      void SessionManager.bindSessionToFixedProvider(
+        session.sessionId,
+        provider.id
+      ).catch((error) => {
+        logger.error("[ResponseHandler] Failed to bind fixed provider:", error);
+      });
+    }
   }
 
   // 5. 更新成本

@@ -619,6 +619,74 @@ export class SessionManager {
   }
 
   /**
+   * 绑定 session 到固定 provider（用于心跳配置匹配的请求）
+   *
+   * 功能说明：当请求 URL 匹配心跳配置时，绑定 session 到固定 provider
+   * 避免频繁切换，除非 provider 健康状态不好才切换
+   *
+   * @param sessionId - Session ID
+   * @param providerId - 供应商 ID
+   */
+  static async bindSessionToFixedProvider(sessionId: string, providerId: number): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return;
+
+    try {
+      const key = `session:${sessionId}:fixed_provider`;
+      await redis.set(key, providerId.toString(), "EX", SessionManager.SESSION_TTL);
+
+      logger.info("SessionManager: Bound session to fixed provider", {
+        sessionId,
+        providerId,
+      });
+    } catch (error) {
+      logger.error("SessionManager: Failed to bind fixed provider", { error });
+    }
+  }
+
+  /**
+   * 获取 session 绑定的固定 provider
+   *
+   * @param sessionId - Session ID
+   * @returns 供应商 ID，如果未绑定则返回 null
+   */
+  static async getSessionFixedProvider(sessionId: string): Promise<number | null> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return null;
+
+    try {
+      const value = await redis.get(`session:${sessionId}:fixed_provider`);
+      if (value) {
+        const providerId = parseInt(value, 10);
+        if (!Number.isNaN(providerId)) {
+          return providerId;
+        }
+      }
+    } catch (error) {
+      logger.error("SessionManager: Failed to get fixed provider", { error });
+    }
+
+    return null;
+  }
+
+  /**
+   * 删除 session 的固定 provider 绑定
+   *
+   * @param sessionId - Session ID
+   */
+  static async deleteSessionFixedProvider(sessionId: string): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return;
+
+    try {
+      await redis.del(`session:${sessionId}:fixed_provider`);
+      logger.debug("SessionManager: Deleted fixed provider binding", { sessionId });
+    } catch (error) {
+      logger.error("SessionManager: Failed to delete fixed provider", { error });
+    }
+  }
+
+  /**
    * 获取当前绑定供应商的优先级
    *
    * ⚠️ 修复：从 session:provider 读取（真实绑定），而不是 session:info

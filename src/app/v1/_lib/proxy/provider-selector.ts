@@ -505,7 +505,39 @@ export class ProxyProviderResolver {
    * 查找可复用的供应商（基于 session）
    */
   private static async findReusable(session: ProxySession): Promise<Provider | null> {
-    if (!session.shouldReuseProvider() || !session.sessionId) {
+    if (!session.sessionId) {
+      return null;
+    }
+
+    // 优先级 1: 检查固定 provider（心跳配置匹配的请求）
+    const fixedProviderId = await SessionManager.getSessionFixedProvider(session.sessionId);
+    if (fixedProviderId) {
+      const provider = await session.getProviderById(fixedProviderId);
+      if (provider && provider.isEnabled) {
+        // 检查健康状态（熔断、限额等）
+        const healthCheck = await ProxyProviderResolver.checkProviderHealth(session, provider);
+        if (healthCheck.healthy) {
+          logger.info("ProviderSelector: Reusing fixed provider (heartbeat match)", {
+            providerName: provider.name,
+            providerId: provider.id,
+            sessionId: session.sessionId,
+          });
+          return provider;
+        } else {
+          // 固定 provider 不健康，清除固定绑定并继续检查普通绑定
+          logger.info("ProviderSelector: Fixed provider unhealthy, clearing binding", {
+            providerId: fixedProviderId,
+            reason: healthCheck.reason,
+          });
+          void SessionManager.deleteSessionFixedProvider(session.sessionId).catch((error) => {
+            logger.error("ProviderSelector: Failed to delete fixed provider binding", { error });
+          });
+        }
+      }
+    }
+
+    // 优先级 2: 检查普通 session 绑定的 provider（需要消息数 > 1）
+    if (!session.shouldReuseProvider()) {
       return null;
     }
 
@@ -528,73 +560,59 @@ export class ProxyProviderResolver {
       return null;
     }
 
-    // 检查熔断器状态（TC-055 修复）
-    if (await isCircuitOpen(provider.id)) {
-      logger.debug("ProviderSelector: Session provider circuit is open", {
+    // 检查健康状态（熔断、限额等）
+    const healthCheck = await ProxyProviderResolver.checkProviderHealth(session, provider);
+    if (!healthCheck.healthy) {
+      logger.debug("ProviderSelector: Session provider unhealthy", {
         sessionId: session.sessionId,
         providerId: provider.id,
-        providerName: provider.name,
-        circuitState: getCircuitState(provider.id),
+        reason: healthCheck.reason,
       });
       return null;
     }
 
-    // 检查模型支持（使用新的模型匹配逻辑）
+    logger.info("ProviderSelector: Reusing provider", {
+      providerName: provider.name,
+      providerId: provider.id,
+      sessionId: session.sessionId,
+    });
+    return provider;
+  }
+
+  /**
+   * 检查供应商健康状态（统一检查熔断、限额等）
+   */
+  private static async checkProviderHealth(
+    session: ProxySession,
+    provider: Provider
+  ): Promise<{ healthy: boolean; reason?: string }> {
+    // 检查熔断器状态
+    if (await isCircuitOpen(provider.id)) {
+      return {
+        healthy: false,
+        reason: "circuit_open",
+      };
+    }
+
+    // 检查模型支持
     const requestedModel = session.getCurrentModel();
     if (requestedModel && !providerSupportsModel(provider, requestedModel)) {
-      logger.debug("ProviderSelector: Session provider does not support requested model", {
-        sessionId: session.sessionId,
-        providerId: provider.id,
-        providerName: provider.name,
-        providerType: provider.providerType,
-        requestedModel,
-        allowedModels: provider.allowedModels,
-        joinClaudePool: provider.joinClaudePool,
-      });
-      return null;
+      return {
+        healthy: false,
+        reason: "model_not_supported",
+      };
     }
 
-    // 修复：检查用户分组权限（严格分组隔离 + 支持多分组）
-    // Check if session provider matches user's group
-    // Priority: key.providerGroup > user.providerGroup
+    // 检查用户分组权限
     const effectiveGroup = getEffectiveProviderGroup(session);
-    const keyGroup = session?.authState?.key?.providerGroup;
-    if (effectiveGroup) {
-      // Use helper function for core group matching logic
-      // Fix #190: Support provider multi-tags (e.g. "cli,chat") matching user single-tag (e.g. "cli")
-      // Fix #281: Reject providers without groupTag when user/key has group restrictions
-      if (!checkProviderGroupMatch(provider.groupTag, effectiveGroup)) {
-        // Detailed logging based on specific failure reason
-        if (!provider.groupTag) {
-          logger.warn(
-            "ProviderSelector: Session provider has no group tag but user/key requires group",
-            {
-              sessionId: session.sessionId,
-              providerId: provider.id,
-              providerName: provider.name,
-              effectiveGroups: effectiveGroup,
-              keyGroupOverride: !!keyGroup,
-              message:
-                "Strict group isolation: rejecting untagged provider for group-scoped user/key",
-            }
-          );
-        } else {
-          logger.warn("ProviderSelector: Session provider not in user groups", {
-            sessionId: session.sessionId,
-            providerId: provider.id,
-            providerName: provider.name,
-            providerTags: provider.groupTag,
-            effectiveGroups: effectiveGroup,
-            keyGroupOverride: !!keyGroup,
-            message: "Strict group isolation: rejecting cross-group session reuse",
-          });
-        }
-        return null; // Reject reuse, re-select
-      }
+    if (effectiveGroup && !checkProviderGroupMatch(provider.groupTag, effectiveGroup)) {
+      return {
+        healthy: false,
+        reason: "group_mismatch",
+      };
     }
-    // No auth group info (effectiveGroup is null) can reuse any provider
 
-    // 会话复用也必须遵守限额（否则会绕过“达到限额即禁用”的语义）
+    // 检查费用限额
     const costCheck = await RateLimitService.checkCostLimits(provider.id, "provider", {
       limit_5h_usd: provider.limit5hUsd,
       limit_daily_usd: provider.limitDailyUsd,
@@ -605,11 +623,10 @@ export class ProxyProviderResolver {
     });
 
     if (!costCheck.allowed) {
-      logger.debug("ProviderSelector: Session provider cost limit exceeded, reject reuse", {
-        sessionId: session.sessionId,
-        providerId: provider.id,
-      });
-      return null;
+      return {
+        healthy: false,
+        reason: "cost_limit_exceeded",
+      };
     }
 
     const totalCheck = await RateLimitService.checkTotalCostLimit(
@@ -622,20 +639,13 @@ export class ProxyProviderResolver {
     );
 
     if (!totalCheck.allowed) {
-      logger.debug("ProviderSelector: Session provider total cost limit exceeded, reject reuse", {
-        sessionId: session.sessionId,
-        providerId: provider.id,
-        reason: totalCheck.reason,
-      });
-      return null;
+      return {
+        healthy: false,
+        reason: "total_cost_limit_exceeded",
+      };
     }
 
-    logger.info("ProviderSelector: Reusing provider", {
-      providerName: provider.name,
-      providerId: provider.id,
-      sessionId: session.sessionId,
-    });
-    return provider;
+    return { healthy: true };
   }
 
   private static async pickRandomProvider(
