@@ -40,6 +40,11 @@ const cache: ProviderCacheState = {
 let subscriptionInitialized = false;
 
 /**
+ * 订阅状态标记
+ */
+let subscriptionInitPromise: Promise<void> | null = null;
+
+/**
  * 初始化 Redis 订阅
  *
  * 使用失效通知模式：收到通知后清除本地缓存，下次请求时从 DB 刷新
@@ -48,18 +53,33 @@ let subscriptionInitialized = false;
 async function ensureSubscription(): Promise<void> {
   if (subscriptionInitialized) return;
 
+  // 如果正在初始化，等待完成
+  if (subscriptionInitPromise) {
+    return subscriptionInitPromise;
+  }
+
   // CI/build 阶段跳过
   if (process.env.CI === "true" || process.env.NEXT_PHASE === "phase-production-build") {
     subscriptionInitialized = true;
     return;
   }
 
-  subscriptionInitialized = true;
-  // pubsub.ts 订阅机制
-  await subscribeCacheInvalidation(CHANNEL_PROVIDERS_UPDATED, () => {
-    invalidateCache();
-    logger.debug("[ProviderCache] Cache invalidated via pub/sub");
-  });
+  // 创建初始化 Promise
+  subscriptionInitPromise = (async () => {
+    try {
+      await subscribeCacheInvalidation(CHANNEL_PROVIDERS_UPDATED, () => {
+        invalidateCache();
+        logger.debug("[ProviderCache] Cache invalidated via pub/sub");
+      });
+      subscriptionInitialized = true;
+    } catch (error) {
+      logger.warn("[ProviderCache] Failed to initialize subscription", { error });
+    } finally {
+      subscriptionInitPromise = null;
+    }
+  })();
+
+  return subscriptionInitPromise;
 }
 
 /**
@@ -99,8 +119,8 @@ export async function getCachedProviders(fetcher: () => Promise<Provider[]>): Pr
     return fetcher();
   }
 
-  // 确保订阅已初始化（异步，不阻塞）
-  void ensureSubscription();
+  // 确保订阅已初始化（同步等待，避免消息丢失）
+  await ensureSubscription();
 
   const now = Date.now();
 
