@@ -942,6 +942,9 @@ export class ProxyProviderResolver {
    *
    * 注意：并发 Session 限制检查已移至原子性检查（ensure 方法中），
    * 此处仅检查金额限制和熔断器状态
+   *
+   * 重要：如果服务商禁用了自动熔断（circuitBreakerDisabled = true），
+   * 则跳过所有费用限制检查，确保服务商完全可用
    */
   private static async filterByLimits(providers: Provider[]): Promise<Provider[]> {
     const results = await Promise.all(
@@ -952,6 +955,15 @@ export class ProxyProviderResolver {
             providerId: p.id,
           });
           return null;
+        }
+
+        // 如果禁用了自动熔断，跳过费用限制检查，确保服务商完全可用
+        if (p.circuitBreakerDisabled) {
+          logger.debug("ProviderSelector: Provider has circuit breaker disabled, skipping cost limit checks", {
+            providerId: p.id,
+            providerName: p.name,
+          });
+          return p;
         }
 
         // 1. 检查金额限制

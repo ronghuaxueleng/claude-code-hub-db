@@ -726,13 +726,30 @@ export function tripToHalfOpen(providerId: number): boolean {
 
 /**
  * 清除供应商的配置缓存（供应商更新后调用）
+ *
+ * 同时重置熔断器状态，确保配置更新后立即生效
+ * 特别是当禁用自动熔断时，需要确保状态变为 closed
  */
 export function clearConfigCache(providerId: number): void {
   const health = healthMap.get(providerId);
   if (health) {
+    // 清除配置缓存
     health.config = null;
     health.configLoadedAt = null;
     logger.debug(`[CircuitBreaker] Cleared config cache for provider ${providerId}`);
+
+    // 重置熔断器状态为 closed，确保配置更新后立即生效
+    if (health.circuitState !== "closed") {
+      const oldState = health.circuitState;
+      health.circuitState = "closed";
+      health.failureCount = 0;
+      health.lastFailureTime = null;
+      health.circuitOpenUntil = null;
+      health.halfOpenSuccessCount = 0;
+      logger.info(
+        `[CircuitBreaker] Reset circuit state to closed after config cache clear for provider ${providerId} (previous state: ${oldState})`
+      );
+    }
   }
 
   // 同时删除 Redis 中的配置缓存
