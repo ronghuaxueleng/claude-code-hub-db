@@ -176,12 +176,9 @@ async function getProviderConfig(providerId: number): Promise<CircuitBreakerConf
     health.configLoadedAt = now;
     return config;
   } catch (error) {
-    logger.warn(
-      `[CircuitBreaker] Failed to load config for provider ${providerId}`,
-      {
-        error: error instanceof Error ? error.message : String(error),
-      }
-    );
+    logger.warn(`[CircuitBreaker] Failed to load config for provider ${providerId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     // 如果内存中有旧配置，继续使用旧配置（避免回退到默认配置导致已禁用的熔断器被重新启用）
     if (health.config) {
