@@ -45,7 +45,7 @@ export interface ProviderHealth {
 const healthMap = new Map<number, ProviderHealth>();
 
 // 配置缓存 TTL（5 分钟）
-const CONFIG_CACHE_TTL = 30 * 1000; // 30 秒配置缓存，加快配置更新生效速度
+const CONFIG_CACHE_TTL = 5 * 60 * 1000;
 
 // 标记已从 Redis 加载过状态的供应商（避免重复加载）
 const loadedFromRedis = new Set<number>();

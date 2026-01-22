@@ -126,9 +126,8 @@ export async function saveProviderCircuitConfig(
       disabled: config.disabled.toString(),
     });
 
-    // 设置 TTL：1 小时（3600 秒）
-    // 原因：避免永久保存导致配置更新后无法及时生效
-    await redis.expire(key, 3600); // 1 小时
+    // 设置 TTL：永久或 24 小时（根据需求调整）
+    // await redis.expire(key, 86400); // 24 小时
 
     logger.debug(`[CircuitBreakerConfig] Saved to Redis`, { providerId, config });
   } catch (error) {
