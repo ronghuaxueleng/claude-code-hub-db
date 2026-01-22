@@ -138,19 +138,10 @@ export function EditKeyForm({ keyData, user, isAdmin = false, onSuccess }: EditK
     },
   });
 
-  // 选择分组时，自动移除 default（当有多个分组时）
+  // 选择分组时，直接保存用户输入，不做额外处理
   const handleProviderGroupChange = useCallback(
     (newValue: string) => {
-      const groups = newValue
-        .split(",")
-        .map((g) => g.trim())
-        .filter(Boolean);
-      if (groups.length > 1 && groups.includes(PROVIDER_GROUP.DEFAULT)) {
-        const withoutDefault = groups.filter((g) => g !== PROVIDER_GROUP.DEFAULT);
-        form.setValue("providerGroup", withoutDefault.join(","));
-      } else {
-        form.setValue("providerGroup", newValue);
-      }
+      form.setValue("providerGroup", newValue);
     },
     [form]
   );
