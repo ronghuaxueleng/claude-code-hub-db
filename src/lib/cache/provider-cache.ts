@@ -11,6 +11,7 @@
 
 import "server-only";
 
+import { clearAllConfigCaches } from "@/lib/circuit-breaker";
 import { getEnvConfig } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { publishCacheInvalidation, subscribeCacheInvalidation } from "@/lib/redis/pubsub";
@@ -84,12 +85,17 @@ async function ensureSubscription(): Promise<void> {
 
 /**
  * 失效缓存（本地）
+ *
+ * 同时清除熔断器配置缓存，确保配置变更（如禁用熔断）在所有实例生效
  */
 export function invalidateCache(): void {
   cache.data = null;
   cache.expiresAt = 0;
   cache.version++;
   cache.refreshPromise = null;
+
+  // 同时清除熔断器配置缓存，确保跨实例配置同步
+  clearAllConfigCaches();
 }
 
 /**

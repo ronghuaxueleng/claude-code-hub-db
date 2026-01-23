@@ -778,3 +778,24 @@ export async function clearProviderState(providerId: number): Promise<void> {
     providerId,
   });
 }
+
+/**
+ * 清除所有供应商的配置缓存（跨实例同步时使用）
+ *
+ * 当收到 Redis pub/sub 通知时调用，确保配置变更（如禁用熔断）在所有实例生效
+ * 注意：只清除配置缓存，不重置熔断器状态（状态由 Redis 同步）
+ */
+export function clearAllConfigCaches(): void {
+  let clearedCount = 0;
+  for (const [providerId, health] of healthMap) {
+    if (health.config) {
+      health.config = null;
+      health.configLoadedAt = null;
+      clearedCount++;
+    }
+  }
+
+  if (clearedCount > 0) {
+    logger.debug(`[CircuitBreaker] Cleared config cache for ${clearedCount} providers via pub/sub`);
+  }
+}
