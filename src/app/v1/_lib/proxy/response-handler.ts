@@ -2005,26 +2005,7 @@ export async function finalizeRequestStats(
     return;
   }
 
-  // 4. 记录成功会话映射（请求成功完成时）
-  // 如果原始会话ID与最终会话ID不同，记录映射关系以供下次复用
-  if (
-    statusCode >= 200 &&
-    statusCode < 300 &&
-    session.originalClientSessionId &&
-    session.sessionId &&
-    session.originalClientSessionId !== session.sessionId
-  ) {
-    void SessionManager.recordSuccessfulSessionMapping(
-      session.originalClientSessionId,
-      session.sessionId,
-      messageContext.user.id,
-      provider.id
-    ).catch((error) => {
-      logger.error("[ResponseHandler] Failed to record successful session mapping:", error);
-    });
-  }
-
-  // 4.5 检查心跳 URL 匹配并绑定固定 provider
+  // 4. 检查心跳 URL 匹配并绑定固定 provider
   // 如果请求 URL 匹配心跳配置，绑定 session 到固定 provider
   // 避免频繁切换，除非 provider 健康状态不好才切换
   if (statusCode >= 200 && statusCode < 300 && session.sessionId && provider.id) {
