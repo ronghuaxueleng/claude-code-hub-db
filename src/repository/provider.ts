@@ -691,6 +691,41 @@ export async function batchDeleteProviders(ids: number[]): Promise<number> {
 }
 
 /**
+ * 批量更新供应商的 URL（查找替换模式）
+ *
+ * @param ids - 供应商 ID 数组
+ * @param searchValue - 要查找的字符串
+ * @param replaceValue - 要替换的字符串
+ * @returns 更新的记录数
+ */
+export async function batchUpdateProvidersUrl(
+  ids: number[],
+  searchValue: string,
+  replaceValue: string
+): Promise<number> {
+  if (ids.length === 0 || !searchValue) {
+    return 0;
+  }
+
+  const result = await db
+    .update(providers)
+    .set({
+      url: sql`REPLACE(${providers.url}, ${searchValue}, ${replaceValue})`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        inArray(providers.id, ids),
+        isNull(providers.deletedAt),
+        sql`${providers.url} LIKE ${"%" + searchValue + "%"}`
+      )
+    )
+    .returning({ id: providers.id });
+
+  return result.length;
+}
+
+/**
  * 获取所有供应商的统计信息
  * 包括：今天的总金额、今天的调用次数、最近一次调用时间和模型
  *

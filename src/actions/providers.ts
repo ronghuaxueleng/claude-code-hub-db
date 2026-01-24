@@ -3772,3 +3772,56 @@ export async function batchClearModelRedirects(
     return { ok: false, error: message };
   }
 }
+
+/**
+ * 批量更新供应商的 URL（查找替换模式）
+ *
+ * @param providerIds - 供应商 ID 数组
+ * @param searchValue - 要查找的字符串
+ * @param replaceValue - 要替换的字符串
+ * @returns 更新的记录数
+ */
+export async function batchUpdateUrls(
+  providerIds: number[],
+  searchValue: string,
+  replaceValue: string
+): Promise<ActionResult<{ updatedCount: number }>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "Unauthorized" };
+    }
+
+    if (providerIds.length === 0) {
+      return { ok: false, error: "No providers selected" };
+    }
+
+    if (!searchValue) {
+      return { ok: false, error: "Search value is required" };
+    }
+
+    const { batchUpdateProvidersUrl } = await import("@/repository/provider");
+    const updatedCount = await batchUpdateProvidersUrl(providerIds, searchValue, replaceValue);
+
+    // Broadcast cache invalidation (cross-instance)
+    await publishProviderCacheInvalidation();
+
+    // Clear config cache for affected providers
+    for (const providerId of providerIds) {
+      clearConfigCache(providerId);
+    }
+
+    logger.info("Batch update URLs successful", {
+      providerIds,
+      searchValue,
+      replaceValue,
+      updatedCount,
+    });
+
+    return { ok: true, data: { updatedCount } };
+  } catch (error) {
+    logger.error("Batch update URLs failed:", error);
+    const message = error instanceof Error ? error.message : "Batch update URLs failed";
+    return { ok: false, error: message };
+  }
+}

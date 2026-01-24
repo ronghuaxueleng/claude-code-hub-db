@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckSquare,
+  Link2,
   Loader2,
   LockKeyhole,
   RotateCcw,
@@ -26,6 +27,7 @@ import {
   batchEnableProviders,
   batchOpenCircuitBreakers,
   batchResetCircuitBreakers,
+  batchUpdateUrls,
 } from "@/actions/providers";
 import {
   AlertDialog,
@@ -105,6 +107,9 @@ export function ProviderManager({
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUpdateUrlDialog, setShowUpdateUrlDialog] = useState(false);
+  const [urlSearchValue, setUrlSearchValue] = useState("");
+  const [urlReplaceValue, setUrlReplaceValue] = useState("");
   const [batchEnablePending, startBatchEnable] = useTransition();
   const [batchDisablePending, startBatchDisable] = useTransition();
   const [batchDeletePending, startBatchDelete] = useTransition();
@@ -113,6 +118,7 @@ export function ProviderManager({
   const [batchCloseCircuitPending, startBatchCloseCircuit] = useTransition();
   const [batchEnableAutoCBPending, startBatchEnableAutoCB] = useTransition();
   const [batchDisableAutoCBPending, startBatchDisableAutoCB] = useTransition();
+  const [batchUpdateUrlPending, startBatchUpdateUrl] = useTransition();
 
   const isBatchPending =
     batchEnablePending ||
@@ -122,7 +128,8 @@ export function ProviderManager({
     batchOpenCircuitPending ||
     batchCloseCircuitPending ||
     batchEnableAutoCBPending ||
-    batchDisableAutoCBPending;
+    batchDisableAutoCBPending ||
+    batchUpdateUrlPending;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -359,6 +366,41 @@ export function ProviderManager({
     });
   };
 
+  const handleBatchUpdateUrl = () => {
+    if (selectedIds.size === 0) return;
+    if (!urlSearchValue.trim()) {
+      toast.error(tBatch("updateUrlFailed"), { description: tBatch("updateUrlSearchRequired") });
+      return;
+    }
+
+    startBatchUpdateUrl(async () => {
+      try {
+        const result = await batchUpdateUrls(
+          Array.from(selectedIds),
+          urlSearchValue,
+          urlReplaceValue
+        );
+        if (result.ok) {
+          toast.success(tBatch("updateUrlSuccess"), {
+            description: tBatch("updateUrlSuccessDesc", { count: result.data.updatedCount }),
+          });
+          setSelectedIds(new Set());
+          setShowUpdateUrlDialog(false);
+          setUrlSearchValue("");
+          setUrlReplaceValue("");
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
+          router.refresh();
+        } else {
+          toast.error(tBatch("updateUrlFailed"), { description: result.error });
+        }
+      } catch (error) {
+        console.error("Batch update URL failed:", error);
+        toast.error(tBatch("updateUrlFailed"), { description: tBatch("unknownError") });
+      }
+    });
+  };
+
   // Extract unique groups from all providers
   const allGroups = useMemo(() => {
     const groups = new Set<string>();
@@ -529,6 +571,16 @@ export function ProviderManager({
           >
             <RotateCcw className="h-4 w-4" />
             {tBatch("resetCircuit")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUpdateUrlDialog(true)}
+            disabled={isBatchPending}
+            className="gap-2"
+          >
+            <Link2 className="h-4 w-4" />
+            {tBatch("updateUrl")}
           </Button>
           <Button
             variant="outline"
@@ -725,6 +777,59 @@ export function ProviderManager({
             >
               {batchDeletePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {tBatch("confirmDelete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Update URL dialog */}
+      <AlertDialog
+        open={showUpdateUrlDialog}
+        onOpenChange={(open) => {
+          setShowUpdateUrlDialog(open);
+          if (!open) {
+            setUrlSearchValue("");
+            setUrlReplaceValue("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tBatch("updateUrlTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{tBatch("updateUrlDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="url-search">{tBatch("updateUrlSearch")}</Label>
+              <Input
+                id="url-search"
+                value={urlSearchValue}
+                onChange={(e) => setUrlSearchValue(e.target.value)}
+                placeholder={tBatch("updateUrlSearchPlaceholder")}
+                disabled={batchUpdateUrlPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="url-replace">{tBatch("updateUrlReplace")}</Label>
+              <Input
+                id="url-replace"
+                value={urlReplaceValue}
+                onChange={(e) => setUrlReplaceValue(e.target.value)}
+                placeholder={tBatch("updateUrlReplacePlaceholder")}
+                disabled={batchUpdateUrlPending}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchUpdateUrlPending}>
+              {tBatch("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchUpdateUrl}
+              disabled={batchUpdateUrlPending || !urlSearchValue.trim()}
+            >
+              {batchUpdateUrlPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {tBatch("confirmUpdateUrl")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
