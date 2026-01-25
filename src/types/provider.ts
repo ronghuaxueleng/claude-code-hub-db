@@ -36,6 +36,9 @@ export type CodexInstructionsStrategy = "auto" | "force_official" | "keep_origin
 // MCP 透传类型枚举
 export type McpPassthroughType = "none" | "minimax" | "glm" | "custom";
 
+// 令牌池选择策略枚举
+export type KeySelectionStrategy = "random" | "round_robin";
+
 export interface Provider {
   id: number;
   name: string;
@@ -118,6 +121,10 @@ export interface Provider {
   // Cache TTL override（inherit 表示不强制覆写）
   cacheTtlPreference: CacheTtlPreference | null;
 
+  // 令牌池配置：支持单个供应商配置多个 API Key
+  keyPool: string[] | null;
+  keySelectionStrategy: KeySelectionStrategy;
+
   // 1M Context Window 偏好配置（仅对 Anthropic 类型供应商有效）
   context1mPreference: Context1mPreference | null;
 
@@ -195,6 +202,9 @@ export interface ProviderDisplay {
   websiteUrl: string | null;
   faviconUrl: string | null;
   cacheTtlPreference: CacheTtlPreference | null;
+  // 令牌池配置
+  keyPoolCount: number;
+  keySelectionStrategy: KeySelectionStrategy;
   context1mPreference: Context1mPreference | null;
   codexReasoningEffortPreference: CodexReasoningEffortPreference | null;
   codexReasoningSummaryPreference: CodexReasoningSummaryPreference | null;
@@ -283,6 +293,9 @@ export interface CreateProviderData {
   website_url?: string | null;
   favicon_url?: string | null;
   cache_ttl_preference?: CacheTtlPreference | null;
+  // 令牌池配置
+  key_pool?: string[] | null;
+  key_selection_strategy?: KeySelectionStrategy;
   context_1m_preference?: Context1mPreference | null;
   codex_reasoning_effort_preference?: CodexReasoningEffortPreference | null;
   codex_reasoning_summary_preference?: CodexReasoningSummaryPreference | null;
@@ -353,6 +366,9 @@ export interface UpdateProviderData {
   website_url?: string | null;
   favicon_url?: string | null;
   cache_ttl_preference?: CacheTtlPreference | null;
+  // 令牌池配置
+  key_pool?: string[] | null;
+  key_selection_strategy?: KeySelectionStrategy;
   context_1m_preference?: Context1mPreference | null;
   codex_reasoning_effort_preference?: CodexReasoningEffortPreference | null;
   codex_reasoning_summary_preference?: CodexReasoningSummaryPreference | null;

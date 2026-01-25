@@ -53,6 +53,8 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     websiteUrl: providerData.website_url ?? null,
     faviconUrl: providerData.favicon_url ?? null,
     cacheTtlPreference: providerData.cache_ttl_preference ?? null,
+    keyPool: providerData.key_pool ?? null,
+    keySelectionStrategy: providerData.key_selection_strategy ?? "random",
     context1mPreference: providerData.context_1m_preference ?? null,
     codexReasoningEffortPreference: providerData.codex_reasoning_effort_preference ?? null,
     codexReasoningSummaryPreference: providerData.codex_reasoning_summary_preference ?? null,
@@ -103,6 +105,8 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     websiteUrl: providers.websiteUrl,
     faviconUrl: providers.faviconUrl,
     cacheTtlPreference: providers.cacheTtlPreference,
+    keyPool: providers.keyPool,
+    keySelectionStrategy: providers.keySelectionStrategy,
     context1mPreference: providers.context1mPreference,
     codexReasoningEffortPreference: providers.codexReasoningEffortPreference,
     codexReasoningSummaryPreference: providers.codexReasoningSummaryPreference,
@@ -321,6 +325,8 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       websiteUrl: providers.websiteUrl,
       faviconUrl: providers.faviconUrl,
       cacheTtlPreference: providers.cacheTtlPreference,
+      keyPool: providers.keyPool,
+      keySelectionStrategy: providers.keySelectionStrategy,
       context1mPreference: providers.context1mPreference,
       codexReasoningEffortPreference: providers.codexReasoningEffortPreference,
       codexReasoningSummaryPreference: providers.codexReasoningSummaryPreference,
@@ -420,6 +426,9 @@ export async function updateProvider(
   if (providerData.favicon_url !== undefined) dbData.faviconUrl = providerData.favicon_url;
   if (providerData.cache_ttl_preference !== undefined)
     dbData.cacheTtlPreference = providerData.cache_ttl_preference ?? null;
+  if (providerData.key_pool !== undefined) dbData.keyPool = providerData.key_pool ?? null;
+  if (providerData.key_selection_strategy !== undefined)
+    dbData.keySelectionStrategy = providerData.key_selection_strategy ?? "random";
   if (providerData.context_1m_preference !== undefined)
     dbData.context1mPreference = providerData.context_1m_preference ?? null;
   if (providerData.codex_reasoning_effort_preference !== undefined)

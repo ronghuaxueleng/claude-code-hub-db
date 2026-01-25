@@ -240,6 +240,15 @@ export const providers = pgTable('providers', {
   // Cache TTL override（null = 不覆写，沿用客户端请求）
   cacheTtlPreference: varchar('cache_ttl_preference', { length: 10 }),
 
+  // 令牌池配置：支持单个供应商配置多个 API Key
+  // - keyPool: 令牌池（JSON 数组），null 或空数组表示仅使用 key 字段
+  // - keySelectionStrategy: 令牌选择策略，'random'（默认）或 'round_robin'
+  keyPool: jsonb('key_pool').$type<string[] | null>().default(null),
+  keySelectionStrategy: varchar('key_selection_strategy', { length: 20 })
+    .notNull()
+    .default('random')
+    .$type<'random' | 'round_robin'>(),
+
   // 1M Context Window 偏好配置（仅对 Anthropic 类型供应商有效）
   // - 'inherit' (默认): 遵循客户端请求，客户端带 1M header 则启用
   // - 'force_enable': 强制启用 1M 上下文（仅对支持的模型生效）

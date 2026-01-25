@@ -270,6 +270,8 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         websiteUrl: provider.websiteUrl,
         faviconUrl: provider.faviconUrl,
         cacheTtlPreference: provider.cacheTtlPreference,
+        keyPoolCount: provider.keyPool?.length ?? 0,
+        keySelectionStrategy: provider.keySelectionStrategy,
         context1mPreference: provider.context1mPreference,
         codexReasoningEffortPreference: provider.codexReasoningEffortPreference,
         codexReasoningSummaryPreference: provider.codexReasoningSummaryPreference,
@@ -298,6 +300,34 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     });
     logger.error("获取服务商数据失败:", error);
     return [];
+  }
+}
+
+/**
+ * Get provider full data for editing (includes keyPool)
+ * Only for admin users in edit mode
+ */
+export async function getProviderForEdit(
+  providerId: number
+): Promise<{ keyPool: string[] | null } | null> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return null;
+    }
+
+    const provider = await findProviderById(providerId);
+    if (!provider) {
+      return null;
+    }
+
+    // Only return sensitive fields needed for editing
+    return {
+      keyPool: provider.keyPool,
+    };
+  } catch (error) {
+    logger.error("getProviderForEdit failed:", error);
+    return null;
   }
 }
 
@@ -457,6 +487,8 @@ export async function addProvider(data: {
   limit_total_usd?: number | null;
   limit_concurrent_sessions?: number | null;
   cache_ttl_preference?: CacheTtlPreference | null;
+  key_pool?: string[] | null;
+  key_selection_strategy?: "random" | "round_robin";
   context_1m_preference?: Context1mPreference | null;
   codex_reasoning_effort_preference?: CodexReasoningEffortPreference | null;
   codex_reasoning_summary_preference?: CodexReasoningSummaryPreference | null;

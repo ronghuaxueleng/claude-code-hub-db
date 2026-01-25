@@ -24,6 +24,7 @@ import { CONTEXT_1M_BETA_HEADER, shouldApplyContext1m } from "@/lib/special-attr
 import { recordIpFailure } from "@/repository/cf-ip-blacklist";
 import { updateMessageRequestDetails } from "@/repository/message";
 import type { CacheTtlPreference, CacheTtlResolved } from "@/types/cache";
+import type { Provider } from "@/types/provider";
 import { isOfficialCodexClient, sanitizeCodexRequest } from "../codex/utils/request-sanitizer";
 import { defaultRegistry } from "../converters";
 import type { Format } from "../converters/types";
@@ -61,6 +62,9 @@ const STANDARD_ENDPOINTS = [
 
 const RETRY_LIMITS = PROVIDER_LIMITS.MAX_RETRY_ATTEMPTS;
 const MAX_PROVIDER_SWITCHES = 20; // 保险栓：最多切换 20 次供应商（防止无限循环）
+
+// 令牌池轮询计数器（按 providerId 维护，内存中无需持久化）
+const keyPoolRoundRobinCounters = new Map<number, number>();
 
 type CacheTtlOption = CacheTtlPreference | null | undefined;
 
@@ -1115,9 +1119,18 @@ export class ProxyForwarder {
         geminiSearchParams.get("alt") === "sse" ||
         originalBody?.stream === true;
 
-      // 2. 准备认证和 Headers
-      const accessToken = await GeminiAuth.getAccessToken(provider.key);
-      const isApiKey = GeminiAuth.isApiKey(provider.key);
+      // 2. 准备认证和 Headers（从令牌池选择 key）
+      const { key: selectedKey, keyIndex: geminiKeyIndex } =
+        ProxyForwarder.selectKeyFromPool(provider);
+      if (geminiKeyIndex !== null) {
+        logger.debug("ProxyForwarder: Gemini using key from pool", {
+          providerId: provider.id,
+          keyIndex: geminiKeyIndex,
+          strategy: provider.keySelectionStrategy,
+        });
+      }
+      const accessToken = await GeminiAuth.getAccessToken(selectedKey);
+      const isApiKey = GeminiAuth.isApiKey(selectedKey);
 
       // 3. 直接透传：使用 buildProxyUrl() 拼接原始路径和查询参数
       const baseUrl =
@@ -2072,11 +2085,73 @@ export class ProxyForwarder {
     return alternativeProvider;
   }
 
+  /**
+   * 从令牌池中选择一个 API Key
+   *
+   * 策略：
+   * 1. 如果有令牌池且非空，根据策略选择
+   *    - random: 随机选择
+   *    - round_robin: 轮询选择（使用内存计数器）
+   * 2. 回退到原 key 字段
+   *
+   * @returns 选中的 API Key 和索引（用于日志）
+   */
+  private static selectKeyFromPool(provider: Provider): { key: string; keyIndex: number | null } {
+    const { keyPool, keySelectionStrategy, key: defaultKey } = provider;
+
+    // 没有令牌池或为空，使用默认 key
+    if (!keyPool || keyPool.length === 0) {
+      return { key: defaultKey, keyIndex: null };
+    }
+
+    // 过滤空字符串
+    const validKeys = keyPool.filter((k) => k && k.trim().length > 0);
+    if (validKeys.length === 0) {
+      return { key: defaultKey, keyIndex: null };
+    }
+
+    let selectedIndex: number;
+
+    if (keySelectionStrategy === "round_robin") {
+      // 轮询策略：获取当前计数器，选择后递增
+      const currentCount = keyPoolRoundRobinCounters.get(provider.id) ?? 0;
+      selectedIndex = currentCount % validKeys.length;
+      keyPoolRoundRobinCounters.set(provider.id, currentCount + 1);
+
+      logger.debug("ProxyForwarder: Key pool round-robin selection", {
+        providerId: provider.id,
+        poolSize: validKeys.length,
+        selectedIndex,
+        counter: currentCount,
+      });
+    } else {
+      // 随机策略（默认）
+      selectedIndex = Math.floor(Math.random() * validKeys.length);
+
+      logger.debug("ProxyForwarder: Key pool random selection", {
+        providerId: provider.id,
+        poolSize: validKeys.length,
+        selectedIndex,
+      });
+    }
+
+    return { key: validKeys[selectedIndex], keyIndex: selectedIndex };
+  }
+
   private static buildHeaders(
     session: ProxySession,
     provider: NonNullable<typeof session.provider>
   ): Headers {
-    const outboundKey = provider.key;
+    // 从令牌池中选择 key
+    const { key: outboundKey, keyIndex } = ProxyForwarder.selectKeyFromPool(provider);
+    if (keyIndex !== null) {
+      logger.debug("ProxyForwarder: Using key from pool", {
+        providerId: provider.id,
+        providerName: provider.name,
+        keyIndex,
+        strategy: provider.keySelectionStrategy,
+      });
+    }
     const preserveClientIp = provider.preserveClientIp ?? false;
     const { clientIp, xForwardedFor } = ProxyForwarder.resolveClientIp(session.headers);
 

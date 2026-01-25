@@ -1,0 +1,14 @@
+{
+  "label": "APIキープール",
+  "description": "複数のAPIキーを設定し、リクエスト毎に選択",
+  "placeholder": "1行に1つのAPIキーを入力",
+  "count": "プール内のキー数: {count}",
+  "emptyHint": "空白の場合は上のAPIキーを使用",
+  "strategy": {
+    "label": "選択戦略",
+    "random": "ランダム",
+    "roundRobin": "ラウンドロビン",
+    "randomDesc": "ランダムにキーを選択",
+    "roundRobinDesc": "順番にキーを使用"
+  }
+}

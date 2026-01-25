@@ -3,7 +3,7 @@ import { ChevronDown, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { addProvider, editProvider, removeProvider } from "@/actions/providers";
+import { addProvider, editProvider, getProviderForEdit, removeProvider } from "@/actions/providers";
 import { getDistinctProviderGroupsAction } from "@/actions/request-filters";
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { TagInput } from "@/components/ui/tag-input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PROVIDER_DEFAULTS, PROVIDER_TIMEOUT_DEFAULTS } from "@/lib/constants/provider.constants";
 import type { Context1mPreference } from "@/lib/special-attributes";
@@ -45,6 +46,7 @@ import type {
   CodexReasoningEffortPreference,
   CodexReasoningSummaryPreference,
   CodexTextVerbosityPreference,
+  KeySelectionStrategy,
   McpPassthroughType,
   ProviderDisplay,
   ProviderType,
@@ -120,6 +122,12 @@ export function ProviderForm({
   );
   const [url, setUrl] = useState(sourceProvider?.url ?? "");
   const [key, setKey] = useState(""); // 编辑时留空代表不更新
+  // 令牌池配置（从 ProviderDisplay 无法获取原始令牌，只显示数量）
+  const [keyPool, setKeyPool] = useState<string[]>([]);
+  const [keyPoolText, setKeyPoolText] = useState(""); // Textarea 中的文本
+  const [keySelectionStrategy, setKeySelectionStrategy] = useState<KeySelectionStrategy>(
+    sourceProvider?.keySelectionStrategy ?? "random"
+  );
   const [providerType, setProviderType] = useState<ProviderType>(
     sourceProvider?.providerType ?? "claude"
   );
@@ -313,6 +321,22 @@ export function ProviderForm({
       });
   }, []);
 
+  // Load keyPool data for edit mode
+  useEffect(() => {
+    if (isEdit && provider?.id) {
+      getProviderForEdit(provider.id)
+        .then((data) => {
+          if (data?.keyPool && data.keyPool.length > 0) {
+            setKeyPool(data.keyPool);
+            setKeyPoolText(data.keyPool.join("\n"));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load provider keyPool:", err);
+        });
+    }
+  }, [isEdit, provider?.id]);
+
   // 折叠区域切换函数
   const toggleSection = (key: SectionKey) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -419,6 +443,8 @@ export function ProviderForm({
             limit_total_usd?: number | null;
             limit_concurrent_sessions?: number | null;
             cache_ttl_preference?: "inherit" | "5m" | "1h";
+            key_pool?: string[] | null;
+            key_selection_strategy?: KeySelectionStrategy;
             context_1m_preference?: Context1mPreference | null;
             codex_reasoning_effort_preference?: CodexReasoningEffortPreference | null;
             codex_reasoning_summary_preference?: CodexReasoningSummaryPreference | null;
@@ -462,6 +488,8 @@ export function ProviderForm({
             limit_total_usd: limitTotalUsd,
             limit_concurrent_sessions: limitConcurrentSessions ?? 0,
             cache_ttl_preference: cacheTtlPreference,
+            key_pool: keyPool.length > 0 ? keyPool : null,
+            key_selection_strategy: keySelectionStrategy,
             context_1m_preference: context1mPreference,
             codex_reasoning_effort_preference: codexReasoningEffortPreference,
             codex_reasoning_summary_preference: codexReasoningSummaryPreference,
@@ -527,6 +555,8 @@ export function ProviderForm({
             limit_total_usd: limitTotalUsd,
             limit_concurrent_sessions: limitConcurrentSessions ?? 0,
             cache_ttl_preference: cacheTtlPreference,
+            key_pool: keyPool.length > 0 ? keyPool : null,
+            key_selection_strategy: keySelectionStrategy,
             context_1m_preference: context1mPreference,
             codex_reasoning_effort_preference: codexReasoningEffortPreference,
             codex_reasoning_summary_preference: codexReasoningSummaryPreference,
@@ -572,6 +602,9 @@ export function ProviderForm({
           setName("");
           setUrl("");
           setKey("");
+          setKeyPool([]);
+          setKeyPoolText("");
+          setKeySelectionStrategy("random");
           setProviderType("claude");
           setPreserveClientIp(false);
           setModelRedirects({});
@@ -672,6 +705,77 @@ export function ProviderForm({
                 {t("key.currentKey", { key: provider.maskedKey })}
               </div>
             ) : null}
+          </div>
+
+          {/* 令牌池配置 */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={isEdit ? "edit-key-pool" : "key-pool"}>
+                {t("keyPool.label")}
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">{t("keyPool.description")}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Textarea
+              id={isEdit ? "edit-key-pool" : "key-pool"}
+              value={keyPoolText}
+              onChange={(e) => {
+                const text = e.target.value;
+                setKeyPoolText(text);
+                // 解析文本为令牌数组（按行分割，过滤空行）
+                const tokens = text
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter((line) => line.length > 0);
+                setKeyPool(tokens);
+              }}
+              placeholder={t("keyPool.placeholder")}
+              disabled={isPending}
+              rows={3}
+              className="font-mono text-sm"
+            />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{t("keyPool.emptyHint")}</span>
+              {keyPool.length > 0 && (
+                <span>{t("keyPool.count", { count: keyPool.length })}</span>
+              )}
+            </div>
+
+            {/* 令牌选择策略 */}
+            {keyPool.length > 0 && (
+              <div className="flex items-center gap-4 mt-2">
+                <Label className="text-sm">{t("keyPool.strategy.label")}</Label>
+                <Select
+                  value={keySelectionStrategy}
+                  onValueChange={(v) => setKeySelectionStrategy(v as KeySelectionStrategy)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="random">
+                      <div className="flex flex-col">
+                        <span>{t("keyPool.strategy.random")}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="round_robin">
+                      <div className="flex flex-col">
+                        <span>{t("keyPool.strategy.roundRobin")}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

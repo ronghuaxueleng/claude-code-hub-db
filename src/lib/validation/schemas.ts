@@ -9,6 +9,7 @@ import { CURRENCY_CONFIG } from "@/lib/utils/currency";
 
 const CACHE_TTL_PREFERENCE = z.enum(["inherit", "5m", "1h"]);
 const CONTEXT_1M_PREFERENCE = z.enum(["inherit", "force_enable", "disabled"]);
+const KEY_SELECTION_STRATEGY = z.enum(["random", "round_robin"]);
 
 // Codex（Responses API）供应商级覆写偏好
 const CODEX_REASONING_EFFORT_PREFERENCE = z.enum([
@@ -435,6 +436,9 @@ export const CreateProviderSchema = z.object({
     .optional()
     .default(0),
   cache_ttl_preference: CACHE_TTL_PREFERENCE.optional().default("inherit"),
+  // 令牌池配置
+  key_pool: z.array(z.string().max(1024, "令牌长度不能超过1024个字符")).nullable().optional(),
+  key_selection_strategy: KEY_SELECTION_STRATEGY.optional().default("random"),
   context_1m_preference: CONTEXT_1M_PREFERENCE.nullable().optional(),
   codex_reasoning_effort_preference:
     CODEX_REASONING_EFFORT_PREFERENCE.optional().default("inherit"),
@@ -612,6 +616,9 @@ export const UpdateProviderSchema = z
       .max(1000, "并发Session上限不能超过1000")
       .optional(),
     cache_ttl_preference: CACHE_TTL_PREFERENCE.optional(),
+    // 令牌池配置
+    key_pool: z.array(z.string().max(1024, "令牌长度不能超过1024个字符")).nullable().optional(),
+    key_selection_strategy: KEY_SELECTION_STRATEGY.optional(),
     context_1m_preference: CONTEXT_1M_PREFERENCE.nullable().optional(),
     codex_reasoning_effort_preference: CODEX_REASONING_EFFORT_PREFERENCE.optional(),
     codex_reasoning_summary_preference: CODEX_REASONING_SUMMARY_PREFERENCE.optional(),

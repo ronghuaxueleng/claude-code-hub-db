@@ -1,0 +1,14 @@
+{
+  "label": "Key Pool",
+  "description": "Configure multiple API keys, one will be selected per request",
+  "placeholder": "Enter one API key per line",
+  "count": "Keys in pool: {count}",
+  "emptyHint": "Leave empty to use the API Key field above",
+  "strategy": {
+    "label": "Selection Strategy",
+    "random": "Random",
+    "roundRobin": "Round Robin",
+    "randomDesc": "Randomly select a key",
+    "roundRobinDesc": "Cycle through keys in order"
+  }
+}

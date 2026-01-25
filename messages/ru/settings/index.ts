@@ -47,6 +47,7 @@ import providersFormTitle from "./providers/form/title.json";
 import providersFormUrl from "./providers/form/url.json";
 import providersFormUrlPreview from "./providers/form/urlPreview.json";
 import providersFormWebsiteUrl from "./providers/form/websiteUrl.json";
+import providersFormKeyPool from "./providers/form/keyPool.json";
 
 const providersForm = {
   ...providersFormStrings,
@@ -69,6 +70,7 @@ const providersForm = {
   url: providersFormUrl,
   urlPreview: providersFormUrlPreview,
   websiteUrl: providersFormWebsiteUrl,
+  keyPool: providersFormKeyPool,
 };
 
 const providers = {

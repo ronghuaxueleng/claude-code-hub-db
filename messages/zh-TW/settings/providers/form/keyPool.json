@@ -1,0 +1,14 @@
+{
+  "label": "令牌池",
+  "description": "配置多個 API Key, 請求時從池中選擇一個",
+  "placeholder": "每行輸入一個 API Key",
+  "count": "當前令牌數: {count}",
+  "emptyHint": "留空則使用上方的 API 密鑰",
+  "strategy": {
+    "label": "選擇策略",
+    "random": "隨機",
+    "roundRobin": "輪詢",
+    "randomDesc": "隨機選擇一個令牌",
+    "roundRobinDesc": "按順序輪詢使用令牌"
+  }
+}
