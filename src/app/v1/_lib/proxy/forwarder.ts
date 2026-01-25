@@ -66,6 +66,22 @@ const MAX_PROVIDER_SWITCHES = 20; // 保险栓：最多切换 20 次供应商（
 // 令牌池轮询计数器（按 providerId 维护，内存中无需持久化）
 const keyPoolRoundRobinCounters = new Map<number, number>();
 
+/**
+ * 判断错误码是否适合 key 级别故障转移
+ *
+ * 适用于与 API Key 相关的错误（如限流、资源不足等）：
+ * - 429: 限流（Rate Limited）
+ * - 500: 内部服务器错误
+ * - 502: Bad Gateway
+ * - 503: 服务不可用
+ * - 529: Overloaded（Anthropic 特有）
+ *
+ * 不适用的错误码（如 400 客户端错误、401 认证失败等）不应触发 key 故障转移
+ */
+function isKeyFailoverEligibleError(statusCode: number): boolean {
+  return [429, 500, 502, 503, 529].includes(statusCode);
+}
+
 type CacheTtlOption = CacheTtlPreference | null | undefined;
 
 function resolveCacheTtlPreference(
@@ -927,6 +943,70 @@ export class ProxyForwarder {
               continue;
             }
 
+            // ========== Key 级别故障转移检查 ==========
+            const currentKeyIndex = session.getCurrentKeyIndex(currentProvider.id);
+            const shouldTryKeyFailover =
+              currentKeyIndex !== null &&
+              currentProvider.keyPool &&
+              currentProvider.keyPool.length > 1 &&
+              isKeyFailoverEligibleError(statusCode);
+
+            if (shouldTryKeyFailover) {
+              // 标记当前 key 为失败
+              session.markKeyAsFailed(currentProvider.id, currentKeyIndex);
+
+              // 检查是否还有可用的 key
+              const failedKeyIndices = session.getFailedKeyIndices(currentProvider.id);
+              // 使用非空断言，因为 shouldTryKeyFailover 已检查 keyPool 存在
+              const validKeyCount = currentProvider.keyPool!.filter(
+                (k) => k && k.trim().length > 0
+              ).length;
+
+              if (failedKeyIndices.size < validKeyCount) {
+                // 还有可用 key，记录到决策链并继续内层循环（使用新 key 重试）
+                logger.info("ProxyForwarder: Key failover - trying next key in pool", {
+                  providerId: currentProvider.id,
+                  providerName: currentProvider.name,
+                  failedKeyIndex: currentKeyIndex,
+                  failedKeyCount: failedKeyIndices.size,
+                  totalValidKeys: validKeyCount,
+                  statusCode,
+                });
+
+                session.addProviderToChain(currentProvider, {
+                  reason: "key_failover",
+                  circuitState: getCircuitState(currentProvider.id),
+                  attemptNumber: attemptCount,
+                  errorMessage: errorMessage,
+                  statusCode: statusCode,
+                  errorDetails: {
+                    provider: {
+                      id: currentProvider.id,
+                      name: currentProvider.name,
+                      statusCode: statusCode,
+                      statusText: `Key failover: keyIndex=${currentKeyIndex} failed, trying next key`,
+                      upstreamBody: proxyError.upstreamError?.body,
+                      upstreamParsed: proxyError.upstreamError?.parsed,
+                    },
+                    request: buildRequestDetails(session),
+                  },
+                });
+
+                // 重置尝试计数，使用新 key 重新开始重试
+                attemptCount = 0;
+                await new Promise((resolve) => setTimeout(resolve, 50));
+                continue;
+              }
+
+              // 所有 key 都已失败，记录日志后继续走原有的供应商切换逻辑
+              logger.warn("ProxyForwarder: All keys in pool exhausted, switching provider", {
+                providerId: currentProvider.id,
+                providerName: currentProvider.name,
+                failedKeyCount: failedKeyIndices.size,
+                totalValidKeys: validKeyCount,
+              });
+            }
+
             // ⭐ 重试耗尽：只有非探测请求才计入熔断器
             if (session.isProbeRequest()) {
               logger.debug("ProxyForwarder: Probe request error, skipping circuit breaker", {
@@ -1119,14 +1199,20 @@ export class ProxyForwarder {
         geminiSearchParams.get("alt") === "sse" ||
         originalBody?.stream === true;
 
-      // 2. 准备认证和 Headers（从令牌池选择 key）
-      const { key: selectedKey, keyIndex: geminiKeyIndex } =
-        ProxyForwarder.selectKeyFromPool(provider);
+      // 2. 准备认证和 Headers（从令牌池选择 key，排除已失败的 key）
+      const geminiFailedKeyIndices = session.getFailedKeyIndices(provider.id);
+      const { key: selectedKey, keyIndex: geminiKeyIndex } = ProxyForwarder.selectKeyFromPool(
+        provider,
+        geminiFailedKeyIndices.size > 0 ? geminiFailedKeyIndices : undefined
+      );
+      // 记录当前使用的 key 索引（用于失败时追踪）
+      session.setCurrentKeyIndex(provider.id, geminiKeyIndex);
       if (geminiKeyIndex !== null) {
         logger.debug("ProxyForwarder: Gemini using key from pool", {
           providerId: provider.id,
           keyIndex: geminiKeyIndex,
           strategy: provider.keySelectionStrategy,
+          failedKeyCount: geminiFailedKeyIndices.size,
         });
       }
       const accessToken = await GeminiAuth.getAccessToken(selectedKey);
@@ -2094,62 +2180,107 @@ export class ProxyForwarder {
    *    - round_robin: 轮询选择（使用内存计数器）
    * 2. 回退到原 key 字段
    *
-   * @returns 选中的 API Key 和索引（用于日志）
+   * @param provider - 供应商配置
+   * @param excludeKeyIndices - 需要排除的 key 索引集合（用于 key 级别故障转移）
+   * @returns 选中的 API Key、索引和是否所有 key 都已耗尽
    */
-  private static selectKeyFromPool(provider: Provider): { key: string; keyIndex: number | null } {
+  private static selectKeyFromPool(
+    provider: Provider,
+    excludeKeyIndices?: Set<number>
+  ): { key: string; keyIndex: number | null; allKeysExhausted: boolean } {
     const { keyPool, keySelectionStrategy, key: defaultKey } = provider;
 
     // 没有令牌池或为空，使用默认 key
     if (!keyPool || keyPool.length === 0) {
-      return { key: defaultKey, keyIndex: null };
+      return { key: defaultKey, keyIndex: null, allKeysExhausted: false };
     }
 
-    // 过滤空字符串
-    const validKeys = keyPool.filter((k) => k && k.trim().length > 0);
-    if (validKeys.length === 0) {
-      return { key: defaultKey, keyIndex: null };
+    // 过滤空字符串，保留原始索引映射
+    const validKeysWithIndex: Array<{ key: string; originalIndex: number }> = [];
+    for (let i = 0; i < keyPool.length; i++) {
+      const k = keyPool[i];
+      if (k && k.trim().length > 0) {
+        validKeysWithIndex.push({ key: k, originalIndex: i });
+      }
     }
 
-    let selectedIndex: number;
+    if (validKeysWithIndex.length === 0) {
+      return { key: defaultKey, keyIndex: null, allKeysExhausted: false };
+    }
+
+    // 排除已失败的 key
+    const availableKeys = excludeKeyIndices
+      ? validKeysWithIndex.filter((item) => !excludeKeyIndices.has(item.originalIndex))
+      : validKeysWithIndex;
+
+    // 所有 key 都已失败
+    if (availableKeys.length === 0) {
+      logger.warn("ProxyForwarder: All keys in pool exhausted", {
+        providerId: provider.id,
+        providerName: provider.name,
+        totalValidKeys: validKeysWithIndex.length,
+        excludedCount: excludeKeyIndices?.size ?? 0,
+      });
+      return { key: defaultKey, keyIndex: null, allKeysExhausted: true };
+    }
+
+    let selectedItem: { key: string; originalIndex: number };
 
     if (keySelectionStrategy === "round_robin") {
-      // 轮询策略：获取当前计数器，选择后递增
+      // 轮询策略：获取当前计数器，从可用 key 中选择
       const currentCount = keyPoolRoundRobinCounters.get(provider.id) ?? 0;
-      selectedIndex = currentCount % validKeys.length;
+      const selectedIdx = currentCount % availableKeys.length;
+      selectedItem = availableKeys[selectedIdx];
       keyPoolRoundRobinCounters.set(provider.id, currentCount + 1);
 
       logger.debug("ProxyForwarder: Key pool round-robin selection", {
         providerId: provider.id,
-        poolSize: validKeys.length,
-        selectedIndex,
+        poolSize: validKeysWithIndex.length,
+        availableCount: availableKeys.length,
+        selectedIndex: selectedItem.originalIndex,
         counter: currentCount,
+        excludedCount: excludeKeyIndices?.size ?? 0,
       });
     } else {
       // 随机策略（默认）
-      selectedIndex = Math.floor(Math.random() * validKeys.length);
+      const randomIdx = Math.floor(Math.random() * availableKeys.length);
+      selectedItem = availableKeys[randomIdx];
 
       logger.debug("ProxyForwarder: Key pool random selection", {
         providerId: provider.id,
-        poolSize: validKeys.length,
-        selectedIndex,
+        poolSize: validKeysWithIndex.length,
+        availableCount: availableKeys.length,
+        selectedIndex: selectedItem.originalIndex,
+        excludedCount: excludeKeyIndices?.size ?? 0,
       });
     }
 
-    return { key: validKeys[selectedIndex], keyIndex: selectedIndex };
+    return {
+      key: selectedItem.key,
+      keyIndex: selectedItem.originalIndex,
+      allKeysExhausted: false,
+    };
   }
 
   private static buildHeaders(
     session: ProxySession,
     provider: NonNullable<typeof session.provider>
   ): Headers {
-    // 从令牌池中选择 key
-    const { key: outboundKey, keyIndex } = ProxyForwarder.selectKeyFromPool(provider);
+    // 从令牌池中选择 key（排除已失败的 key）
+    const failedKeyIndices = session.getFailedKeyIndices(provider.id);
+    const { key: outboundKey, keyIndex } = ProxyForwarder.selectKeyFromPool(
+      provider,
+      failedKeyIndices.size > 0 ? failedKeyIndices : undefined
+    );
+    // 记录当前使用的 key 索引（用于失败时追踪）
+    session.setCurrentKeyIndex(provider.id, keyIndex);
     if (keyIndex !== null) {
       logger.debug("ProxyForwarder: Using key from pool", {
         providerId: provider.id,
         providerName: provider.name,
         keyIndex,
         strategy: provider.keySelectionStrategy,
+        failedKeyCount: failedKeyIndices.size,
       });
     }
     const preserveClientIp = provider.preserveClientIp ?? false;

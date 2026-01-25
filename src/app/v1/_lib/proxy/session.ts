@@ -134,6 +134,20 @@ export class ProxySession {
    */
   private providerByIdCache: Map<number, Provider | null> = new Map();
 
+  /**
+   * Key 级别故障转移追踪
+   *
+   * 当前请求中已失败的 key 索引（按 providerId 分组）
+   * 用于在同一 Provider 内尝试其他 Key，避免重复选择失败的 key
+   */
+  private failedKeyIndices: Map<number, Set<number>> = new Map();
+
+  /**
+   * 当前使用的 key 索引（用于失败时追踪）
+   * Key: providerId, Value: keyIndex (null 表示使用默认 key 而非 keyPool)
+   */
+  private currentKeyIndex: Map<number, number | null> = new Map();
+
   private constructor(init: {
     startTime: number;
     method: string;
@@ -415,6 +429,66 @@ export class ProxySession {
     return provider;
   }
 
+  // ========== Key 级别故障转移方法 ==========
+
+  /**
+   * 标记某个 key 为失败
+   *
+   * @param providerId - Provider ID
+   * @param keyIndex - 失败的 key 索引（null 表示默认 key，不支持故障转移）
+   */
+  markKeyAsFailed(providerId: number, keyIndex: number | null): void {
+    if (keyIndex === null) {
+      return; // 默认 key 不参与故障转移追踪
+    }
+    let failedSet = this.failedKeyIndices.get(providerId);
+    if (!failedSet) {
+      failedSet = new Set<number>();
+      this.failedKeyIndices.set(providerId, failedSet);
+    }
+    failedSet.add(keyIndex);
+  }
+
+  /**
+   * 获取某个 Provider 已失败的 key 索引集合
+   *
+   * @param providerId - Provider ID
+   * @returns 失败的 key 索引集合（可能为空）
+   */
+  getFailedKeyIndices(providerId: number): Set<number> {
+    return this.failedKeyIndices.get(providerId) ?? new Set<number>();
+  }
+
+  /**
+   * 设置当前使用的 key 索引
+   *
+   * @param providerId - Provider ID
+   * @param keyIndex - key 索引（null 表示使用默认 key）
+   */
+  setCurrentKeyIndex(providerId: number, keyIndex: number | null): void {
+    this.currentKeyIndex.set(providerId, keyIndex);
+  }
+
+  /**
+   * 获取当前使用的 key 索引
+   *
+   * @param providerId - Provider ID
+   * @returns key 索引（null 表示使用默认 key 或未设置）
+   */
+  getCurrentKeyIndex(providerId: number): number | null {
+    return this.currentKeyIndex.get(providerId) ?? null;
+  }
+
+  /**
+   * 清除某个 Provider 的失败 key 记录（切换供应商时调用）
+   *
+   * @param providerId - Provider ID
+   */
+  clearFailedKeys(providerId: number): void {
+    this.failedKeyIndices.delete(providerId);
+    this.currentKeyIndex.delete(providerId);
+  }
+
   /**
    * 生成基于请求指纹的确定性 Session ID
    *
@@ -522,7 +596,8 @@ export class ProxySession {
         | "retry_with_official_instructions" // Codex instructions 自动重试（官方）
         | "retry_with_cached_instructions" // Codex instructions 智能重试（缓存）
         | "client_error_non_retryable" // 不可重试的客户端错误（Prompt 超限、内容过滤、PDF 限制、Thinking 格式）
-        | "http2_fallback"; // HTTP/2 协议错误，回退到 HTTP/1.1（不切换供应商、不计入熔断器）
+        | "http2_fallback" // HTTP/2 协议错误，回退到 HTTP/1.1（不切换供应商、不计入熔断器）
+        | "key_failover"; // Key 级别故障转移（同一供应商内尝试其他 Key）
       selectionMethod?:
         | "session_reuse"
         | "weighted_random"
