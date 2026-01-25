@@ -781,13 +781,16 @@ export class ProxyForwarder {
               }
 
               // 所有 key 都已失败，清空失败记录，等待后从头重试
-              logger.warn("ProxyForwarder: System error - all keys exhausted, retrying from beginning", {
-                providerId: currentProvider.id,
-                providerName: currentProvider.name,
-                failedKeyCount: sysErrFailedKeyIndices.size,
-                totalValidKeys: sysErrValidKeyCount,
-                errorType: err.constructor.name,
-              });
+              logger.warn(
+                "ProxyForwarder: System error - all keys exhausted, retrying from beginning",
+                {
+                  providerId: currentProvider.id,
+                  providerName: currentProvider.name,
+                  failedKeyCount: sysErrFailedKeyIndices.size,
+                  totalValidKeys: sysErrValidKeyCount,
+                  errorType: err.constructor.name,
+                }
+              );
 
               session.addProviderToChain(currentProvider, {
                 reason: "key_failover",
@@ -1064,12 +1067,15 @@ export class ProxyForwarder {
               }
 
               // 所有 key 都已失败，清空失败记录，等待后从头重试
-              logger.warn("ProxyForwarder: All keys exhausted, clearing and retrying from beginning", {
-                providerId: currentProvider.id,
-                providerName: currentProvider.name,
-                failedKeyCount: failedKeyIndices.size,
-                totalValidKeys: validKeyCount,
-              });
+              logger.warn(
+                "ProxyForwarder: All keys exhausted, clearing and retrying from beginning",
+                {
+                  providerId: currentProvider.id,
+                  providerName: currentProvider.name,
+                  failedKeyCount: failedKeyIndices.size,
+                  totalValidKeys: validKeyCount,
+                }
+              );
 
               session.addProviderToChain(currentProvider, {
                 reason: "key_failover",
