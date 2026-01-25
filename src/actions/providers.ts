@@ -675,6 +675,8 @@ export async function editProvider(
     website_url?: string | null;
     mcp_passthrough_type?: "none" | "minimax" | "glm" | "custom";
     mcp_passthrough_url?: string | null;
+    key_pool?: string[] | null;
+    key_selection_strategy?: "random" | "round_robin";
     tpm?: number | null;
     rpm?: number | null;
     rpd?: number | null;
