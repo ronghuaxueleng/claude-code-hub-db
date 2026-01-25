@@ -740,7 +740,72 @@ export class ProxyForwarder {
               continue; // ⭐ 继续内层循环（重试当前供应商）
             }
 
-            // 第2次失败：跳出内层循环，切换供应商
+            // ========== Key 级别故障转移检查（SYSTEM_ERROR） ==========
+            const systemErrorKeyIndex = session.getCurrentKeyIndex(currentProvider.id);
+            const shouldTryKeyFailoverOnSystemError =
+              systemErrorKeyIndex !== null &&
+              currentProvider.keyPool &&
+              currentProvider.keyPool.length > 1;
+
+            if (shouldTryKeyFailoverOnSystemError) {
+              // 标记当前 key 为失败
+              session.markKeyAsFailed(currentProvider.id, systemErrorKeyIndex);
+
+              // 检查是否还有可用的 key
+              const sysErrFailedKeyIndices = session.getFailedKeyIndices(currentProvider.id);
+              const sysErrValidKeyCount = currentProvider.keyPool!.filter(
+                (k) => k && k.trim().length > 0
+              ).length;
+
+              if (sysErrFailedKeyIndices.size < sysErrValidKeyCount) {
+                // 还有可用 key，尝试下一个 key
+                logger.info("ProxyForwarder: System error - trying next key in pool", {
+                  providerId: currentProvider.id,
+                  providerName: currentProvider.name,
+                  failedKeyIndex: systemErrorKeyIndex,
+                  failedKeyCount: sysErrFailedKeyIndices.size,
+                  totalValidKeys: sysErrValidKeyCount,
+                  errorType: err.constructor.name,
+                });
+
+                session.addProviderToChain(currentProvider, {
+                  reason: "key_failover",
+                  circuitState: getCircuitState(currentProvider.id),
+                  attemptNumber: attemptCount,
+                  errorMessage: `System error (${err.name}): trying next key`,
+                });
+
+                attemptCount = 0;
+                await new Promise((resolve) => setTimeout(resolve, 50));
+                continue;
+              }
+
+              // 所有 key 都已失败，清空失败记录，等待后从头重试
+              logger.warn("ProxyForwarder: System error - all keys exhausted, retrying from beginning", {
+                providerId: currentProvider.id,
+                providerName: currentProvider.name,
+                failedKeyCount: sysErrFailedKeyIndices.size,
+                totalValidKeys: sysErrValidKeyCount,
+                errorType: err.constructor.name,
+              });
+
+              session.addProviderToChain(currentProvider, {
+                reason: "key_failover",
+                circuitState: getCircuitState(currentProvider.id),
+                attemptNumber: attemptCount,
+                errorMessage: `All ${sysErrValidKeyCount} keys exhausted (system error), retrying from beginning`,
+              });
+
+              // 清空失败的 key 记录，从头开始
+              session.clearFailedKeys(currentProvider.id);
+              attemptCount = 0;
+
+              // 等待一段时间后重试
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              continue;
+            }
+
+            // 第2次失败且无 key pool：跳出内层循环，切换供应商
             logger.warn("ProxyForwarder: System error persists, will switch provider", {
               providerId: currentProvider.id,
               providerName: currentProvider.name,
@@ -998,13 +1063,29 @@ export class ProxyForwarder {
                 continue;
               }
 
-              // 所有 key 都已失败，记录日志后继续走原有的供应商切换逻辑
-              logger.warn("ProxyForwarder: All keys in pool exhausted, switching provider", {
+              // 所有 key 都已失败，清空失败记录，等待后从头重试
+              logger.warn("ProxyForwarder: All keys exhausted, clearing and retrying from beginning", {
                 providerId: currentProvider.id,
                 providerName: currentProvider.name,
                 failedKeyCount: failedKeyIndices.size,
                 totalValidKeys: validKeyCount,
               });
+
+              session.addProviderToChain(currentProvider, {
+                reason: "key_failover",
+                circuitState: getCircuitState(currentProvider.id),
+                attemptNumber: attemptCount,
+                errorMessage: `All ${validKeyCount} keys exhausted, retrying from beginning`,
+                statusCode: statusCode,
+              });
+
+              // 清空失败的 key 记录，从头开始
+              session.clearFailedKeys(currentProvider.id);
+              attemptCount = 0;
+
+              // 等待一段时间后重试（避免立即重试造成更大压力）
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              continue;
             }
 
             // ⭐ 重试耗尽：只有非探测请求才计入熔断器
