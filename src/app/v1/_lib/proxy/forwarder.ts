@@ -1103,7 +1103,7 @@ export class ProxyForwarder {
       // ⭐ 继续外层循环（尝试新供应商）
     } // ========== 外层循环结束 ==========
 
-    // ========== 所有供应商都失败：抛出简化错误 ==========
+    // ========== 所有供应商都失败：抛出最后的实际错误 ==========
     // ⭐ 检查是否达到保险栓上限
     if (totalProvidersAttempted >= MAX_PROVIDER_SWITCHES) {
       logger.error("ProxyForwarder: Exceeded max provider switches (safety limit)", {
@@ -1113,7 +1113,12 @@ export class ProxyForwarder {
       });
     }
 
-    // ⭐ 不暴露供应商详情，仅返回简单错误
+    // ⭐ 优先抛出最后的实际错误（包含上游错误详情），而不是通用错误
+    if (lastError) {
+      throw lastError;
+    }
+
+    // 兜底：没有 lastError 时使用通用错误
     throw new ProxyError("所有供应商暂时不可用，请稍后重试", 503); // Service Unavailable
   }
 
