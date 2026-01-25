@@ -710,9 +710,7 @@ export function ProviderForm({
           {/* 令牌池配置 */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Label htmlFor={isEdit ? "edit-key-pool" : "key-pool"}>
-                {t("keyPool.label")}
-              </Label>
+              <Label htmlFor={isEdit ? "edit-key-pool" : "key-pool"}>{t("keyPool.label")}</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -744,9 +742,7 @@ export function ProviderForm({
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{t("keyPool.emptyHint")}</span>
-              {keyPool.length > 0 && (
-                <span>{t("keyPool.count", { count: keyPool.length })}</span>
-              )}
+              {keyPool.length > 0 && <span>{t("keyPool.count", { count: keyPool.length })}</span>}
             </div>
 
             {/* 令牌选择策略 */}
