@@ -338,6 +338,60 @@ class TokenCreator:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def list_tokens(self, cookie: str, user_id: str, page: int = 0, size: int = 100) -> list[dict]:
+        """获取 token 列表"""
+        headers = self.HEADERS.copy()
+        headers["cookie"] = cookie
+        headers["new-api-user"] = user_id
+        # GET 请求不需要 content-type
+        headers.pop("content-type", None)
+
+        try:
+            resp = requests.get(
+                f"{self.API_URL}?p={page}&size={size}",
+                headers=headers,
+                timeout=30,
+                proxies=self.proxies,
+            )
+
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("success"):
+                    return data.get("data", [])
+                else:
+                    print(f"    [WARN] 获取 token 列表失败: {data.get('message', '未知错误')}")
+            else:
+                print(f"    [WARN] 获取 token 列表 HTTP {resp.status_code}")
+        except Exception as e:
+            print(f"    [WARN] 获取 token 列表异常: {e}")
+
+        return []
+
+    def delete_token(self, cookie: str, user_id: str, token_id: int) -> dict:
+        """删除单个 token"""
+        headers = self.HEADERS.copy()
+        headers["cookie"] = cookie
+        headers["new-api-user"] = user_id
+        # DELETE 请求不需要 content-type
+        headers.pop("content-type", None)
+
+        try:
+            resp = requests.delete(
+                f"{self.API_URL}{token_id}",
+                headers=headers,
+                timeout=30,
+                proxies=self.proxies,
+            )
+
+            data = resp.json() if resp.text.startswith("{") else {"success": False}
+
+            if resp.status_code == 200 and data.get("success"):
+                return {"success": True, "id": token_id}
+            else:
+                return {"success": False, "id": token_id, "error": data.get("message", str(data))}
+        except Exception as e:
+            return {"success": False, "id": token_id, "error": str(e)}
+
     def batch_create(
         self, cookie: str, user_id: str, prefix: str, count: int, delay: float = 0.5
     ):
@@ -387,6 +441,116 @@ class TokenCreator:
         self.created_tokens.extend(tokens)
         print(f"\n完成! \033[32m成功: {success_count}\033[0m, \033[31m失败: {fail_count}\033[0m")
         return tokens
+
+    def batch_delete(
+        self,
+        cookie: str,
+        user_id: str,
+        prefix: str = None,
+        keyword: str = None,
+        token_ids: list[int] = None,
+        delay: float = 0.5,
+        dry_run: bool = False,
+    ):
+        """批量删除 token
+
+        Args:
+            cookie: 登录 cookie
+            user_id: 用户 ID
+            prefix: 按名称前缀过滤
+            keyword: 按关键词搜索过滤
+            token_ids: 直接指定要删除的 token ID 列表
+            delay: 删除间隔秒数
+            dry_run: 仅预览不实际删除
+        """
+        print(f"\n{'='*50}")
+        print(f"用户ID: {user_id}")
+        if token_ids:
+            print(f"删除模式: 指定 ID 列表 ({len(token_ids)} 个)")
+        elif prefix:
+            print(f"删除模式: 名称前缀匹配 '{prefix}'")
+        elif keyword:
+            print(f"删除模式: 关键词搜索 '{keyword}'")
+        else:
+            print(f"删除模式: 全部删除")
+        print(f"预览模式: {'是' if dry_run else '否'}")
+        print(f"{'='*50}\n")
+
+        # 获取要删除的 token 列表
+        to_delete = []
+
+        if token_ids:
+            # 直接使用指定的 ID
+            to_delete = [{"id": tid, "name": f"(ID: {tid})"} for tid in token_ids]
+        else:
+            # 从 API 获取 token 列表
+            print("[INFO] 正在获取 token 列表...")
+            all_tokens = []
+            page = 0
+            while True:
+                tokens = self.list_tokens(cookie, user_id, page=page, size=100)
+                if not tokens:
+                    break
+                all_tokens.extend(tokens)
+                if len(tokens) < 100:
+                    break
+                page += 1
+
+            print(f"[INFO] 共找到 {len(all_tokens)} 个 token")
+
+            # 过滤
+            for token in all_tokens:
+                name = token.get("name", "")
+                token_id = token.get("id")
+
+                if prefix and name.startswith(prefix):
+                    to_delete.append(token)
+                elif keyword and keyword in name:
+                    to_delete.append(token)
+                elif not prefix and not keyword:
+                    to_delete.append(token)
+
+        if not to_delete:
+            print("[INFO] 没有找到匹配的 token")
+            return []
+
+        # 显示预览
+        print(f"\n[INFO] 将删除以下 {len(to_delete)} 个 token:")
+        for token in to_delete[:10]:
+            print(f"  - [{token.get('id')}] {token.get('name')}")
+        if len(to_delete) > 10:
+            print(f"  ... 还有 {len(to_delete) - 10} 个")
+
+        if dry_run:
+            print("\n[DRY RUN] 仅预览，未实际删除")
+            return to_delete
+
+        # 执行删除
+        print(f"\n[INFO] 开始删除...")
+        success_count = 0
+        fail_count = 0
+        deleted_ids = []
+
+        for i, token in enumerate(to_delete, 1):
+            token_id = token.get("id")
+            token_name = token.get("name", "")
+
+            result = self.delete_token(cookie, user_id, token_id)
+
+            if result["success"]:
+                print(f"  [\033[32mOK\033[0m] {token_name} (ID: {token_id})")
+                success_count += 1
+                deleted_ids.append(token_id)
+            else:
+                error = result.get("error", "未知错误")
+                print(f"  [\033[31mFAIL\033[0m] {token_name} (ID: {token_id}) -> {error}")
+                fail_count += 1
+
+            if i < len(to_delete):
+                time.sleep(delay)
+
+        print(f"\n完成! \033[32m成功: {success_count}\033[0m, \033[31m失败: {fail_count}\033[0m")
+        return deleted_ids
 
 
 def parse_cookie_file(file_path: str) -> list[dict]:
@@ -450,13 +614,14 @@ def parse_cookie_file(file_path: str) -> list[dict]:
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="AnyRouter Token 批量创建工具",
+        description="AnyRouter Token 批量创建/删除工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+=== 创建模式 (默认) ===
 数据来源 (二选一):
 
 1. 从Cookie API获取 (自动提取user_id):
-   python create_tokens.py --api-token IzSHC1qdoyDgCDzedAdkX8zxCU7bh0mm -n 5
+   python create_tokens.py --api-token xxx -n 5
 
 2. 从文件读取:
    python create_tokens.py -f cookies.txt -n 5
@@ -464,6 +629,20 @@ async def main():
 Cookie文件格式:
    cookie|user_id|prefix|count
    session=xxx;acw_tc=yyy|6702|mytoken|10
+
+=== 删除模式 ===
+
+1. 按前缀删除:
+   python create_tokens.py -f cookies.txt --delete --delete-prefix token_abc
+
+2. 按关键词搜索删除:
+   python create_tokens.py -f cookies.txt --delete --delete-keyword test
+
+3. 指定 ID 删除:
+   python create_tokens.py -f cookies.txt --delete --delete-ids 12345,67890
+
+4. 预览模式 (不实际删除):
+   python create_tokens.py -f cookies.txt --delete --delete-prefix token_abc --dry-run
         """,
     )
 
@@ -472,18 +651,33 @@ Cookie文件格式:
     source.add_argument("-f", "--file", help="Cookie列表文件路径")
     source.add_argument("--api-token", help="Cookie API的Bearer Token")
 
-    parser.add_argument("-u", "--user-id", help="默认用户ID (可选，API模式下自动提取)")
+    # 模式选择
+    parser.add_argument("--delete", action="store_true", help="删除模式")
+
+    # 创建模式参数
     parser.add_argument("-n", "--count", type=int, default=1, help="每个账号创建数量 (默认: 1)")
     parser.add_argument("-p", "--prefix", default="token", help="Token名称前缀 (默认: token)")
     parser.add_argument("-c", "--config", help="Token配置JSON字符串")
+    parser.add_argument("--quota", type=int, default=500000, help="配额数量 (默认: 500000)")
+
+    # 删除模式参数
+    parser.add_argument("--delete-prefix", help="删除模式: 按名称前缀匹配")
+    parser.add_argument("--delete-keyword", help="删除模式: 按关键词搜索")
+    parser.add_argument("--delete-ids", help="删除模式: 直接指定ID列表 (逗号分隔)")
+
+    # 通用参数
+    parser.add_argument("-u", "--user-id", help="默认用户ID (可选，API模式下自动提取)")
     parser.add_argument("-o", "--output", default="created_tokens.json", help="输出文件")
     parser.add_argument("-d", "--delay", type=float, default=0.5, help="请求间隔秒数 (默认: 0.5)")
-    parser.add_argument("--quota", type=int, default=500000, help="配额数量 (默认: 500000)")
     parser.add_argument("--unlimited", action="store_true", default=True, help="无限配额")
     parser.add_argument("--proxy", help="代理地址 (如: http://127.0.0.1:7890)")
     parser.add_argument(
         "--no-waf", action="store_true", default=False,
         help="跳过 WAF 过盾 (如果已有 WAF cookies 在 cookie 中)",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", default=False,
+        help="预览模式 (仅显示将要删除的token，不实际删除)",
     )
 
     args = parser.parse_args()
@@ -529,8 +723,69 @@ Cookie文件格式:
     else:
         print("[WAF] 已跳过 WAF 过盾 (--no-waf)")
 
-    # 创建token
-    creator = TokenCreator(token_config, proxy=args.proxy)
+    creator = TokenCreator({}, proxy=args.proxy)
+
+    # 删除模式
+    if args.delete:
+        # 解析 ID 列表
+        token_ids = None
+        if args.delete_ids:
+            try:
+                token_ids = [int(x.strip()) for x in args.delete_ids.split(",")]
+            except ValueError:
+                print("错误: --delete-ids 格式不正确，应为逗号分隔的数字")
+                sys.exit(1)
+
+        all_deleted = []
+
+        for idx, account in enumerate(accounts, 1):
+            cookie = account.get("cookie", "")
+            user_id = account.get("user_id", args.user_id)
+
+            if not cookie:
+                print(f"\n[{idx}/{len(accounts)}] 跳过: cookie为空")
+                continue
+
+            # 合并 WAF cookies
+            cookie = merge_waf_cookies(cookie, waf_cookies)
+
+            if not user_id:
+                print(f"\n[{idx}/{len(accounts)}] 跳过: 未指定user_id")
+                continue
+
+            print(f"\n[{idx}/{len(accounts)}] 处理账号...")
+            deleted = creator.batch_delete(
+                cookie,
+                str(user_id),
+                prefix=args.delete_prefix,
+                keyword=args.delete_keyword,
+                token_ids=token_ids,
+                delay=args.delay,
+                dry_run=args.dry_run,
+            )
+            all_deleted.extend(deleted)
+
+        print(f"\n总计删除: {len(all_deleted)} 个 token")
+        return
+
+    # 创建模式 (原有逻辑)
+    token_config = {
+        "remain_quota": args.quota,
+        "unlimited_quota": args.unlimited,
+        "expired_time": -1,
+        "model_limits_enabled": False,
+        "model_limits": "",
+        "allow_ips": "",
+        "group": "",
+    }
+
+    if args.config:
+        try:
+            config_data = json.loads(args.config)
+            token_config.update(config_data)
+        except json.JSONDecodeError as e:
+            print(f"错误: 无法解析token配置 - {e}")
+            sys.exit(1)
 
     for idx, account in enumerate(accounts, 1):
         cookie = account.get("cookie", "")
