@@ -95,40 +95,41 @@ export function UsageLogsView({
   filtersRef.current = filters;
   isAutoRefreshRef.current = isAutoRefresh;
 
+  // 错误消息 ref，避免 loadData 依赖 t 导致无限循环
+  const errorMessageRef = useRef(t("logs.error.loadFailed"));
+  errorMessageRef.current = t("logs.error.loadFailed");
+
   // 加载数据
   // shouldDetectNew: 是否检测新增记录（只在刷新时为 true，筛选/翻页时为 false）
-  const loadData = useCallback(
-    async (shouldDetectNew = false) => {
-      startTransition(async () => {
-        const result = await getUsageLogs(filtersRef.current);
-        if (result.ok && result.data) {
-          // 只在刷新时检测新增（非筛选/翻页）
-          if (shouldDetectNew && previousLogsRef.current.size > 0) {
-            const newIds = result.data.logs
-              .filter((log) => !previousLogsRef.current.has(log.id))
-              .map((log) => log.id)
-              .slice(0, 10); // 限制最多高亮 10 条
+  const loadData = useCallback(async (shouldDetectNew = false) => {
+    startTransition(async () => {
+      const result = await getUsageLogs(filtersRef.current);
+      if (result.ok && result.data) {
+        // 只在刷新时检测新增（非筛选/翻页）
+        if (shouldDetectNew && previousLogsRef.current.size > 0) {
+          const newIds = result.data.logs
+            .filter((log) => !previousLogsRef.current.has(log.id))
+            .map((log) => log.id)
+            .slice(0, 10); // 限制最多高亮 10 条
 
-            if (newIds.length > 0) {
-              setNewLogIds(new Set(newIds));
-              // 800ms 后清除高亮
-              setTimeout(() => setNewLogIds(new Set()), 800);
-            }
+          if (newIds.length > 0) {
+            setNewLogIds(new Set(newIds));
+            // 800ms 后清除高亮
+            setTimeout(() => setNewLogIds(new Set()), 800);
           }
-
-          // 更新记录缓存
-          previousLogsRef.current = new Map(result.data.logs.map((log) => [log.id, true]));
-
-          setData(result.data);
-          setError(null);
-        } else {
-          setError(!result.ok && "error" in result ? result.error : t("logs.error.loadFailed"));
-          setData(null);
         }
-      });
-    },
-    [t]
-  );
+
+        // 更新记录缓存
+        previousLogsRef.current = new Map(result.data.logs.map((log) => [log.id, true]));
+
+        setData(result.data);
+        setError(null);
+      } else {
+        setError(!result.ok && "error" in result ? result.error : errorMessageRef.current);
+        setData(null);
+      }
+    });
+  }, []);
 
   // 手动刷新（检测新增）
   const handleManualRefresh = async () => {

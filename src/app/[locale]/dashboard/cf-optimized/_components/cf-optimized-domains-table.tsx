@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listCfOptimizedDomains } from "@/actions/cf-optimized-domains";
 import { Button } from "@/components/ui/button";
 import type { CfOptimizedDomain } from "@/repository/cf-optimized-domains";
@@ -19,11 +19,7 @@ export function CfOptimizedDomainsTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<CfOptimizedDomain | null>(null);
 
-  useEffect(() => {
-    loadDomains();
-  }, [loadDomains]);
-
-  async function loadDomains() {
+  const loadDomains = useCallback(async function () {
     setLoading(true);
     try {
       const data = await listCfOptimizedDomains();
@@ -33,7 +29,11 @@ export function CfOptimizedDomainsTable() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    loadDomains();
+  }, [loadDomains]);
 
   function handleEdit(domain: CfOptimizedDomain) {
     setSelectedDomain(domain);
