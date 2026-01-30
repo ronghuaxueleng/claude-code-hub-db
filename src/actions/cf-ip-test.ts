@@ -329,7 +329,9 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
 
   // 4. 过滤黑名单
   const ipsToTest = candidateIps.filter((ip) => !blacklistedIps.includes(ip));
-  console.log(`[CF IP Test] Testing ${ipsToTest.length} IPs (${candidateIps.length - ipsToTest.length} blacklisted)`);
+  console.log(
+    `[CF IP Test] Testing ${ipsToTest.length} IPs (${candidateIps.length - ipsToTest.length} blacklisted)`
+  );
 
   // 5. 并发测速
   const { results, failedIps } = await testIpsConcurrently(domain, ipsToTest, 3000, testCount);
@@ -346,7 +348,9 @@ export async function testCfOptimizedIps(domain: string, testCount = 1): Promise
     for (const result of results) {
       result.originalIp = originalIp;
       result.originalLatency = originalLatency;
-      result.improvement = Math.round(((originalLatency - result.avgLatency) / originalLatency) * 100);
+      result.improvement = Math.round(
+        ((originalLatency - result.avgLatency) / originalLatency) * 100
+      );
     }
   }
 
