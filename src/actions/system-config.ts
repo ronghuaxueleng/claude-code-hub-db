@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
+import { refreshCache as refreshCfOptimizedCache } from "@/lib/cf-optimized-ip-resolver";
 import { invalidateSystemSettingsCache } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { UpdateSystemSettingsSchema } from "@/lib/validation/schemas";
@@ -75,6 +76,11 @@ export async function saveSystemSettings(formData: {
 
     // Invalidate the system settings cache so proxy requests get fresh settings
     invalidateSystemSettingsCache();
+
+    // 如果更新了 CF 优选开关，刷新 CF 优选 IP 解析器缓存
+    if (validated.enableCfOptimization !== undefined) {
+      await refreshCfOptimizedCache();
+    }
 
     revalidatePath("/settings/config");
     revalidatePath("/dashboard");
