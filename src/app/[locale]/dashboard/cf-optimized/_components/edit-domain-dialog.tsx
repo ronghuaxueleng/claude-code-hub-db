@@ -66,10 +66,26 @@ export function EditDomainDialog({ open, onOpenChange, onSuccess, domain }: Edit
         return;
       }
 
-      // 将测试结果填入文本框
-      const ipList = results.map((r) => `${r.ip} # ${r.avgLatency.toFixed(0)}ms`).join("\n");
+      // 将测试结果填入文本框（包含加速百分比信息）
+      const ipList = results
+        .map((r) => {
+          let comment = `${r.avgLatency.toFixed(0)}ms`;
+          if (r.improvement !== undefined) {
+            const sign = r.improvement >= 0 ? "+" : "";
+            comment += `, ${sign}${r.improvement}%`;
+          }
+          return `${r.ip} # ${comment}`;
+        })
+        .join("\n");
       setIps(ipList);
-      toast.success(`找到 ${results.length} 个优选 IP`);
+
+      // Toast 中显示更详细的信息
+      const bestResult = results[0];
+      let successMessage = `找到 ${results.length} 个优选 IP`;
+      if (bestResult?.improvement !== undefined && bestResult.improvement > 0) {
+        successMessage += `，最优加速 ${bestResult.improvement}%`;
+      }
+      toast.success(successMessage);
     } catch (error) {
       console.error("Speed test failed:", error);
       toast.error("测速失败，请稍后重试");

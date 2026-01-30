@@ -62,11 +62,22 @@ async function runAutoTestCheck(): Promise<void> {
           // 刷新缓存
           await refreshCache();
 
-          logger.info("[CfIpAutoTestScheduler] Auto test completed", {
+          // 计算加速效果
+          const avgLatency = results.reduce((sum, r) => sum + r.avgLatency, 0) / results.length;
+          const bestResult = results[0];
+          const logData: Record<string, unknown> = {
             domain: domain.domain,
             ipsCount: newIps.length,
-            avgLatency: results.reduce((sum, r) => sum + r.avgLatency, 0) / results.length,
-          });
+            avgLatency,
+          };
+          if (bestResult?.originalLatency !== undefined) {
+            logData.originalLatency = bestResult.originalLatency;
+          }
+          if (bestResult?.improvement !== undefined) {
+            logData.improvement = `${bestResult.improvement}%`;
+          }
+
+          logger.info("[CfIpAutoTestScheduler] Auto test completed", logData);
         } else {
           // 没有找到可用 IP，只更新测试时间
           await updateCfOptimizedDomain(domain.id, {
