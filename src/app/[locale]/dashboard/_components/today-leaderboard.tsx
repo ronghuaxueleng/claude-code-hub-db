@@ -3,11 +3,14 @@
 import { Award, Medal, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CurrencyCode } from "@/lib/utils";
 import { formatCurrency, formatTokenAmount } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import type {
   LeaderboardEntry,
   ModelLeaderboardEntry,
@@ -22,6 +25,7 @@ interface NormalizedEntry {
   totalRequests: number;
   totalTokens: number;
   totalCost: number;
+  copyable?: boolean;
 }
 
 interface TodayLeaderboardProps {
@@ -90,6 +94,10 @@ interface LeaderboardCardProps {
   requestsLabel: string;
   tokensLabel: string;
   errorText?: string | null;
+  copyable?: boolean;
+  copySuccessText?: string;
+  copyFailedText?: string;
+  clickToCopyText?: string;
 }
 
 function LeaderboardCard({
@@ -101,6 +109,10 @@ function LeaderboardCard({
   requestsLabel,
   tokensLabel,
   errorText,
+  copyable,
+  copySuccessText,
+  copyFailedText,
+  clickToCopyText,
 }: LeaderboardCardProps) {
   if (loading) {
     return (
@@ -153,27 +165,54 @@ function LeaderboardCard({
         <CardTitle className="text-sm font-semibold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3" role="list" aria-label={title}>
-        {entries.slice(0, 5).map((entry, index) => (
-          <div key={entry.id} className="flex items-start justify-between gap-3" role="listitem">
-            <div className="flex items-start gap-3 min-w-0">
-              <RankBadge rank={index + 1} />
-              <div className="min-w-0">
-                <div className="font-medium truncate">{entry.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {entry.totalRequests.toLocaleString()} {requestsLabel}
+        {entries.slice(0, 5).map((entry, index) => {
+          const handleCopy = async () => {
+            const success = await copyToClipboard(entry.name);
+            if (success) {
+              toast.success(copySuccessText);
+            } else {
+              toast.error(copyFailedText);
+            }
+          };
+
+          return (
+            <div key={entry.id} className="flex items-start justify-between gap-3" role="listitem">
+              <div className="flex items-start gap-3 min-w-0">
+                <RankBadge rank={index + 1} />
+                <div className="min-w-0">
+                  {copyable ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                            onClick={handleCopy}
+                          >
+                            {entry.name}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>{clickToCopyText}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <div className="font-medium truncate">{entry.name}</div>
+                  )}
+                  <div className="text-xs text-muted-foreground truncate">
+                    {entry.totalRequests.toLocaleString()} {requestsLabel}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-mono font-semibold">
+                  {formatCurrency(entry.totalCost, currencyCode)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatTokenAmount(entry.totalTokens)} {tokensLabel}
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="font-mono font-semibold">
-                {formatCurrency(entry.totalCost, currencyCode)}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formatTokenAmount(entry.totalTokens)} {tokensLabel}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
@@ -185,6 +224,7 @@ export function TodayLeaderboard({
   allowGlobalUsageView,
 }: TodayLeaderboardProps) {
   const t = useTranslations("dashboard.leaderboard");
+  const tCommon = useTranslations("common");
   const [userEntries, setUserEntries] = useState<NormalizedEntry[]>([]);
   const [providerEntries, setProviderEntries] = useState<NormalizedEntry[]>([]);
   const [modelEntries, setModelEntries] = useState<NormalizedEntry[]>([]);
@@ -320,6 +360,7 @@ export function TodayLeaderboard({
         entries: userEntries,
         error: error,
         shouldShow: true,
+        copyable: false,
       },
       {
         key: "provider",
@@ -327,6 +368,7 @@ export function TodayLeaderboard({
         entries: providerEntries,
         error: providerError,
         shouldShow: isAdmin || allowGlobalUsageView,
+        copyable: false,
       },
       {
         key: "model",
@@ -334,6 +376,7 @@ export function TodayLeaderboard({
         entries: modelEntries,
         error: modelError,
         shouldShow: isAdmin || allowGlobalUsageView,
+        copyable: true,
       },
     ];
 
@@ -363,6 +406,10 @@ export function TodayLeaderboard({
           requestsLabel={t("requests")}
           tokensLabel={t("tokens")}
           errorText={card.error}
+          copyable={card.copyable}
+          copySuccessText={tCommon("copySuccess")}
+          copyFailedText={tCommon("copyFailed")}
+          clickToCopyText={tCommon("clickToCopy")}
         />
       ))}
     </div>

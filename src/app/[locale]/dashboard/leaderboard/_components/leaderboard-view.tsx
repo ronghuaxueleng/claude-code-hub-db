@@ -3,12 +3,15 @@
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getAllUserKeyGroups, getAllUserTags } from "@/actions/users";
 import { ProviderTypeFilter } from "@/app/[locale]/settings/providers/_components/provider-type-filter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TagInput } from "@/components/ui/tag-input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import { formatTokenAmount } from "@/lib/utils";
 import type {
   DateRangeParams,
@@ -37,6 +40,7 @@ const VALID_PERIODS: LeaderboardPeriod[] = ["daily", "weekly", "monthly", "allTi
 
 export function LeaderboardView({ isAdmin }: LeaderboardViewProps) {
   const t = useTranslations("dashboard.leaderboard");
+  const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
 
   const urlScope = searchParams.get("scope") as LeaderboardScope | null;
@@ -308,7 +312,32 @@ export function LeaderboardView({ isAdmin }: LeaderboardViewProps) {
   const modelColumns: ColumnDef<ModelEntry>[] = [
     {
       header: t("columns.model"),
-      cell: (row) => <span className="font-mono text-sm">{(row as ModelEntry).model}</span>,
+      cell: (row) => {
+        const modelName = (row as ModelEntry).model;
+        const handleCopy = async () => {
+          const success = await copyToClipboard(modelName);
+          if (success) {
+            toast.success(tCommon("copySuccess"));
+          } else {
+            toast.error(tCommon("copyFailed"));
+          }
+        };
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className="font-mono text-sm cursor-pointer hover:text-primary transition-colors"
+                  onClick={handleCopy}
+                >
+                  {modelName}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{tCommon("clickToCopy")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
       sortKey: "model",
       getValue: (row) => (row as ModelEntry).model,
     },
