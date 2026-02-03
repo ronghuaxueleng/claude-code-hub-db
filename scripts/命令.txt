@@ -1,2 +1,2 @@
 python create_tokens.py --api-token IzSHC1qdoyDgCDzedAdkX8zxCU7bh0mm --delete --proxy http://127.0.0.1:1080
-python create_tokens.py --api-token IzSHC1qdoyDgCDzedAdkX8zxCU7bh0mm -n 20 --proxy http://127.0.0.1:1080
+python create_tokens.py --api-token IzSHC1qdoyDgCDzedAdkX8zxCU7bh0mm -n 10 --proxy http://127.0.0.1:1080
