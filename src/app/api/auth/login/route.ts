@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { key } = await request.json();
+    const { key, from } = await request.json();
 
     if (!key) {
       return NextResponse.json({ error: "请输入 API Key" }, { status: 400 });
@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
     // 设置认证 cookie
     await setAuthCookie(key);
 
-    const redirectTo = getLoginRedirectTarget(session);
+    const defaultTarget = getLoginRedirectTarget(session);
+    // 优先使用登录前的目标页面，仅接受站内相对路径
+    const redirectTo =
+      from && typeof from === "string" && from.startsWith("/") && !from.startsWith("//")
+        ? from
+        : defaultTarget;
 
     return NextResponse.json({
       ok: true,

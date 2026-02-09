@@ -50,7 +50,7 @@ function LoginPageContent() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: apiKey }),
+        body: JSON.stringify({ key: apiKey, from }),
       });
 
       const data = await response.json();
