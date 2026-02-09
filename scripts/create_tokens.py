@@ -407,8 +407,11 @@ class TokenCreator:
         created_names = []  # 成功创建的 token 名称
 
         for i in range(1, count + 1):
-            random_str = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-            token_name = f"{prefix}_{random_str}"
+            if count == 1:
+                token_name = "cc"
+            else:
+                random_str = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+                token_name = f"{prefix}_{random_str}"
 
             result = self.create_token(cookie, user_id, token_name)
 
@@ -428,7 +431,8 @@ class TokenCreator:
         tokens = []
         if created_names:
             print(f"\n[INFO] 正在获取 token keys...")
-            key_map = self.search_tokens(cookie, user_id, prefix)
+            search_keyword = "cc" if count == 1 else prefix
+            key_map = self.search_tokens(cookie, user_id, search_keyword)
 
             for name in created_names:
                 key = key_map.get(name, "")
