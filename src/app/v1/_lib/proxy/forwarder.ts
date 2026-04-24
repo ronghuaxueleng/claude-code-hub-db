@@ -2834,6 +2834,12 @@ export class ProxyForwarder {
       for (const flag of CLAUDE_CODE_DEFAULT_BETA_FLAGS) {
         betaFlags.add(flag);
       }
+
+      // 针对 1M 上下文，补充 context-1m beta header（仅在需要时）
+      // 逻辑：根据供应商 context1mPreference 决定是否应用 1M 上下文
+      if (session.getContext1mApplied?.()) {
+        betaFlags.add(CONTEXT_1M_BETA_HEADER);
+      }
       overrides["anthropic-beta"] = Array.from(betaFlags).join(", ");
 
       // User-Agent: 使用 Claude CLI 标识（上游供应商可能根据 UA 验证请求来源）
