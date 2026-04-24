@@ -82,13 +82,13 @@ export function shouldApplyContext1m(
     return false;
   }
 
-  // If provider force enables, apply for supported models
+  // If provider force enables, always apply
   if (preference === "force_enable") {
-    return isContext1mSupportedModel(model);
+    return true;
   }
 
-  // Default (inherit): follow client request for supported models
-  return clientRequestedContext1m && isContext1mSupportedModel(model);
+  // Default (inherit): follow client request
+  return clientRequestedContext1m;
 }
 
 /**
