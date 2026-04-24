@@ -15,6 +15,7 @@
  * Note: Longer prefixes must come first for correct matching
  */
 export const CONTEXT_1M_SUPPORTED_MODEL_PREFIXES = [
+  "claude-opus-4-7",
   "claude-sonnet-4-5",
   "claude-sonnet-4",
 ] as const;
