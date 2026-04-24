@@ -1299,13 +1299,21 @@ export class ProxyForwarder {
     );
     session.setCacheTtlResolved(resolvedCacheTtl);
 
+    // 应用模型重定向（如果配置了）
+    const wasRedirected = ModelRedirector.apply(session, provider);
+    if (wasRedirected) {
+      logger.debug("ProxyForwarder: Model redirected", {
+        providerId: provider.id,
+      });
+    }
+
     // 解析 1M 上下文是否应用
-    // 注意：此时模型重定向尚未发生，getCurrentModel() 返回原始模型
+    // 注意：此时模型重定向已完成，getCurrentModel() 返回重定向后的模型
     // 1M 功能仅对 Anthropic 类型供应商有效
     const isAnthropicProvider =
       provider.providerType === "claude" || provider.providerType === "claude-auth";
     if (isAnthropicProvider) {
-      const currentModel = session.getCurrentModel() || "";
+      const currentModel = session.getCurrentModel() || ""; // 重定向后的模型
       const clientRequests1m = session.clientRequestsContext1m();
       // W-007: 添加类型验证，避免类型断言
       const validPreferences = ["inherit", "force_enable", "disabled", null] as const;
@@ -1316,14 +1324,6 @@ export class ProxyForwarder {
         : null;
       const context1mApplied = shouldApplyContext1m(context1mPref, currentModel, clientRequests1m);
       session.setContext1mApplied(context1mApplied);
-    }
-
-    // 应用模型重定向（如果配置了）
-    const wasRedirected = ModelRedirector.apply(session, provider);
-    if (wasRedirected) {
-      logger.debug("ProxyForwarder: Model redirected", {
-        providerId: provider.id,
-      });
     }
 
     let proxyUrl: string;
