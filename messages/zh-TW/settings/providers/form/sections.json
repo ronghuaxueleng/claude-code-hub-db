@@ -7,6 +7,10 @@
   },
   "circuitBreaker": {
     "desc": "連續失敗時自動熔斷，避免影響整體服務品質",
+    "disabled": {
+      "desc": "開啟後，該供應商不會因連續失敗進入熔斷狀態。",
+      "label": "停用自動熔斷"
+    },
     "failureThreshold": {
       "desc": "連續失敗多少次後觸發熔斷",
       "label": "失敗閾值（次）",

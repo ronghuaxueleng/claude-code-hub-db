@@ -134,6 +134,7 @@ describe("ProviderForm: 编辑时应支持提交总消费上限(limit_total_usd)
       circuitBreakerFailureThreshold: 5,
       circuitBreakerOpenDuration: 1800000,
       circuitBreakerHalfOpenSuccessThreshold: 2,
+      circuitBreakerDisabled: false,
       proxyUrl: null,
       proxyFallbackToDirect: false,
       firstByteTimeoutStreamingMs: 0,
@@ -304,6 +305,129 @@ describe("ProviderForm: 新增成功后应重置总消费上限输入", () => {
     expect((document.getElementById("limit-total") as HTMLInputElement | null)?.value ?? null).toBe(
       ""
     );
+
+    unmount();
+  });
+});
+
+describe("ProviderForm: 编辑时应支持提交禁用自动熔断开关", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    const storage = (() => {
+      let store: Record<string, string> = {};
+      return {
+        getItem: (key: string) => (Object.hasOwn(store, key) ? store[key] : null),
+        setItem: (key: string, value: string) => {
+          store[key] = String(value);
+        },
+        removeItem: (key: string) => {
+          delete store[key];
+        },
+        clear: () => {
+          store = {};
+        },
+        key: (index: number) => Object.keys(store)[index] ?? null,
+        get length() {
+          return Object.keys(store).length;
+        },
+      };
+    })();
+
+    Object.defineProperty(globalThis, "localStorage", {
+      value: storage,
+      configurable: true,
+    });
+
+    storage.setItem("provider-form-sections", JSON.stringify({ circuitBreaker: true }));
+  });
+
+  test("打开禁用自动熔断后提交应调用 editProvider 且 payload 携带 circuit_breaker_disabled", async () => {
+    const messages = loadMessages();
+
+    const provider = {
+      id: 1,
+      name: "p",
+      url: "https://example.com",
+      maskedKey: "xxxxxx",
+      isEnabled: true,
+      weight: 1,
+      priority: 0,
+      costMultiplier: 1,
+      groupTag: null,
+      providerType: "claude",
+      preserveClientIp: false,
+      modelRedirects: null,
+      allowedModels: null,
+      joinClaudePool: false,
+      codexInstructionsStrategy: "auto",
+      mcpPassthroughType: "none",
+      mcpPassthroughUrl: null,
+      limit5hUsd: null,
+      limitDailyUsd: null,
+      dailyResetMode: "fixed",
+      dailyResetTime: "00:00",
+      limitWeeklyUsd: null,
+      limitMonthlyUsd: null,
+      limitConcurrentSessions: 0,
+      maxRetryAttempts: null,
+      circuitBreakerFailureThreshold: 5,
+      circuitBreakerOpenDuration: 1800000,
+      circuitBreakerHalfOpenSuccessThreshold: 2,
+      circuitBreakerDisabled: false,
+      proxyUrl: null,
+      proxyFallbackToDirect: false,
+      firstByteTimeoutStreamingMs: 0,
+      streamingIdleTimeoutMs: 0,
+      requestTimeoutNonStreamingMs: 0,
+      websiteUrl: null,
+      faviconUrl: null,
+      cacheTtlPreference: null,
+      context1mPreference: null,
+      tpm: null,
+      rpm: null,
+      rpd: null,
+      cc: null,
+      createdAt: "2026-01-04",
+      updatedAt: "2026-01-04",
+    } as any;
+
+    const { unmount } = render(
+      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <Dialog open onOpenChange={() => {}}>
+          <ProviderForm mode="edit" provider={provider} enableMultiProviderTypes />
+        </Dialog>
+      </NextIntlClientProvider>
+    );
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const switchButton = document.getElementById("edit-circuit-breaker-disabled");
+    expect(switchButton).toBeTruthy();
+
+    await act(async () => {
+      switchButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const form = document.body.querySelector("form") as HTMLFormElement | null;
+    expect(form).toBeTruthy();
+
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+
+    for (let i = 0; i < 5; i++) {
+      if (providersActionMocks.editProvider.mock.calls.length > 0) break;
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    }
+
+    expect(providersActionMocks.editProvider).toHaveBeenCalledTimes(1);
+    const [, payload] = providersActionMocks.editProvider.mock.calls[0] as [number, any];
+    expect(payload.circuit_breaker_disabled).toBe(true);
 
     unmount();
   });

@@ -98,6 +98,7 @@ export function toProvider(dbProvider: any): Provider {
     circuitBreakerFailureThreshold: dbProvider?.circuitBreakerFailureThreshold ?? 5,
     circuitBreakerOpenDuration: dbProvider?.circuitBreakerOpenDuration ?? 1800000,
     circuitBreakerHalfOpenSuccessThreshold: dbProvider?.circuitBreakerHalfOpenSuccessThreshold ?? 2,
+    circuitBreakerDisabled: dbProvider?.circuitBreakerDisabled ?? false,
     proxyUrl: dbProvider?.proxyUrl ?? null,
     proxyFallbackToDirect: dbProvider?.proxyFallbackToDirect ?? false,
     firstByteTimeoutStreamingMs: dbProvider?.firstByteTimeoutStreamingMs ?? 30000,

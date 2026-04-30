@@ -185,6 +185,10 @@
     "title": "熔断器配置",
     "summary": "{failureThreshold} 次失败 / {openDuration} 分钟熔断 / {successThreshold} 次成功恢复 / 每个供应商最多 {maxRetryAttempts} 次尝试",
     "desc": "供应商连续失败时自动熔断，避免影响整体服务质量",
+    "disabled": {
+      "label": "禁用自动熔断",
+      "desc": "开启后，该供应商不会因连续失败进入熔断状态。"
+    },
     "failureThreshold": {
       "label": "失败阈值（次）",
       "placeholder": "5",

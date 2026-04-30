@@ -120,6 +120,7 @@ describe("Provider Actions - Async Optimization", () => {
         circuitBreakerFailureThreshold: 5,
         circuitBreakerOpenDuration: 1800000,
         circuitBreakerHalfOpenSuccessThreshold: 2,
+        circuitBreakerDisabled: false,
         proxyUrl: null,
         proxyFallbackToDirect: false,
         firstByteTimeoutStreamingMs: null,
@@ -149,6 +150,7 @@ describe("Provider Actions - Async Optimization", () => {
       circuitBreakerFailureThreshold: 5,
       circuitBreakerOpenDuration: 1800000,
       circuitBreakerHalfOpenSuccessThreshold: 2,
+      circuitBreakerDisabled: false,
     });
 
     updateProviderMock.mockResolvedValue({
@@ -156,6 +158,7 @@ describe("Provider Actions - Async Optimization", () => {
       circuitBreakerFailureThreshold: 5,
       circuitBreakerOpenDuration: 1800000,
       circuitBreakerHalfOpenSuccessThreshold: 2,
+      circuitBreakerDisabled: false,
     });
 
     deleteProviderMock.mockResolvedValue(undefined);
@@ -487,6 +490,40 @@ describe("Provider Actions - Async Optimization", () => {
       expect(elapsed).toBeLessThan(500);
       expect(revalidatePathMock).not.toHaveBeenCalled();
     });
+
+    it("should pass circuit_breaker_disabled to repository and redis config", async () => {
+      createProviderMock.mockResolvedValueOnce({
+        id: 123,
+        circuitBreakerFailureThreshold: 5,
+        circuitBreakerOpenDuration: 1800000,
+        circuitBreakerHalfOpenSuccessThreshold: 2,
+        circuitBreakerDisabled: true,
+      });
+
+      const { addProvider } = await import("@/actions/providers");
+      await addProvider({
+        name: "p2",
+        url: "https://api.example.com",
+        key: "sk-test-2",
+        circuit_breaker_disabled: true,
+        tpm: null,
+        rpm: null,
+        rpd: null,
+        cc: null,
+      });
+
+      expect(createProviderMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          circuit_breaker_disabled: true,
+        })
+      );
+      expect(saveProviderCircuitConfigMock).toHaveBeenCalledWith(
+        123,
+        expect.objectContaining({
+          disabled: true,
+        })
+      );
+    });
   });
 
   // 说明：当前代码实现的函数名为 editProvider/removeProvider。
@@ -498,6 +535,33 @@ describe("Provider Actions - Async Optimization", () => {
 
       expect(result.ok).toBe(true);
       expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
+
+    it("should sync redis when circuit_breaker_disabled changes", async () => {
+      updateProviderMock.mockResolvedValueOnce({
+        id: 1,
+        circuitBreakerFailureThreshold: 5,
+        circuitBreakerOpenDuration: 1800000,
+        circuitBreakerHalfOpenSuccessThreshold: 2,
+        circuitBreakerDisabled: true,
+      });
+
+      const { editProvider } = await import("@/actions/providers");
+      await editProvider(1, { circuit_breaker_disabled: true });
+
+      expect(updateProviderMock).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          circuit_breaker_disabled: true,
+        })
+      );
+      expect(saveProviderCircuitConfigMock).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          disabled: true,
+        })
+      );
+      expect(clearConfigCacheMock).toHaveBeenCalledWith(1);
     });
   });
 

@@ -500,6 +500,7 @@ export async function addProvider(data: {
   circuit_breaker_failure_threshold?: number;
   circuit_breaker_open_duration?: number;
   circuit_breaker_half_open_success_threshold?: number;
+  circuit_breaker_disabled?: boolean;
   proxy_url?: string | null;
   proxy_fallback_to_direct?: boolean;
   first_byte_timeout_streaming_ms?: number;
@@ -569,6 +570,7 @@ export async function addProvider(data: {
       circuit_breaker_open_duration: validated.circuit_breaker_open_duration ?? 1800000,
       circuit_breaker_half_open_success_threshold:
         validated.circuit_breaker_half_open_success_threshold ?? 2,
+      circuit_breaker_disabled: validated.circuit_breaker_disabled ?? false,
       proxy_url: validated.proxy_url ?? null,
       proxy_fallback_to_direct: validated.proxy_fallback_to_direct ?? false,
       first_byte_timeout_streaming_ms:
@@ -670,6 +672,7 @@ export async function editProvider(
     circuit_breaker_failure_threshold?: number;
     circuit_breaker_open_duration?: number;
     circuit_breaker_half_open_success_threshold?: number;
+    circuit_breaker_disabled?: boolean;
     proxy_url?: string | null;
     proxy_fallback_to_direct?: boolean;
     first_byte_timeout_streaming_ms?: number;
@@ -741,7 +744,8 @@ export async function editProvider(
     const hasCircuitConfigChange =
       validated.circuit_breaker_failure_threshold !== undefined ||
       validated.circuit_breaker_open_duration !== undefined ||
-      validated.circuit_breaker_half_open_success_threshold !== undefined;
+      validated.circuit_breaker_half_open_success_threshold !== undefined ||
+      validated.circuit_breaker_disabled !== undefined;
 
     if (hasCircuitConfigChange) {
       try {

@@ -220,6 +220,9 @@ export function ProviderForm({
   const [halfOpenSuccessThreshold, setHalfOpenSuccessThreshold] = useState<number | undefined>(
     sourceProvider?.circuitBreakerHalfOpenSuccessThreshold
   );
+  const [circuitBreakerDisabled, setCircuitBreakerDisabled] = useState<boolean>(
+    sourceProvider?.circuitBreakerDisabled ?? false
+  );
   const [maxRetryAttempts, setMaxRetryAttempts] = useState<number | null>(
     sourceProvider?.maxRetryAttempts ?? null
   );
@@ -458,6 +461,7 @@ export function ProviderForm({
             circuit_breaker_failure_threshold?: number;
             circuit_breaker_open_duration?: number;
             circuit_breaker_half_open_success_threshold?: number;
+            circuit_breaker_disabled?: boolean;
             proxy_url?: string | null;
             proxy_fallback_to_direct?: boolean;
             first_byte_timeout_streaming_ms?: number;
@@ -506,6 +510,7 @@ export function ProviderForm({
               ? openDurationMinutes * 60000
               : 1800000,
             circuit_breaker_half_open_success_threshold: halfOpenSuccessThreshold ?? 2,
+            circuit_breaker_disabled: circuitBreakerDisabled,
             proxy_url: proxyUrl.trim() || null,
             proxy_fallback_to_direct: proxyFallbackToDirect,
             // ⭐ 编辑模式：undefined 代表不更新(沿用数据库旧值),不能回退到默认值
@@ -574,6 +579,7 @@ export function ProviderForm({
               ? openDurationMinutes * 60000
               : 1800000,
             circuit_breaker_half_open_success_threshold: halfOpenSuccessThreshold ?? 2,
+            circuit_breaker_disabled: circuitBreakerDisabled,
             proxy_url: proxyUrl.trim() || null,
             proxy_fallback_to_direct: proxyFallbackToDirect,
             first_byte_timeout_streaming_ms:
@@ -628,6 +634,7 @@ export function ProviderForm({
           setLimitTotalUsd(null);
           setLimitConcurrentSessions(null);
           setMaxRetryAttempts(null);
+          setCircuitBreakerDisabled(false);
           setFailureThreshold(5);
           setOpenDurationMinutes(30);
           setHalfOpenSuccessThreshold(2);
@@ -1650,6 +1657,28 @@ export function ProviderForm({
                   <p className="text-xs text-muted-foreground">
                     {t("sections.circuitBreaker.desc")}
                   </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={
+                          isEdit ? "edit-circuit-breaker-disabled" : "circuit-breaker-disabled"
+                        }
+                      >
+                        {t("sections.circuitBreaker.disabled.label")}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t("sections.circuitBreaker.disabled.desc")}
+                      </p>
+                    </div>
+                    <Switch
+                      id={isEdit ? "edit-circuit-breaker-disabled" : "circuit-breaker-disabled"}
+                      checked={circuitBreakerDisabled}
+                      onCheckedChange={setCircuitBreakerDisabled}
+                      disabled={isPending}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">

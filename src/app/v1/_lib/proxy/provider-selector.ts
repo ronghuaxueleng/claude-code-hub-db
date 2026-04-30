@@ -610,8 +610,8 @@ export class ProxyProviderResolver {
    * 检查供应商健康状态（统一检查熔断、限额等）
    *
    * 重要：如果服务商禁用了自动熔断（circuitBreakerDisabled = true），
-   * 则跳过熔断检查和费用限制检查，确保服务商完全可用（与 filterByLimits 逻辑一致）
-   * 但仍然检查模型支持和用户分组权限（这些是配置限制，不是运行时限制）
+   * 则仅跳过熔断检查，但仍然检查费用限制。
+   * 模型支持和用户分组权限始终检查（这些是配置限制，不是运行时限制）
    */
   private static async checkProviderHealth(
     session: ProxySession,
@@ -636,22 +636,18 @@ export class ProxyProviderResolver {
       };
     }
 
-    // 如果禁用了自动熔断，跳过熔断检查和费用限制检查
+    // 如果禁用了自动熔断，仅跳过熔断检查
     // 重要：必须先检查 circuitBreakerDisabled，因为它来自供应商对象（实时更新），
     // 而 isCircuitOpen 依赖熔断器配置缓存（有 5 分钟 TTL），可能存在延迟
     if (provider.circuitBreakerDisabled) {
       logger.debug(
-        "ProviderSelector: Provider has circuit breaker disabled, skipping circuit and cost checks in health check",
+        "ProviderSelector: Provider has circuit breaker disabled, skipping circuit check in health check",
         {
           providerId: provider.id,
           providerName: provider.name,
         }
       );
-      return { healthy: true };
-    }
-
-    // 检查熔断器状态
-    if (await isCircuitOpen(provider.id)) {
+    } else if (await isCircuitOpen(provider.id)) {
       return {
         healthy: false,
         reason: "circuit_open",
@@ -1039,27 +1035,23 @@ export class ProxyProviderResolver {
    * 此处仅检查金额限制和熔断器状态
    *
    * 重要：如果服务商禁用了自动熔断（circuitBreakerDisabled = true），
-   * 则跳过所有费用限制检查，确保服务商完全可用
+   * 则仅跳过熔断器状态检查，费用限制仍然生效
    */
   private static async filterByLimits(providers: Provider[]): Promise<Provider[]> {
     const results = await Promise.all(
       providers.map(async (p) => {
-        // 0. 如果禁用了自动熔断，跳过所有限制检查（熔断、费用等），确保服务商完全可用
+        // 0. 如果禁用了自动熔断，仅跳过熔断检查
         // 重要：必须先检查 circuitBreakerDisabled，因为它来自供应商对象（实时更新），
         // 而 isCircuitOpen 依赖熔断器配置缓存（有 5 分钟 TTL），可能存在延迟
         if (p.circuitBreakerDisabled) {
           logger.debug(
-            "ProviderSelector: Provider has circuit breaker disabled, skipping all limit checks",
+            "ProviderSelector: Provider has circuit breaker disabled, skipping circuit check",
             {
               providerId: p.id,
               providerName: p.name,
             }
           );
-          return p;
-        }
-
-        // 1. 检查熔断器状态
-        if (await isCircuitOpen(p.id)) {
+        } else if (await isCircuitOpen(p.id)) {
           logger.debug("ProviderSelector: Provider circuit breaker is open", {
             providerId: p.id,
           });

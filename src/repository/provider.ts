@@ -47,6 +47,7 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     circuitBreakerOpenDuration: providerData.circuit_breaker_open_duration ?? 1800000,
     circuitBreakerHalfOpenSuccessThreshold:
       providerData.circuit_breaker_half_open_success_threshold ?? 2,
+    circuitBreakerDisabled: providerData.circuit_breaker_disabled ?? false,
     proxyUrl: providerData.proxy_url ?? null,
     proxyFallbackToDirect: providerData.proxy_fallback_to_direct ?? false,
     firstByteTimeoutStreamingMs: providerData.first_byte_timeout_streaming_ms ?? 30000,
@@ -100,6 +101,7 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     circuitBreakerFailureThreshold: providers.circuitBreakerFailureThreshold,
     circuitBreakerOpenDuration: providers.circuitBreakerOpenDuration,
     circuitBreakerHalfOpenSuccessThreshold: providers.circuitBreakerHalfOpenSuccessThreshold,
+    circuitBreakerDisabled: providers.circuitBreakerDisabled,
     proxyUrl: providers.proxyUrl,
     proxyFallbackToDirect: providers.proxyFallbackToDirect,
     firstByteTimeoutStreamingMs: providers.firstByteTimeoutStreamingMs,
@@ -425,6 +427,8 @@ export async function updateProvider(
   if (providerData.circuit_breaker_half_open_success_threshold !== undefined)
     dbData.circuitBreakerHalfOpenSuccessThreshold =
       providerData.circuit_breaker_half_open_success_threshold;
+  if (providerData.circuit_breaker_disabled !== undefined)
+    dbData.circuitBreakerDisabled = providerData.circuit_breaker_disabled;
   if (providerData.proxy_url !== undefined) dbData.proxyUrl = providerData.proxy_url;
   if (providerData.proxy_fallback_to_direct !== undefined)
     dbData.proxyFallbackToDirect = providerData.proxy_fallback_to_direct;

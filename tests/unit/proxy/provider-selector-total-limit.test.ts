@@ -99,6 +99,50 @@ describe("ProxyProviderResolver.filterByLimits - provider total limit", () => {
       { resetAt }
     );
   });
+
+  test("禁用自动熔断时仍应执行费用限制检查", async () => {
+    const { ProxyProviderResolver } = await import("@/app/v1/_lib/proxy/provider-selector");
+
+    const providers: Provider[] = [
+      {
+        id: 1,
+        name: "p1",
+        isEnabled: true,
+        providerType: "claude",
+        groupTag: null,
+        weight: 1,
+        priority: 0,
+        costMultiplier: 1,
+        circuitBreakerDisabled: true,
+        limit5hUsd: 5,
+        limitDailyUsd: null,
+        dailyResetMode: "fixed",
+        dailyResetTime: "00:00",
+        limitWeeklyUsd: null,
+        limitMonthlyUsd: null,
+        limitTotalUsd: null,
+        totalCostResetAt: null,
+        limitConcurrentSessions: 0,
+      } as unknown as Provider,
+    ];
+
+    rateLimitMocks.RateLimitService.checkCostLimits.mockResolvedValueOnce({
+      allowed: false,
+      reason: "limit reached",
+    });
+
+    const filtered = await (ProxyProviderResolver as any).filterByLimits(providers);
+    expect(filtered).toEqual([]);
+    expect(circuitBreakerMocks.isCircuitOpen).not.toHaveBeenCalled();
+    expect(rateLimitMocks.RateLimitService.checkCostLimits).toHaveBeenCalledWith(1, "provider", {
+      limit_5h_usd: 5,
+      limit_daily_usd: null,
+      daily_reset_mode: "fixed",
+      daily_reset_time: "00:00",
+      limit_weekly_usd: null,
+      limit_monthly_usd: null,
+    });
+  });
 });
 
 describe("ProxyProviderResolver.findReusable - provider total limit", () => {

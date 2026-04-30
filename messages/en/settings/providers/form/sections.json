@@ -7,6 +7,10 @@
   },
   "circuitBreaker": {
     "desc": "Automatically break on consecutive failures to protect overall service quality",
+    "disabled": {
+      "desc": "When enabled, this provider will not enter circuit-open state after repeated failures.",
+      "label": "Disable auto circuit breaker"
+    },
     "failureThreshold": {
       "desc": "Number of consecutive failures to trigger break",
       "label": "Failure Threshold",
