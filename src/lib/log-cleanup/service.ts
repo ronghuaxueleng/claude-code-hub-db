@@ -2,6 +2,7 @@ import { and, between, gte, inArray, isNotNull, lte, type SQL, sql } from "drizz
 import { db } from "@/drizzle/db";
 import { messageRequest } from "@/drizzle/schema";
 import { logger } from "@/lib/logger";
+import { getAffectedRowCount } from "@/lib/utils/db-result";
 
 /**
  * 日志清理条件
@@ -229,9 +230,7 @@ async function deleteBatch(whereConditions: SQL[], batchSize: number): Promise<n
     WHERE id IN (SELECT id FROM ids_to_delete)
   `);
 
-  // Drizzle execute 返回的 result 包含 rowCount 属性
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (result as any).rowCount || 0;
+  return getAffectedRowCount(result);
 }
 
 /**

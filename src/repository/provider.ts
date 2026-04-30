@@ -6,6 +6,7 @@ import { providers } from "@/drizzle/schema";
 import { getCachedProviders } from "@/lib/cache/provider-cache";
 import { getEnvConfig } from "@/lib/config";
 import { logger } from "@/lib/logger";
+import { getAffectedRowCount } from "@/lib/utils/db-result";
 import type { CreateProviderData, Provider, UpdateProviderData } from "@/types/provider";
 import { toProvider } from "./_shared/transformers";
 
@@ -553,8 +554,7 @@ export async function updateProviderPrioritiesBatch(
 
   const result = await db.execute(query);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (result as any).rowCount || 0;
+  return getAffectedRowCount(result);
 }
 
 export async function deleteProvider(id: number): Promise<boolean> {
