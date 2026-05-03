@@ -111,7 +111,7 @@ describe("OpenAI → Codex 转换 - instructions 透传", () => {
               type: "function",
               function: {
                 name: "get_weather",
-                arguments: "{\"city\":\"Shanghai\"}",
+                arguments: '{"city":"Shanghai"}',
               },
             },
           ],
@@ -119,7 +119,7 @@ describe("OpenAI → Codex 转换 - instructions 透传", () => {
         {
           role: "tool",
           tool_call_id: "call_123",
-          content: "{\"temp\":26}",
+          content: '{"temp":26}',
         },
       ],
     };
@@ -136,12 +136,12 @@ describe("OpenAI → Codex 转换 - instructions 透传", () => {
         type: "function_call",
         call_id: "call_123",
         name: "get_weather",
-        arguments: "{\"city\":\"Shanghai\"}",
+        arguments: '{"city":"Shanghai"}',
       },
       {
         type: "function_call_output",
         call_id: "call_123",
-        output: "{\"temp\":26}",
+        output: '{"temp":26}',
       },
     ]);
   });
