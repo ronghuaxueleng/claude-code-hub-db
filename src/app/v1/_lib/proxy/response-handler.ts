@@ -130,6 +130,21 @@ function cleanResponseHeaders(headers: Headers): Headers {
 }
 
 export class ProxyResponseHandler {
+  private static getCodexEventResponseObject(
+    data: Record<string, unknown>
+  ): Record<string, unknown> | undefined {
+    const nested = data.response;
+    if (nested && typeof nested === "object") {
+      return nested as Record<string, unknown>;
+    }
+
+    if (typeof data.id === "string" || Array.isArray(data.output) || data.usage) {
+      return data;
+    }
+
+    return undefined;
+  }
+
   static async dispatch(session: ProxySession, response: Response): Promise<Response> {
     let fixedResponse = response;
     try {
@@ -476,7 +491,7 @@ export class ProxyResponseHandler {
 
         switch (eventType) {
           case "response.created": {
-            const response = data.response as Record<string, unknown> | undefined;
+            const response = ProxyResponseHandler.getCodexEventResponseObject(data);
             if (response) {
               messageId = (response.id as string) || messageId;
               model = (response.model as string) || model;
@@ -508,7 +523,7 @@ export class ProxyResponseHandler {
           }
 
           case "response.completed": {
-            const response = data.response as Record<string, unknown> | undefined;
+            const response = ProxyResponseHandler.getCodexEventResponseObject(data);
             if (response) {
               messageId = (response.id as string) || messageId;
               model = (response.model as string) || model;

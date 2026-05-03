@@ -54,6 +54,19 @@ function buildSSE(event: string, data: Record<string, unknown>): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+function getEventResponseObject(data: Record<string, unknown>): Record<string, unknown> | undefined {
+  const nested = data.response;
+  if (nested && typeof nested === "object") {
+    return nested as Record<string, unknown>;
+  }
+
+  if (typeof data.id === "string" || Array.isArray(data.output) || data.usage) {
+    return data;
+  }
+
+  return undefined;
+}
+
 /**
  * 流式响应转换：Codex → Claude
  *
@@ -105,9 +118,9 @@ export function transformCodexStreamResponseToClaude(
   switch (eventType) {
     case "response.created": {
       // → message_start
-      const responseId = (data.response as Record<string, unknown>)?.id || "";
-      const responseModel =
-        (data.response as Record<string, unknown>)?.model || "claude-opus-4-1-20250805";
+      const response = getEventResponseObject(data);
+      const responseId = (response?.id as string) || "";
+      const responseModel = (response?.model as string) || "claude-opus-4-1-20250805";
 
       output = buildSSE("message_start", {
         type: "message_start",
@@ -285,7 +298,7 @@ export function transformCodexStreamResponseToClaude(
 
     case "response.completed": {
       // → message_delta + message_stop
-      const response = data.response as Record<string, unknown> | undefined;
+      const response = getEventResponseObject(data);
       const usage = response?.usage as Record<string, unknown> | undefined;
 
       const stopReason = state.hasToolCall ? "tool_use" : "end_turn";
@@ -342,7 +355,7 @@ export function transformCodexNonStreamResponseToClaude(
     return response;
   }
 
-  const responseData = response.response as Record<string, unknown> | undefined;
+  const responseData = getEventResponseObject(response);
   if (!responseData) {
     logger.warn("[Codex→Claude] Missing response data");
     return response;

@@ -65,6 +65,19 @@ interface CodexToOpenAIState extends TransformState {
   functionCallIndex?: number;
 }
 
+function getEventResponseObject(data: Record<string, unknown>): Record<string, unknown> | undefined {
+  const nested = data.response;
+  if (nested && typeof nested === "object") {
+    return nested as Record<string, unknown>;
+  }
+
+  if (typeof data.id === "string" || Array.isArray(data.output) || data.usage) {
+    return data;
+  }
+
+  return undefined;
+}
+
 /**
  * 流式响应转换：Codex → OpenAI
  *
@@ -125,9 +138,10 @@ export function transformCodexStreamResponseToOpenAI(
   switch (eventType) {
     case "response.created": {
       // 初始化状态，不输出
-      const response = (data.response as Record<string, unknown>) || {};
+      const response = getEventResponseObject(data) || {};
       codexState.responseId = (response.id as string) || "";
-      codexState.createdAt = (response.created_at as number) || created;
+      codexState.createdAt =
+        (response.created_at as number) || (response.created as number) || created;
       codexState.model = (response.model as string) || model;
       break;
     }
@@ -256,7 +270,7 @@ export function transformCodexStreamResponseToOpenAI(
 
     case "response.completed": {
       // → finish_reason + usage + [DONE]
-      const response = data.response as Record<string, unknown> | undefined;
+      const response = getEventResponseObject(data);
       const usage = response?.usage as Record<string, unknown> | undefined;
       const usagePayload = buildUsagePayload(usage);
 
@@ -316,7 +330,7 @@ export function transformCodexNonStreamResponseToOpenAI(
     return response;
   }
 
-  const responseData = response.response as Record<string, unknown> | undefined;
+  const responseData = getEventResponseObject(response);
   if (!responseData) {
     logger.warn("[Codex→OpenAI] Missing response data");
     return response;
