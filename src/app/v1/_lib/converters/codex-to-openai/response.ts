@@ -65,7 +65,9 @@ interface CodexToOpenAIState extends TransformState {
   functionCallIndex?: number;
 }
 
-function getEventResponseObject(data: Record<string, unknown>): Record<string, unknown> | undefined {
+function getEventResponseObject(
+  data: Record<string, unknown>
+): Record<string, unknown> | undefined {
   const nested = data.response;
   if (nested && typeof nested === "object") {
     return nested as Record<string, unknown>;

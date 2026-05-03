@@ -54,7 +54,9 @@ function buildSSE(event: string, data: Record<string, unknown>): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function getEventResponseObject(data: Record<string, unknown>): Record<string, unknown> | undefined {
+function getEventResponseObject(
+  data: Record<string, unknown>
+): Record<string, unknown> | undefined {
   const nested = data.response;
   if (nested && typeof nested === "object") {
     return nested as Record<string, unknown>;
