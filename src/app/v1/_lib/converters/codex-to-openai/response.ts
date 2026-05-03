@@ -51,6 +51,57 @@ function buildOpenAISSE(data: Record<string, unknown>): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+function appendToolCallsFromOutputItem(
+  toolCalls: Array<Record<string, unknown>>,
+  item: Record<string, unknown>,
+  toolNameMap: Map<string, string>
+): void {
+  const itemType = item.type as string;
+
+  if (itemType === "function_call") {
+    let name = (item.name as string) || "";
+    const originalName = toolNameMap.get(name);
+    if (originalName) {
+      name = originalName;
+    }
+
+    toolCalls.push({
+      id: (item.call_id as string) || "",
+      type: "function",
+      function: {
+        name,
+        arguments: (item.arguments as string) || "",
+      },
+    });
+    return;
+  }
+
+  if (itemType === "tool_calls") {
+    const calls = item.tool_calls as Array<Record<string, unknown>> | undefined;
+    if (!calls || !Array.isArray(calls)) {
+      return;
+    }
+
+    for (const call of calls) {
+      const fn = (call.function as Record<string, unknown>) || {};
+      let name = (fn.name as string) || "";
+      const originalName = toolNameMap.get(name);
+      if (originalName) {
+        name = originalName;
+      }
+
+      toolCalls.push({
+        id: (call.id as string) || "",
+        type: "function",
+        function: {
+          name,
+          arguments: (fn.arguments as string) || "",
+        },
+      });
+    }
+  }
+}
+
 /**
  * 扩展的转换状态（用于 Codex → OpenAI）
  */
@@ -385,34 +436,16 @@ export function transformCodexNonStreamResponseToOpenAI(
           if (content && Array.isArray(content)) {
             for (const contentItem of content) {
               if (contentItem.type === "output_text") {
-                contentText = (contentItem.text as string) || "";
-                break;
+                contentText += (contentItem.text as string) || "";
               }
             }
           }
           break;
         }
 
-        case "function_call": {
-          // 处理 function_call
-          const callId = (item.call_id as string) || "";
-          let name = (item.name as string) || "";
-          const argumentsStr = (item.arguments as string) || "";
-
-          // 恢复原始工具名称
-          const originalName = toolNameMap.get(name);
-          if (originalName) {
-            name = originalName;
-          }
-
-          toolCalls.push({
-            id: callId,
-            type: "function",
-            function: {
-              name,
-              arguments: argumentsStr,
-            },
-          });
+        case "function_call":
+        case "tool_calls": {
+          appendToolCallsFromOutputItem(toolCalls, item, toolNameMap);
           break;
         }
       }

@@ -145,6 +145,48 @@ export class ProxyResponseHandler {
     return undefined;
   }
 
+  private static appendCodexToolCalls(
+    toolCalls: Array<{
+      id: string;
+      type: string;
+      function: { name: string; arguments: string };
+    }>,
+    item: Record<string, unknown>
+  ): void {
+    const itemType = item.type as string;
+
+    if (itemType === "function_call") {
+      toolCalls.push({
+        id: (item.call_id as string) || "",
+        type: "function",
+        function: {
+          name: (item.name as string) || "",
+          arguments: (item.arguments as string) || "",
+        },
+      });
+      return;
+    }
+
+    if (itemType === "tool_calls") {
+      const calls = item.tool_calls as Array<Record<string, unknown>> | undefined;
+      if (!calls || !Array.isArray(calls)) {
+        return;
+      }
+
+      for (const call of calls) {
+        const fn = (call.function as Record<string, unknown>) || {};
+        toolCalls.push({
+          id: (call.id as string) || "",
+          type: "function",
+          function: {
+            name: (fn.name as string) || "",
+            arguments: (fn.arguments as string) || "",
+          },
+        });
+      }
+    }
+  }
+
   static async dispatch(session: ProxySession, response: Response): Promise<Response> {
     let fixedResponse = response;
     try {
@@ -566,31 +608,21 @@ export class ProxyResponseHandler {
                     case "message": {
                       const content = item.content as Array<Record<string, unknown>> | undefined;
                       if (content && Array.isArray(content)) {
-                        const parts: string[] = [];
                         for (const contentItem of content) {
                           if (contentItem.type === "output_text") {
                             const text = (contentItem.text as string) || "";
                             if (text) {
-                              parts.push(text);
+                              textContent += text;
                             }
                           }
-                        }
-                        if (parts.length > 0) {
-                          textContent = parts.join("");
                         }
                       }
                       break;
                     }
 
                     case "function_call":
-                      toolCalls.push({
-                        id: (item.call_id as string) || "",
-                        type: "function",
-                        function: {
-                          name: (item.name as string) || "",
-                          arguments: (item.arguments as string) || "",
-                        },
-                      });
+                    case "tool_calls":
+                      ProxyResponseHandler.appendCodexToolCalls(toolCalls, item);
                       break;
                   }
                 }
