@@ -215,8 +215,84 @@ export class ProxyResponseHandler {
       );
     }
 
-    // 解析 Claude SSE 事件
-    let model = session.request.model || "";
+    const parsed =
+      provider.providerType === "codex"
+        ? ProxyResponseHandler.parseCodexJoinPoolSSE(fullText, session.request.model || "")
+        : ProxyResponseHandler.parseClaudeJoinPoolSSE(fullText, session.request.model || "");
+
+    // 构建 OpenAI Chat Completions 非流式响应
+    const openAIResponse = {
+      id: parsed.messageId || `chatcmpl-${Date.now()}`,
+      object: "chat.completion",
+      created: Math.floor(Date.now() / 1000),
+      model: parsed.model,
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant",
+            content: parsed.textContent || null,
+            ...(parsed.reasoningContent && { reasoning_content: parsed.reasoningContent }),
+            ...(parsed.toolCalls.length > 0 && { tool_calls: parsed.toolCalls }),
+          },
+          finish_reason: parsed.finishReason,
+        },
+      ],
+      usage: {
+        prompt_tokens: parsed.inputTokens,
+        completion_tokens: parsed.outputTokens,
+        total_tokens: parsed.inputTokens + parsed.outputTokens,
+        ...(parsed.cacheCreationInputTokens > 0 && {
+          cache_creation_input_tokens: parsed.cacheCreationInputTokens,
+        }),
+        ...(parsed.cacheReadInputTokens > 0 && {
+          cache_read_input_tokens: parsed.cacheReadInputTokens,
+        }),
+      },
+    };
+
+    logger.info("[ResponseHandler] joinOpenAIPool: SSE buffered to non-stream JSON", {
+      sessionId: session.sessionId,
+      providerId: provider.id,
+      model: parsed.model,
+      inputTokens: parsed.inputTokens,
+      outputTokens: parsed.outputTokens,
+      textLength: parsed.textContent.length,
+      toolCallsCount: parsed.toolCalls.length,
+    });
+
+    const responseBody = JSON.stringify(openAIResponse);
+
+    // 后台统计
+    const messageContext = session.messageContext;
+    const taskId = `non-stream-join-${messageContext?.id || `unknown-${Date.now()}`}`;
+
+    const processingPromise = (async () => {
+      try {
+        const duration = Date.now() - session.startTime;
+        await finalizeRequestStats(session, responseBody, 200, duration);
+      } catch (error) {
+        if (!isClientAbortError(error as Error)) {
+          logger.error("[ResponseHandler] joinPool non-stream stats failed:", error);
+        }
+      } finally {
+        AsyncTaskManager.cleanup(taskId);
+      }
+    })();
+
+    AsyncTaskManager.register(taskId, processingPromise, "join-pool-non-stream-stats");
+    processingPromise.catch((error) => {
+      logger.error("[ResponseHandler] joinPool non-stream stats uncaught error:", error);
+    });
+
+    return new Response(responseBody, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  private static parseClaudeJoinPoolSSE(fullText: string, fallbackModel: string) {
+    let model = fallbackModel;
     let messageId = "";
     let textContent = "";
     let reasoningContent = "";
@@ -328,12 +404,11 @@ export class ProxyResponseHandler {
             break;
           }
         }
-      } catch (_parseError) {
+      } catch {
         // skip unparseable events
       }
     }
 
-    // 映射 stop_reason
     let finishReason = "stop";
     switch (stopReason) {
       case "end_turn":
@@ -350,75 +425,123 @@ export class ProxyResponseHandler {
         break;
     }
 
-    // 构建 OpenAI Chat Completions 非流式响应
-    const openAIResponse = {
-      id: messageId || `chatcmpl-${Date.now()}`,
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
+    return {
       model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content: textContent || null,
-            ...(reasoningContent && { reasoning_content: reasoningContent }),
-            ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
-          },
-          finish_reason: finishReason,
-        },
-      ],
-      usage: {
-        prompt_tokens: inputTokens,
-        completion_tokens: outputTokens,
-        total_tokens: inputTokens + outputTokens,
-        ...(cacheCreationInputTokens > 0 && {
-          cache_creation_input_tokens: cacheCreationInputTokens,
-        }),
-        ...(cacheReadInputTokens > 0 && {
-          cache_read_input_tokens: cacheReadInputTokens,
-        }),
-      },
-    };
-
-    logger.info("[ResponseHandler] joinOpenAIPool: SSE buffered to non-stream JSON", {
-      sessionId: session.sessionId,
-      providerId: provider.id,
-      model,
+      messageId,
+      textContent,
+      reasoningContent,
+      finishReason,
       inputTokens,
       outputTokens,
-      textLength: textContent.length,
-      toolCallsCount: toolCalls.length,
-    });
+      cacheCreationInputTokens,
+      cacheReadInputTokens,
+      toolCalls,
+    };
+  }
 
-    const responseBody = JSON.stringify(openAIResponse);
+  private static parseCodexJoinPoolSSE(fullText: string, fallbackModel: string) {
+    let model = fallbackModel;
+    let messageId = "";
+    let textContent = "";
+    let reasoningContent = "";
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cacheCreationInputTokens = 0;
+    let cacheReadInputTokens = 0;
+    let finishReason = "stop";
+    const toolCalls: Array<{
+      id: string;
+      type: string;
+      function: { name: string; arguments: string };
+    }> = [];
 
-    // 后台统计
-    const messageContext = session.messageContext;
-    const taskId = `non-stream-join-${messageContext?.id || `unknown-${Date.now()}`}`;
+    const events = fullText.split("\n\n");
+    for (const event of events) {
+      if (!event.trim()) continue;
 
-    const processingPromise = (async () => {
-      try {
-        const duration = Date.now() - session.startTime;
-        await finalizeRequestStats(session, responseBody, 200, duration);
-      } catch (error) {
-        if (!isClientAbortError(error as Error)) {
-          logger.error("[ResponseHandler] joinPool non-stream stats failed:", error);
+      let eventData = "";
+      for (const line of event.split("\n")) {
+        if (line.startsWith("data: ")) {
+          eventData = line.slice(6);
         }
-      } finally {
-        AsyncTaskManager.cleanup(taskId);
       }
-    })();
 
-    AsyncTaskManager.register(taskId, processingPromise, "join-pool-non-stream-stats");
-    processingPromise.catch((error) => {
-      logger.error("[ResponseHandler] joinPool non-stream stats uncaught error:", error);
-    });
+      if (!eventData || eventData === "[DONE]") continue;
 
-    return new Response(responseBody, {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+      try {
+        const data = JSON.parse(eventData) as Record<string, unknown>;
+        const eventType = data.type as string | undefined;
+        if (!eventType) continue;
+
+        switch (eventType) {
+          case "response.created": {
+            const response = data.response as Record<string, unknown> | undefined;
+            if (response) {
+              messageId = (response.id as string) || messageId;
+              model = (response.model as string) || model;
+            }
+            break;
+          }
+
+          case "response.output_text.delta":
+            textContent += (data.delta as string) || "";
+            break;
+
+          case "response.reasoning_summary_text.delta":
+            reasoningContent += (data.delta as string) || "";
+            break;
+
+          case "response.output_item.done": {
+            const item = data.item as Record<string, unknown> | undefined;
+            if (item?.type === "function_call") {
+              toolCalls.push({
+                id: (item.call_id as string) || "",
+                type: "function",
+                function: {
+                  name: (item.name as string) || "",
+                  arguments: (item.arguments as string) || "",
+                },
+              });
+            }
+            break;
+          }
+
+          case "response.completed": {
+            const response = data.response as Record<string, unknown> | undefined;
+            if (response) {
+              messageId = (response.id as string) || messageId;
+              model = (response.model as string) || model;
+              const usage = response.usage as Record<string, unknown> | undefined;
+              if (usage) {
+                inputTokens = (usage.input_tokens as number) || inputTokens;
+                outputTokens = (usage.output_tokens as number) || outputTokens;
+                cacheCreationInputTokens =
+                  (usage.cache_creation_input_tokens as number) || cacheCreationInputTokens;
+                cacheReadInputTokens =
+                  (usage.cache_read_input_tokens as number) || cacheReadInputTokens;
+              }
+            }
+            finishReason = toolCalls.length > 0 ? "tool_calls" : "stop";
+            break;
+          }
+        }
+      } catch {
+        // skip unparseable events
+      }
+    }
+
+    return {
+      model,
+      messageId,
+      textContent,
+      reasoningContent,
+      finishReason,
+      inputTokens,
+      outputTokens,
+      cacheCreationInputTokens,
+      cacheReadInputTokens,
+      toolCalls,
+    };
   }
 
   private static async handleNonStream(
