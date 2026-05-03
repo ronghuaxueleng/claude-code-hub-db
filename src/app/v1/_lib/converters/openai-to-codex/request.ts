@@ -102,7 +102,7 @@ interface CodexRequest {
     description?: string;
     parameters?: Record<string, unknown>;
   }>;
-  tool_choice?: string | { type: string; function?: { name: string } };
+  tool_choice?: string | { type: string; name?: string };
   [key: string]: unknown;
 }
 
@@ -286,9 +286,7 @@ export function transformOpenAIRequestToCodex(
       if (tc.type === "function" && tc.function?.name) {
         output.tool_choice = {
           type: "function",
-          function: {
-            name: tc.function.name,
-          },
+          name: tc.function.name,
         };
       }
     }

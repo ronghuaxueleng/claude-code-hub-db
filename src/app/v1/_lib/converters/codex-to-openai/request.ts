@@ -42,7 +42,7 @@ interface ResponseAPIRequest {
     parameters?: Record<string, unknown>;
     parametersJsonSchema?: Record<string, unknown>;
   }>;
-  tool_choice?: string | { type: string; function?: { name: string } };
+  tool_choice?: string | { type: string; name?: string; function?: { name: string } };
   max_output_tokens?: number;
   stream?: boolean;
   [key: string]: unknown;
@@ -341,12 +341,13 @@ export function transformCodexRequestToOpenAI(
           break;
       }
     } else if (typeof req.tool_choice === "object") {
-      const tc = req.tool_choice as { type: string; function?: { name: string } };
-      if (tc.type === "function" && tc.function?.name) {
+      const tc = req.tool_choice as { type: string; name?: string; function?: { name: string } };
+      const toolName = tc.name || tc.function?.name;
+      if (tc.type === "function" && toolName) {
         output.tool_choice = {
           type: "function",
           function: {
-            name: tc.function.name,
+            name: toolName,
           },
         };
       }

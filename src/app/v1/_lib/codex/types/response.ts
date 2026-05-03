@@ -32,34 +32,26 @@ export interface ReasoningConfig {
 
 export interface ToolChoiceObject {
   type: "function";
-  function?: {
-    name: string;
-  };
+  name: string;
 }
 
 export interface ResponseTool {
   type: "function";
-  function: {
-    name: string;
-    description?: string;
-    parameters?: Record<string, unknown>;
-    strict?: boolean;
-  };
+  name: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  strict?: boolean;
 }
 
-export type InputItem = MessageInput | ToolOutputsInput;
+export type InputItem = MessageInput | FunctionCallOutputInput;
 
 export interface MessageInput {
   role: "user" | "assistant" | "developer";
   content: ContentItem[];
 }
 
-export interface ToolOutputsInput {
-  type: "tool_outputs";
-  outputs: ToolOutput[];
-}
-
-export interface ToolOutput {
+export interface FunctionCallOutputInput {
+  type: "function_call_output";
   call_id: string;
   output: string;
 }
