@@ -520,6 +520,65 @@ export class ProxyResponseHandler {
                 cacheReadInputTokens =
                   (usage.cache_read_input_tokens as number) || cacheReadInputTokens;
               }
+
+              // 优先使用 response.completed.output 作为最终真值。
+              // 某些带 tools 的 Responses SSE 不会完整输出 text delta，
+              // 但会在 completed.output 中给出完整的 message / function_call。
+              const output = response.output as Array<Record<string, unknown>> | undefined;
+              if (output && Array.isArray(output)) {
+                textContent = "";
+                reasoningContent = "";
+                toolCalls.length = 0;
+
+                for (const item of output) {
+                  const itemType = item.type as string;
+
+                  switch (itemType) {
+                    case "reasoning": {
+                      const summary = item.summary as Array<Record<string, unknown>> | undefined;
+                      if (summary && Array.isArray(summary)) {
+                        for (const summaryItem of summary) {
+                          if (summaryItem.type === "summary_text") {
+                            reasoningContent = (summaryItem.text as string) || reasoningContent;
+                            break;
+                          }
+                        }
+                      }
+                      break;
+                    }
+
+                    case "message": {
+                      const content = item.content as Array<Record<string, unknown>> | undefined;
+                      if (content && Array.isArray(content)) {
+                        const parts: string[] = [];
+                        for (const contentItem of content) {
+                          if (contentItem.type === "output_text") {
+                            const text = (contentItem.text as string) || "";
+                            if (text) {
+                              parts.push(text);
+                            }
+                          }
+                        }
+                        if (parts.length > 0) {
+                          textContent = parts.join("");
+                        }
+                      }
+                      break;
+                    }
+
+                    case "function_call":
+                      toolCalls.push({
+                        id: (item.call_id as string) || "",
+                        type: "function",
+                        function: {
+                          name: (item.name as string) || "",
+                          arguments: (item.arguments as string) || "",
+                        },
+                      });
+                      break;
+                  }
+                }
+              }
             }
             finishReason = toolCalls.length > 0 ? "tool_calls" : "stop";
             break;
