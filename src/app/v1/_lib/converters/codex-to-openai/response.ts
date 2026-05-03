@@ -416,12 +416,14 @@ export function transformCodexNonStreamResponseToOpenAI(
     message.reasoning_content = reasoningText;
   }
 
-  if (toolCalls.length > 0) {
+  const hasFinalContent = !!contentText;
+
+  if (!hasFinalContent && toolCalls.length > 0) {
     message.tool_calls = toolCalls;
   }
 
   // 设置 finish_reason
-  const finishReason = toolCalls.length > 0 ? "tool_calls" : "stop";
+  const finishReason = !hasFinalContent && toolCalls.length > 0 ? "tool_calls" : "stop";
 
   openaiResponse.choices = [
     {

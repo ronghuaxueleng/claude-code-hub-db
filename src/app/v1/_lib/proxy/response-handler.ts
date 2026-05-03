@@ -233,7 +233,8 @@ export class ProxyResponseHandler {
             role: "assistant",
             content: parsed.textContent || null,
             ...(parsed.reasoningContent && { reasoning_content: parsed.reasoningContent }),
-            ...(parsed.toolCalls.length > 0 && { tool_calls: parsed.toolCalls }),
+            ...(!parsed.textContent &&
+              parsed.toolCalls.length > 0 && { tool_calls: parsed.toolCalls }),
           },
           finish_reason: parsed.finishReason,
         },
@@ -580,7 +581,7 @@ export class ProxyResponseHandler {
                 }
               }
             }
-            finishReason = toolCalls.length > 0 ? "tool_calls" : "stop";
+            finishReason = !textContent && toolCalls.length > 0 ? "tool_calls" : "stop";
             break;
           }
         }
