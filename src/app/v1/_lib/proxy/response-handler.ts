@@ -597,7 +597,9 @@ export class ProxyResponseHandler {
             } else if (item?.type === "function_call") {
               const itemId = (item.id as string) || "";
               const bufferedArguments =
-                (itemId && functionCallArgumentBuffers.get(itemId)) || (item.arguments as string) || "";
+                (itemId && functionCallArgumentBuffers.get(itemId)) ||
+                (item.arguments as string) ||
+                "";
               toolCalls.push({
                 id: (item.call_id as string) || "",
                 type: "function",
