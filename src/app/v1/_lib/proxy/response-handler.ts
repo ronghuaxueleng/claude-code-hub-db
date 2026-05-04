@@ -501,12 +501,14 @@ export class ProxyResponseHandler {
     let model = fallbackModel;
     let messageId = "";
     let textContent = "";
+    let pendingTextContent = "";
     let reasoningContent = "";
     let inputTokens = 0;
     let outputTokens = 0;
     let cacheCreationInputTokens = 0;
     let cacheReadInputTokens = 0;
     let finishReason = "stop";
+    let hasCompletedMessage = false;
     const toolCalls: Array<{
       id: string;
       type: string;
@@ -546,7 +548,7 @@ export class ProxyResponseHandler {
           }
 
           case "response.output_text.delta":
-            textContent += (data.delta as string) || "";
+            pendingTextContent += (data.delta as string) || "";
             break;
 
           case "response.output_item.added": {
@@ -586,14 +588,18 @@ export class ProxyResponseHandler {
           case "response.output_item.done": {
             const item = data.item as Record<string, unknown> | undefined;
             if (item?.type === "message") {
+              hasCompletedMessage = true;
               const content = item.content as Array<Record<string, unknown>> | undefined;
-              if (!textContent && content && Array.isArray(content)) {
+              let completedMessageText = "";
+              if (content && Array.isArray(content)) {
                 for (const contentItem of content) {
                   if (contentItem.type === "output_text") {
-                    textContent += (contentItem.text as string) || "";
+                    completedMessageText += (contentItem.text as string) || "";
                   }
                 }
               }
+              textContent += completedMessageText || pendingTextContent;
+              pendingTextContent = "";
             } else if (item?.type === "function_call") {
               const itemId = (item.id as string) || "";
               const bufferedArguments =
@@ -630,7 +636,16 @@ export class ProxyResponseHandler {
                   (usage.cache_read_input_tokens as number) || cacheReadInputTokens;
               }
             }
-            finishReason = !textContent && toolCalls.length > 0 ? "tool_calls" : "stop";
+            if (!hasCompletedMessage && toolCalls.length > 0) {
+              textContent = "";
+              pendingTextContent = "";
+              finishReason = "tool_calls";
+            } else {
+              if (!textContent && pendingTextContent) {
+                textContent = pendingTextContent;
+              }
+              finishReason = "stop";
+            }
             break;
           }
         }
