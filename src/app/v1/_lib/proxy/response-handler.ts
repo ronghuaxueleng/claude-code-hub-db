@@ -512,14 +512,18 @@ export class ProxyResponseHandler {
       type: string;
       function: { name: string; arguments: string };
     }> = [];
+    const functionCallArgumentBuffers: Map<string, string> = new Map();
 
     const events = fullText.split("\n\n");
     for (const event of events) {
       if (!event.trim()) continue;
 
+      let sseEventName = "";
       let eventData = "";
       for (const line of event.split("\n")) {
-        if (line.startsWith("data: ")) {
+        if (line.startsWith("event: ")) {
+          sseEventName = line.slice(7).trim();
+        } else if (line.startsWith("data: ")) {
           eventData = line.slice(6);
         }
       }
@@ -528,7 +532,7 @@ export class ProxyResponseHandler {
 
       try {
         const data = JSON.parse(eventData) as Record<string, unknown>;
-        const eventType = data.type as string | undefined;
+        const eventType = sseEventName || (data.type as string | undefined);
         if (!eventType) continue;
 
         switch (eventType) {
@@ -545,21 +549,66 @@ export class ProxyResponseHandler {
             textContent += (data.delta as string) || "";
             break;
 
+          case "response.output_item.added": {
+            const item = data.item as Record<string, unknown> | undefined;
+            if (item?.type === "message") {
+              messageId = (item.id as string) || messageId;
+            } else if (item?.type === "function_call") {
+              const itemId = (item.id as string) || "";
+              if (itemId) {
+                functionCallArgumentBuffers.set(itemId, (item.arguments as string) || "");
+              }
+            }
+            break;
+          }
+
           case "response.reasoning_summary_text.delta":
             reasoningContent += (data.delta as string) || "";
             break;
 
+          case "response.function_call_arguments.delta": {
+            const itemId = (data.item_id as string) || "";
+            if (itemId) {
+              const existing = functionCallArgumentBuffers.get(itemId) || "";
+              functionCallArgumentBuffers.set(itemId, existing + ((data.delta as string) || ""));
+            }
+            break;
+          }
+
+          case "response.function_call_arguments.done": {
+            const itemId = (data.item_id as string) || "";
+            if (itemId) {
+              functionCallArgumentBuffers.set(itemId, (data.arguments as string) || "");
+            }
+            break;
+          }
+
           case "response.output_item.done": {
             const item = data.item as Record<string, unknown> | undefined;
-            if (item?.type === "function_call") {
+            if (item?.type === "message") {
+              const content = item.content as Array<Record<string, unknown>> | undefined;
+              if (!textContent && content && Array.isArray(content)) {
+                for (const contentItem of content) {
+                  if (contentItem.type === "output_text") {
+                    textContent += (contentItem.text as string) || "";
+                  }
+                }
+              }
+            } else if (item?.type === "function_call") {
+              const itemId = (item.id as string) || "";
+              const bufferedArguments =
+                (itemId && functionCallArgumentBuffers.get(itemId)) || (item.arguments as string) || "";
               toolCalls.push({
                 id: (item.call_id as string) || "",
                 type: "function",
                 function: {
                   name: (item.name as string) || "",
-                  arguments: (item.arguments as string) || "",
+                  arguments: bufferedArguments,
                 },
               });
+              if (itemId) {
+                functionCallArgumentBuffers.delete(itemId);
+              }
             }
             break;
           }
@@ -577,55 +626,6 @@ export class ProxyResponseHandler {
                   (usage.cache_creation_input_tokens as number) || cacheCreationInputTokens;
                 cacheReadInputTokens =
                   (usage.cache_read_input_tokens as number) || cacheReadInputTokens;
-              }
-
-              // 优先使用 response.completed.output 作为最终真值。
-              // 某些带 tools 的 Responses SSE 不会完整输出 text delta，
-              // 但会在 completed.output 中给出完整的 message / function_call。
-              const output = response.output as Array<Record<string, unknown>> | undefined;
-              if (output && Array.isArray(output)) {
-                textContent = "";
-                reasoningContent = "";
-                toolCalls.length = 0;
-
-                for (const item of output) {
-                  const itemType = item.type as string;
-
-                  switch (itemType) {
-                    case "reasoning": {
-                      const summary = item.summary as Array<Record<string, unknown>> | undefined;
-                      if (summary && Array.isArray(summary)) {
-                        for (const summaryItem of summary) {
-                          if (summaryItem.type === "summary_text") {
-                            reasoningContent = (summaryItem.text as string) || reasoningContent;
-                            break;
-                          }
-                        }
-                      }
-                      break;
-                    }
-
-                    case "message": {
-                      const content = item.content as Array<Record<string, unknown>> | undefined;
-                      if (content && Array.isArray(content)) {
-                        for (const contentItem of content) {
-                          if (contentItem.type === "output_text") {
-                            const text = (contentItem.text as string) || "";
-                            if (text) {
-                              textContent += text;
-                            }
-                          }
-                        }
-                      }
-                      break;
-                    }
-
-                    case "function_call":
-                    case "tool_calls":
-                      ProxyResponseHandler.appendCodexToolCalls(toolCalls, item);
-                      break;
-                  }
-                }
               }
             }
             finishReason = !textContent && toolCalls.length > 0 ? "tool_calls" : "stop";
