@@ -1899,7 +1899,7 @@ export class ProxyForwarder {
       }
 
       if (isCodexJoinOpenAIChatCompletion(session, provider)) {
-        logger.debug("ProxyForwarder: Codex joinOpenAIPool request headers summary", {
+        logger.info("ProxyForwarder: Codex joinOpenAIPool request headers summary", {
           providerId: provider.id,
           providerName: provider.name,
           requestPath: session.requestUrl.pathname,
