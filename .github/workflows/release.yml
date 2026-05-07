@@ -222,40 +222,12 @@ jobs:
             git commit -m "chore: sync VERSION file with release ${{ steps.next_version.outputs.new_tag }} [skip ci]"
           fi
 
-      - name: Create and push tag
-        if: steps.check.outputs.needs_bump == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          NEW_TAG="${{ steps.next_version.outputs.new_tag }}"
-          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
-          git push origin HEAD:main "$NEW_TAG"
-
-      - name: Create GitHub Release
-        if: steps.check.outputs.needs_bump == 'true' || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.next_version.outputs.new_tag }}
-          name: Release ${{ steps.next_version.outputs.new_version }}
-          body: |
-            ## Docker
-
-            ```bash
-            docker pull crpi-cnazxqmg4avmg4fq.cn-beijing.personal.cr.aliyuncs.com/ronghuaxueleng/claude-code-hub:${{ steps.next_version.outputs.new_tag }}
-            ${{ steps.next_version.outputs.is_prerelease != 'true' && 'docker pull crpi-cnazxqmg4avmg4fq.cn-beijing.personal.cr.aliyuncs.com/ronghuaxueleng/claude-code-hub:latest' || '' }}
-            ```
-
-            ---
-
-            Release notes will be auto-generated...
-          draft: false
-          prerelease: ${{ steps.next_version.outputs.is_prerelease == 'true' }}
-          generate_release_notes: false
-
       # 自清理旧的tags和releases(保持最近50个) - 仅清理正式版本
       - name: Cleanup old tags and releases
         if: (steps.check.outputs.needs_bump == 'true' || github.event_name == 'workflow_dispatch') && steps.next_version.outputs.is_prerelease != 'true'
         continue-on-error: true
         env:
-          TAGS_TO_KEEP: 50
+          TAGS_TO_KEEP: 0
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🧹 自动清理旧版本,保持最近 $TAGS_TO_KEEP 个tag..."
