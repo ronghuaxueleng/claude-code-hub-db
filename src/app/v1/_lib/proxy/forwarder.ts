@@ -2961,7 +2961,7 @@ export class ProxyForwarder {
       );
     }
     if (isOpenAIToCodexConversion) {
-      const codexJoinPoolUserAgent = "codex_cli_rs/0.55.0 (Mac OS 26.1.0; arm64) vscode/2.0.64";
+      const codexJoinPoolUserAgent = "claude-cli/2.1.112 (external, cli)";
       overrides["user-agent"] = codexJoinPoolUserAgent;
 
       // Codex /v1/responses 对 OpenAI 客户端特有 header 更敏感。
