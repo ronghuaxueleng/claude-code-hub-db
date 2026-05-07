@@ -1470,7 +1470,7 @@ export class ProxyForwarder {
         if (basePath.endsWith(`/${versionPrefix}`)) {
           geminiUrl.pathname = basePath + modelPath;
         } else {
-          geminiUrl.pathname = basePath + `/${versionPrefix}` + modelPath;
+          geminiUrl.pathname = `${basePath}/${versionPrefix}${modelPath}`;
         }
         if (isStreaming) {
           geminiUrl.searchParams.set("alt", "sse");
@@ -2890,6 +2890,10 @@ export class ProxyForwarder {
     const isOpenAIToClaudeConversion =
       session.originalFormat === "openai" &&
       (provider.providerType === "claude" || provider.providerType === "claude-auth");
+    const isOpenAIToCodexConversion =
+      session.originalFormat === "openai" &&
+      provider.providerType === "codex" &&
+      !!provider.joinOpenAIPool;
 
     if (isOpenAIToClaudeConversion) {
       // Claude API 版本（必需，Claude API 要求该头存在）
@@ -2955,6 +2959,38 @@ export class ProxyForwarder {
         "sec-fetch-mode",
         "sec-fetch-site"
       );
+    }
+    if (isOpenAIToCodexConversion) {
+      // Codex /v1/responses 对 OpenAI 客户端特有 header 更敏感。
+      // 采用“必要头最小化”策略，避免把 OpenAI/浏览器 SDK 头原样带到 Codex 上游。
+      blacklist.push(
+        "openai-organization",
+        "openai-project",
+        "openai-version",
+        "openai-beta",
+        "x-stainless-lang",
+        "x-stainless-runtime",
+        "x-stainless-arch",
+        "x-stainless-os",
+        "x-stainless-package-version",
+        "x-stainless-retry-count",
+        "x-stainless-runtime-version",
+        "x-stainless-timeout",
+        "x-app",
+        "x-title",
+        "origin",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "sec-fetch-dest",
+        "sec-fetch-mode",
+        "sec-fetch-site"
+      );
+      logger.debug("ProxyForwarder: Applied Codex joinOpenAIPool header minimization", {
+        providerId: provider.id,
+        providerName: provider.name,
+      });
     }
 
     const headerProcessor = HeaderProcessor.createForProxy({
