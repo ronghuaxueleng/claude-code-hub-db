@@ -2961,6 +2961,9 @@ export class ProxyForwarder {
       );
     }
     if (isOpenAIToCodexConversion) {
+      const codexJoinPoolUserAgent = "codex_cli_rs/0.55.0 (Mac OS 26.1.0; arm64) vscode/2.0.64";
+      overrides["user-agent"] = codexJoinPoolUserAgent;
+
       // Codex /v1/responses 对 OpenAI 客户端特有 header 更敏感。
       // 采用“必要头最小化”策略，避免把 OpenAI/浏览器 SDK 头原样带到 Codex 上游。
       blacklist.push(
@@ -2987,9 +2990,10 @@ export class ProxyForwarder {
         "sec-fetch-mode",
         "sec-fetch-site"
       );
-      logger.debug("ProxyForwarder: Applied Codex joinOpenAIPool header minimization", {
+      logger.info("ProxyForwarder: Applied Codex joinOpenAIPool header minimization", {
         providerId: provider.id,
         providerName: provider.name,
+        userAgent: codexJoinPoolUserAgent,
       });
     }
 
