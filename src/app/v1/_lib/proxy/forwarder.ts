@@ -141,6 +141,22 @@ function summarizeHeadersForDebug(headers: Headers): Record<string, string> {
   return summary;
 }
 
+function summarizeCodexRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  return {
+    model: body.model,
+    stream: body.stream,
+    store: body.store,
+    parallel_tool_calls: body.parallel_tool_calls,
+    include: Array.isArray(body.include) ? body.include : (body.include ?? null),
+    instructionsLength: typeof body.instructions === "string" ? body.instructions.length : null,
+    inputCount: Array.isArray(body.input) ? body.input.length : null,
+    toolsCount: Array.isArray(body.tools) ? body.tools.length : null,
+    toolChoice: body.tool_choice ?? null,
+    hasMetadata: !!body.metadata,
+    hasReasoning: !!body.reasoning,
+  };
+}
+
 type CacheTtlOption = CacheTtlPreference | null | undefined;
 
 function resolveCacheTtlPreference(
@@ -2008,6 +2024,15 @@ export class ProxyForwarder {
         try {
           const parsed = JSON.parse(bodyString);
           isStreaming = parsed.stream === true;
+          if (isCodexJoinOpenAIChatCompletion(session, provider)) {
+            logger.info("ProxyForwarder: Codex joinOpenAIPool request body summary", {
+              providerId: provider.id,
+              providerName: provider.name,
+              requestPath: session.requestUrl.pathname,
+              bodyLength: bodyString.length,
+              bodySummary: summarizeCodexRequestBody(parsed as Record<string, unknown>),
+            });
+          }
         } catch {
           isStreaming = false;
         }
