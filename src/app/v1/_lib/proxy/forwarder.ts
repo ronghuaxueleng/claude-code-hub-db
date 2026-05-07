@@ -96,6 +96,51 @@ function isKeyFailoverEligibleError(statusCode: number): boolean {
   return [429, 500, 502, 503, 529].includes(statusCode);
 }
 
+function isCodexJoinOpenAIChatCompletion(
+  session: ProxySession,
+  provider: NonNullable<ProxySession["provider"]>
+): boolean {
+  return (
+    session.originalFormat === "openai" &&
+    session.requestUrl.pathname === "/v1/chat/completions" &&
+    provider.joinOpenAIPool &&
+    provider.providerType === "codex"
+  );
+}
+
+function summarizeHeadersForDebug(headers: Headers): Record<string, string> {
+  const summary: Record<string, string> = {};
+  const sensitiveKeys = new Set(["authorization", "x-api-key", "cookie"]);
+
+  headers.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveKeys.has(lowerKey)) {
+      summary[lowerKey] = value ? "[redacted]" : "";
+      return;
+    }
+
+    if (
+      lowerKey === "user-agent" ||
+      lowerKey === "content-type" ||
+      lowerKey === "accept" ||
+      lowerKey === "accept-encoding" ||
+      lowerKey === "host" ||
+      lowerKey === "origin" ||
+      lowerKey === "referer" ||
+      lowerKey === "openai-organization" ||
+      lowerKey === "openai-project" ||
+      lowerKey === "anthropic-version" ||
+      lowerKey === "anthropic-beta" ||
+      lowerKey.startsWith("x-stainless-") ||
+      lowerKey.startsWith("x-app")
+    ) {
+      summary[lowerKey] = value;
+    }
+  });
+
+  return summary;
+}
+
 type CacheTtlOption = CacheTtlPreference | null | undefined;
 
 function resolveCacheTtlPreference(
@@ -1837,6 +1882,17 @@ export class ProxyForwarder {
         });
       }
 
+      if (isCodexJoinOpenAIChatCompletion(session, provider)) {
+        logger.debug("ProxyForwarder: Codex joinOpenAIPool request headers summary", {
+          providerId: provider.id,
+          providerName: provider.name,
+          requestPath: session.requestUrl.pathname,
+          headerCount: Array.from(processedHeaders.keys()).length,
+          headerKeys: Array.from(processedHeaders.keys()),
+          headerSummary: summarizeHeadersForDebug(processedHeaders),
+        });
+      }
+
       // ⭐ MCP 透传处理：检测是否为 MCP 请求，并使用相应的 URL
       let effectiveBaseUrl = provider.url;
 
@@ -2536,6 +2592,25 @@ export class ProxyForwarder {
       // HTTP 错误：清除响应超时定时器
       if (responseTimeoutId) {
         clearTimeout(responseTimeoutId);
+      }
+      if (isCodexJoinOpenAIChatCompletion(session, provider)) {
+        const errorResponse = response.clone();
+        let responseBodyExcerpt = "";
+        try {
+          responseBodyExcerpt = (await errorResponse.text()).slice(0, 2048);
+        } catch (error) {
+          responseBodyExcerpt = `<<failed to read body: ${error instanceof Error ? error.message : String(error)}>>`;
+        }
+        logger.error("ProxyForwarder: Codex joinOpenAIPool upstream returned non-OK", {
+          providerId: provider.id,
+          providerName: provider.name,
+          requestPath: session.requestUrl.pathname,
+          proxyUrl,
+          statusCode: response.status,
+          statusText: response.statusText,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseBodyExcerpt,
+        });
       }
       throw await ProxyError.fromUpstreamResponse(response, {
         id: provider.id,
