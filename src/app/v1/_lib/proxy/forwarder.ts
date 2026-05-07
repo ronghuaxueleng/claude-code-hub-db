@@ -154,6 +154,10 @@ function summarizeCodexRequestBody(body: Record<string, unknown>): Record<string
     toolChoice: body.tool_choice ?? null,
     hasMetadata: !!body.metadata,
     hasReasoning: !!body.reasoning,
+    reasoningEffort:
+      body.reasoning && typeof body.reasoning === "object"
+        ? ((body.reasoning as Record<string, unknown>).effort ?? null)
+        : null,
   };
 }
 
