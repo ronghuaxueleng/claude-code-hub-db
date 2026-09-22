@@ -1002,3 +1002,87 @@ export async function renewKeyExpiresAt(
     return { ok: false, error: message, errorCode: ERROR_CODES.UPDATE_FAILED };
   }
 }
+
+/**
+ * 修改密钥值（手动更新 key 字符串）
+ * 
+ * 此函数允许管理员或key所有者手动修改密钥的值。
+ * 注意：修改后需要用户更新客户端配置。
+ */
+export async function updateKeyValue(
+  keyId: number,
+  data: { newKey: string }
+): Promise<ActionResult> {
+  try {
+    const tError = await getTranslations("errors");
+
+    const session = await getSession();
+    if (!session) {
+      return { ok: false, error: tError("UNAUTHORIZED"), errorCode: ERROR_CODES.UNAUTHORIZED };
+    }
+
+    const key = await findKeyById(keyId);
+    if (!key) {
+      return { ok: false, error: tError("KEY_NOT_FOUND"), errorCode: ERROR_CODES.NOT_FOUND };
+    }
+
+    // 权限检查：用户只能修改自己的Key，管理员可以修改所有Key
+    if (session.user.role !== "admin" && session.user.id !== key.userId) {
+      return {
+        ok: false,
+        error: tError("PERMISSION_DENIED"),
+        errorCode: ERROR_CODES.PERMISSION_DENIED,
+      };
+    }
+
+    // 验证新key格式（基本验证：非空且长度合理）
+    const newKey = data.newKey.trim();
+    if (!newKey) {
+      return { 
+        ok: false, 
+        error: tError("INVALID_FORMAT"), 
+        errorCode: ERROR_CODES.INVALID_FORMAT 
+      };
+    }
+
+    if (newKey.length < 10 || newKey.length > 500) {
+      return { 
+        ok: false, 
+        error: "密钥长度必须在 10-500 字符之间", 
+        errorCode: ERROR_CODES.INVALID_FORMAT 
+      };
+    }
+
+    // 检查新key是否已被其他key使用
+    const existingKey = await db.query.keys.findFirst({
+      where: and(
+        eq(keysTable.key, newKey),
+        isNull(keysTable.deletedAt)
+      ),
+    });
+
+    if (existingKey && existingKey.id !== keyId) {
+      return {
+        ok: false,
+        error: "该密钥值已被使用",
+        errorCode: ERROR_CODES.DUPLICATE_KEY,
+      };
+    }
+
+    // 更新密钥值
+    await updateKey(keyId, {
+      key: newKey,
+    });
+
+    logger.info(`Key value updated: keyId=${keyId}, userId=${session.user.id}`);
+
+    revalidatePath("/dashboard/users");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (error) {
+    logger.error("修改密钥值失败:", error);
+    const tError = await getTranslations("errors");
+    const message = error instanceof Error ? error.message : tError("UPDATE_KEY_FAILED");
+    return { ok: false, error: message, errorCode: ERROR_CODES.UPDATE_FAILED };
+  }
+}

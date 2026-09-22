@@ -179,6 +179,7 @@ export async function updateKey(id: number, keyData: UpdateKeyData): Promise<Key
     updatedAt: new Date(),
   };
   if (keyData.name !== undefined) dbData.name = keyData.name;
+  if (keyData.key !== undefined) dbData.key = keyData.key;
   if (keyData.is_enabled !== undefined) dbData.isEnabled = keyData.is_enabled;
   if (keyData.expires_at !== undefined) dbData.expiresAt = keyData.expires_at;
   if (keyData.can_login_web_ui !== undefined) dbData.canLoginWebUi = keyData.can_login_web_ui;

@@ -27,6 +27,7 @@ export interface UserManagementTableProps {
   currencyCode?: string;
   onCreateUser?: () => void;
   onAddKey?: (user: UserDisplay) => void;
+  onKeyUpdated?: () => void;
   highlightKeyIds?: Set<number>;
   autoExpandOnFilter?: boolean;
   isMultiSelectMode?: boolean;
@@ -112,6 +113,7 @@ export function UserManagementTable({
   currencyCode,
   onCreateUser,
   onAddKey,
+  onKeyUpdated,
   highlightKeyIds,
   autoExpandOnFilter,
   isMultiSelectMode,
@@ -567,6 +569,7 @@ export function UserManagementTable({
                           onEditUser={() => openEditDialog(user.id)}
                           onAddKey={onAddKey ? () => onAddKey(user) : undefined}
                           onQuickRenew={isAdmin ? handleOpenQuickRenew : undefined}
+                          onKeyUpdated={onKeyUpdated}
                           optimisticExpiresAt={optimisticUserExpiries.get(user.id)}
                           currentUser={currentUser}
                           currencyCode={currencyCode}

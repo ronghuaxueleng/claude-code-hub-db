@@ -932,7 +932,9 @@
     "edit": "编辑",
     "delete": "删除",
     "editAriaLabel": "编辑密钥",
-    "deleteAriaLabel": "删除密钥"
+    "deleteAriaLabel": "删除密钥",
+    "updateKey": "修改密钥",
+    "updateKeyAriaLabel": "修改密钥值"
   },
   "userActions": {
     "edit": "编辑用户",
@@ -1622,6 +1624,23 @@
         },
         "overwriteHint": "此类型已存在，保存将覆盖原有值"
       }
+    },
+    "updateKeyValue": {
+      "title": "修改密钥值",
+      "description": "为密钥 {keyName} 设置新的密钥值",
+      "newKeyLabel": "新密钥值",
+      "newKeyPlaceholder": "请输入新的密钥值",
+      "newKeyHint": "密钥长度必须在 10-500 字符之间",
+      "confirmKeyLabel": "确认密钥值",
+      "confirmKeyPlaceholder": "再次输入新的密钥值",
+      "confirmKeyHint": "请再次输入相同的密钥值以确认",
+      "warning": "⚠️ 警告：修改密钥后，所有使用旧密钥的客户端将无法访问，请确保及时更新客户端配置。",
+      "confirmButton": "确认修改",
+      "success": "密钥修改成功",
+      "error": "密钥修改失败",
+      "mismatchError": "两次输入的密钥值不一致",
+      "emptyError": "密钥值不能为空",
+      "lengthError": "密钥长度必须在 10-500 字符之间"
     }
   },
   "webhookMigration": {

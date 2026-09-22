@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Copy, Eye, FileText, Info, Pencil, Key as KeyIcon, Trash2 } from "lucide-react";
+import { BarChart3, Copy, Eye, FileText, Info, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -28,7 +28,6 @@ import { formatDate } from "@/lib/utils/date-format";
 import { type QuickRenewKey, QuickRenewKeyDialog } from "./forms/quick-renew-key-dialog";
 import { KeyFullDisplayDialog } from "./key-full-display-dialog";
 import { KeyQuotaUsageDialog } from "./key-quota-usage-dialog";
-import { UpdateKeyValueDialog } from "./update-key-value-dialog";
 import { KeyStatsDialog } from "./key-stats-dialog";
 
 export interface KeyRowItemProps {
@@ -57,7 +56,6 @@ export interface KeyRowItemProps {
   onSelect?: (checked: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
-  onKeyUpdated?: () => void;
   onViewLogs: () => void;
   onViewDetails: () => void;
   currencyCode?: string;
@@ -85,7 +83,6 @@ export interface KeyRowItemProps {
       show: string;
       hide: string;
       quota: string;
-      updateKey: string;
     };
     status: {
       enabled: string;
@@ -138,7 +135,6 @@ export function KeyRowItem({
   onSelect,
   onEdit,
   onDelete,
-  onKeyUpdated,
   onViewLogs,
   onViewDetails: _onViewDetails,
   currencyCode,
@@ -152,7 +148,6 @@ export function KeyRowItem({
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
   const [quickRenewOpen, setQuickRenewOpen] = useState(false);
-  const [updateKeyDialogOpen, setUpdateKeyDialogOpen] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   // 乐观更新：本地状态跟踪启用状态
   const [localStatus, setLocalStatus] = useState<"enabled" | "disabled">(keyData.status);
@@ -319,19 +314,6 @@ export function KeyRowItem({
             checked={Boolean(isSelected)}
             onCheckedChange={(checked) => onSelect?.(Boolean(checked))}
           />
-
-      {/* Update Key Value Dialog */}
-      <UpdateKeyValueDialog
-        open={updateKeyDialogOpen}
-        onOpenChange={setUpdateKeyDialogOpen}
-        keyData={{
-          id: keyData.id,
-          name: keyData.name,
-        }}
-        onSuccess={() => {
-          router.refresh();
-        }}
-      />
         </div>
       ) : null}
 
@@ -582,25 +564,6 @@ export function KeyRowItem({
           <TooltipContent>{translations.actions.edit}</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              aria-label={translations.actions.updateKey}
-              onClick={(e) => {
-                e.stopPropagation();
-                setUpdateKeyDialogOpen(true);
-              }}
-              className="h-7 w-7"
-            >
-              <KeyIcon className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{translations.actions.updateKey}</TooltipContent>
-        </Tooltip>
-
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -680,20 +643,6 @@ export function KeyRowItem({
         keyData={quickRenewKeyData}
         onConfirm={handleQuickRenewConfirm}
         translations={quickRenewTranslations}
-      />
-
-      {/* Update Key Value Dialog */}
-      <UpdateKeyValueDialog
-        open={updateKeyDialogOpen}
-        onOpenChange={setUpdateKeyDialogOpen}
-        keyData={{
-          id: keyData.id,
-          name: keyData.name,
-        }}
-        onSuccess={() => {
-          onKeyUpdated?.();
-          router.refresh();
-        }}
       />
     </div>
   );

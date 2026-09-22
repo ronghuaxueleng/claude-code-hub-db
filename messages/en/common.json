@@ -49,5 +49,9 @@
   "theme": "Theme",
   "light": "Light",
   "dark": "Dark",
-  "system": "System"
+  "system": "System",
+  "updateKey": "Update Key",
+  "errors": {
+    "DUPLICATE_KEY": "This key value is already in use"
+  }
 }

@@ -931,7 +931,9 @@
     "edit": "Edit",
     "delete": "Delete",
     "editAriaLabel": "Edit key",
-    "deleteAriaLabel": "Delete key"
+    "deleteAriaLabel": "Delete key",
+    "updateKey": "Update Key",
+    "updateKeyAriaLabel": "Update key value"
   },
   "userActions": {
     "edit": "Edit user",
@@ -1623,6 +1625,23 @@
         },
         "overwriteHint": "This type already exists, saving will overwrite the existing value"
       }
+    },
+    "updateKeyValue": {
+      "title": "Update Key Value",
+      "description": "Set a new key value for {keyName}",
+      "newKeyLabel": "New Key Value",
+      "newKeyPlaceholder": "Enter the new key value",
+      "newKeyHint": "Key length must be between 10-500 characters",
+      "confirmKeyLabel": "Confirm Key Value",
+      "confirmKeyPlaceholder": "Enter the new key value again",
+      "confirmKeyHint": "Please enter the same key value again to confirm",
+      "warning": "⚠️ Warning: After updating the key, all clients using the old key will lose access. Please ensure you update the client configuration promptly.",
+      "confirmButton": "Confirm Update",
+      "success": "Key updated successfully",
+      "error": "Failed to update key",
+      "mismatchError": "The two key values do not match",
+      "emptyError": "Key value cannot be empty",
+      "lengthError": "Key length must be between 10-500 characters"
     }
   },
   "webhookMigration": {

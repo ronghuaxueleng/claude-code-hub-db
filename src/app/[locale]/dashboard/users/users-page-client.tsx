@@ -450,6 +450,7 @@ function UsersPageContent({ currentUser }: UsersPageClientProps) {
             show: tKeyList("showKeyTooltip"),
             hide: tKeyList("hideKeyTooltip"),
             quota: tUserMgmt("table.keyRow.quotaButton"),
+            updateKey: tCommon("updateKey") || "Update Key",
           },
           status: {
             enabled: tUserMgmt("keyStatus.enabled"),
@@ -639,6 +640,7 @@ function UsersPageContent({ currentUser }: UsersPageClientProps) {
             currencyCode="USD"
             onCreateUser={isAdmin ? handleCreateUser : handleCreateKey}
             onAddKey={handleAddKey}
+            onKeyUpdated={handleKeyCreated}
             highlightKeyIds={shouldHighlightKeys ? matchingKeyIds : undefined}
             autoExpandOnFilter={shouldHighlightKeys}
             isMultiSelectMode={isAdmin && isMultiSelectMode}

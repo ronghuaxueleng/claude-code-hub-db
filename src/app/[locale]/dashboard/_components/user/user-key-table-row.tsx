@@ -35,6 +35,7 @@ export interface UserKeyTableRowProps {
   onEditUser: () => void;
   onAddKey?: () => void;
   onQuickRenew?: (user: UserDisplay) => void;
+  onKeyUpdated?: () => void;
   optimisticExpiresAt?: Date;
   currentUser?: { role: string };
   currencyCode?: string;
@@ -124,6 +125,7 @@ export function UserKeyTableRow({
   onEditUser,
   onAddKey,
   onQuickRenew,
+  onKeyUpdated,
   optimisticExpiresAt,
   currencyCode,
   highlightKeyIds,
@@ -466,6 +468,7 @@ export function UserKeyTableRow({
                   onDelete={() => handleDeleteKey(key.id)}
                   onViewLogs={() => router.push(`/dashboard/logs?keyId=${key.id}`)}
                   onViewDetails={() => setEditingKeyId(key.id)}
+                  onKeyUpdated={onKeyUpdated}
                   currencyCode={currencyCode}
                   translations={keyRowTranslations}
                   highlight={highlightKeyIds?.has(key.id)}
