@@ -45,20 +45,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { PROVIDER_GROUP, PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { getProviderTypeConfig, getProviderTypeTranslationKey } from "@/lib/provider-type-utils";
 import { copyToClipboard, isClipboardSupported } from "@/lib/utils/clipboard";
 import { getContrastTextColor, getGroupColor } from "@/lib/utils/color";
 import type { CurrencyCode } from "@/lib/utils/currency";
 import { formatCurrency } from "@/lib/utils/currency";
+import { isProviderEnabledForGroups } from "@/lib/utils/provider-group-state";
 import type { ProviderDisplay, ProviderStatistics } from "@/types/provider";
 import type { User } from "@/types/user";
 import { ProviderForm } from "./forms/provider-form";
 import { InlineEditPopover } from "./inline-edit-popover";
+import { ProviderGroupStatus } from "./provider-group-status";
 
 interface ProviderRichListItemProps {
   provider: ProviderDisplay;
+  selectedGroups?: string[];
   currentUser?: User;
   healthStatus?: {
     circuitState: "closed" | "open" | "half-open";
@@ -80,6 +82,7 @@ interface ProviderRichListItemProps {
 
 export function ProviderRichListItem({
   provider,
+  selectedGroups = [],
   currentUser,
   healthStatus,
   statistics,
@@ -103,7 +106,6 @@ export function ProviderRichListItem({
   const [resetPending, startResetTransition] = useTransition();
   const [resetUsagePending, startResetUsageTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
-  const [togglePending, startToggleTransition] = useTransition();
 
   const canEdit = currentUser?.role === "admin";
   const tTypes = useTranslations("settings.providers.types");
@@ -294,34 +296,10 @@ export function ProviderRichListItem({
     });
   };
 
-  // 处理启用/禁用切换
-  const handleToggle = () => {
-    startToggleTransition(async () => {
-      try {
-        const res = await editProvider(provider.id, {
-          is_enabled: !provider.isEnabled,
-        });
-        if (res.ok) {
-          const status = !provider.isEnabled ? tList("statusEnabled") : tList("statusDisabled");
-          toast.success(tList("toggleSuccess", { status }), {
-            description: tList("toggleSuccessDesc", { name: provider.name }),
-          });
-          queryClient.invalidateQueries({ queryKey: ["providers"] });
-          queryClient.invalidateQueries({ queryKey: ["providers-health"] });
-          router.refresh();
-        } else {
-          toast.error(tList("toggleFailed"), {
-            description: res.error || tList("unknownError"),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to toggle provider status:", error);
-        toast.error(tList("toggleFailed"), {
-          description: tList("deleteError"),
-        });
-      }
-    });
-  };
+  const enabledInScope = isProviderEnabledForGroups(
+    provider,
+    selectedGroups.length > 0 ? selectedGroups.join(",") : null
+  );
 
   const createSaveHandler = (fieldName: "priority" | "weight" | "cost_multiplier") => {
     return async (value: number) => {
@@ -365,7 +343,7 @@ export function ProviderRichListItem({
         {/* 左侧：状态和类型图标 */}
         <div className="flex items-center gap-2">
           {/* 启用状态指示器 */}
-          {provider.isEnabled ? (
+          {enabledInScope ? (
             <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
           ) : (
             <XCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -593,15 +571,7 @@ export function ProviderRichListItem({
 
         {/* 操作按钮 */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* 启用/禁用切换 */}
-          {canEdit && (
-            <Switch
-              checked={provider.isEnabled}
-              onCheckedChange={handleToggle}
-              disabled={togglePending}
-              className="data-[state=checked]:bg-green-500"
-            />
-          )}
+          {canEdit && <ProviderGroupStatus provider={provider} selectedGroups={selectedGroups} />}
 
           {/* 编辑按钮 */}
           {canEdit && (

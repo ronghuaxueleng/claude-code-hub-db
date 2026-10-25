@@ -5,13 +5,11 @@ import {
   CheckSquare,
   Link2,
   Loader2,
-  LockKeyhole,
   RotateCcw,
   Search,
   ShieldCheck,
   ShieldOff,
   Trash2,
-  Unlock,
   XSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -53,6 +51,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import type { CurrencyCode } from "@/lib/utils/currency";
+import { getProviderGroups } from "@/lib/utils/provider-group-state";
 import type { ProviderDisplay, ProviderStatisticsMap, ProviderType } from "@/types/provider";
 import type { User } from "@/types/user";
 import { ProviderList } from "./provider-list";
@@ -174,7 +173,7 @@ export function ProviderManager({
 
     startBatchEnable(async () => {
       try {
-        const result = await batchEnableProviders(Array.from(selectedIds));
+        const result = await batchEnableProviders(Array.from(selectedIds), groupFilter);
         if (result.ok) {
           toast.success(tBatch("enableSuccess"), {
             description: tBatch("enableSuccessDesc", { count: result.data.updatedCount }),
@@ -198,7 +197,7 @@ export function ProviderManager({
 
     startBatchDisable(async () => {
       try {
-        const result = await batchDisableProviders(Array.from(selectedIds));
+        const result = await batchDisableProviders(Array.from(selectedIds), groupFilter);
         if (result.ok) {
           toast.success(tBatch("disableSuccess"), {
             description: tBatch("disableSuccessDesc", { count: result.data.updatedCount }),
@@ -404,24 +403,12 @@ export function ProviderManager({
   // Extract unique groups from all providers
   const allGroups = useMemo(() => {
     const groups = new Set<string>();
-    let hasDefaultGroup = false;
     providers.forEach((p) => {
-      const tags = p.groupTag
-        ?.split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      if (!tags || tags.length === 0) {
-        hasDefaultGroup = true;
-      } else {
-        tags.forEach((g) => groups.add(g));
-      }
+      getProviderGroups(p).forEach((group) => groups.add(group));
     });
-
-    // Sort groups: "default" first, then alphabetically
-    const sortedGroups = Array.from(groups).sort();
-    if (hasDefaultGroup) {
-      return ["default", ...sortedGroups];
-    }
+    const sortedGroups = Array.from(groups).sort((a, b) =>
+      a === "default" ? -1 : b === "default" ? 1 : a.localeCompare(b)
+    );
     return sortedGroups;
   }, [providers]);
 
@@ -450,7 +437,17 @@ export function ProviderManager({
 
     // Filter by status
     if (statusFilter !== "all") {
-      result = result.filter((p) => (statusFilter === "active" ? p.isEnabled : !p.isEnabled));
+      result = result.filter((p) => {
+        const providerGroups = getProviderGroups(p);
+        const enabled =
+          p.isEnabled &&
+          (groupFilter.length === 0
+            ? providerGroups.some((group) => !p.disabledGroups?.includes(group))
+            : groupFilter.some(
+                (group) => providerGroups.includes(group) && !p.disabledGroups?.includes(group)
+              ));
+        return statusFilter === "active" ? enabled : !enabled;
+      });
     }
 
     // Filter by groups
@@ -668,7 +665,10 @@ export function ProviderManager({
             <Button
               variant={groupFilter.length === 0 ? "default" : "outline"}
               size="sm"
-              onClick={() => setGroupFilter([])}
+              onClick={() => {
+                setGroupFilter([]);
+                setSelectedIds(new Set());
+              }}
               disabled={loading}
               className="h-7"
             >
@@ -680,6 +680,7 @@ export function ProviderManager({
                 variant={groupFilter.includes(group) ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
+                  setSelectedIds(new Set());
                   setGroupFilter((prev) =>
                     prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group]
                   );
@@ -690,6 +691,7 @@ export function ProviderManager({
                 {group}
               </Button>
             ))}
+            <p className="w-full text-xs text-muted-foreground">{tFilter("groups.statusHint")}</p>
           </div>
         )}
         {/* 搜索结果提示 + Circuit Breaker filter */}
@@ -752,6 +754,7 @@ export function ProviderManager({
             statisticsLoading={statisticsLoading}
             currencyCode={currencyCode}
             enableMultiProviderTypes={enableMultiProviderTypes}
+            selectedGroups={groupFilter}
             selectedIds={selectedIds}
             onSelectChange={currentUser?.role === "admin" ? handleSelectChange : undefined}
             onSelectAll={currentUser?.role === "admin" ? handleSelectAll : undefined}

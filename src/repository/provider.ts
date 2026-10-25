@@ -79,6 +79,7 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     priority: providers.priority,
     costMultiplier: providers.costMultiplier,
     groupTag: providers.groupTag,
+    disabledGroups: providers.disabledGroups,
     providerType: providers.providerType,
     preserveClientIp: providers.preserveClientIp,
     modelRedirects: providers.modelRedirects,
@@ -144,6 +145,7 @@ export async function findProviderList(
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      disabledGroups: providers.disabledGroups,
       providerType: providers.providerType,
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
@@ -223,6 +225,7 @@ export async function findAllProvidersFresh(): Promise<Provider[]> {
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      disabledGroups: providers.disabledGroups,
       providerType: providers.providerType,
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
@@ -306,6 +309,7 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      disabledGroups: providers.disabledGroups,
       providerType: providers.providerType,
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
@@ -476,6 +480,7 @@ export async function updateProvider(
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      disabledGroups: providers.disabledGroups,
       providerType: providers.providerType,
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
@@ -632,15 +637,37 @@ export async function getDistinctProviderGroups(): Promise<string[]> {
  */
 export async function batchUpdateProvidersEnabled(
   ids: number[],
-  isEnabled: boolean
+  isEnabled: boolean,
+  groups: string[] = []
 ): Promise<number> {
   if (ids.length === 0) {
     return 0;
   }
 
+  // Update only the requested group entries atomically, preserving concurrent
+  // changes to other groups and the provider's global enabled state.
+  const selectedGroups = sql`(
+    SELECT COALESCE(jsonb_agg(group_name), '[]'::jsonb)
+    FROM jsonb_array_elements_text(${JSON.stringify(groups)}::jsonb) AS requested(group_name)
+    WHERE EXISTS (
+      SELECT 1 FROM regexp_split_to_table(
+        COALESCE(NULLIF(btrim(${providers.groupTag}), ''), 'default'), ','
+      ) AS member(name)
+      WHERE btrim(member.name) = requested.group_name
+    )
+  )`;
+  const disabledGroups = isEnabled
+    ? sql`${providers.disabledGroups} - ARRAY(SELECT jsonb_array_elements_text(${selectedGroups}))`
+    : sql`(SELECT COALESCE(jsonb_agg(DISTINCT value), '[]'::jsonb)
+        FROM jsonb_array_elements(${providers.disabledGroups} || ${selectedGroups}))`;
+
   const result = await db
     .update(providers)
-    .set({ isEnabled, updatedAt: new Date() })
+    .set(
+      groups.length > 0
+        ? { disabledGroups, updatedAt: new Date() }
+        : { isEnabled, updatedAt: new Date() }
+    )
     .where(and(inArray(providers.id, ids), isNull(providers.deletedAt)))
     .returning({ id: providers.id });
 

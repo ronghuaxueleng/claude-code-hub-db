@@ -141,6 +141,7 @@ export const providers = pgTable('providers', {
   priority: integer('priority').notNull().default(0),
   costMultiplier: numeric('cost_multiplier', { precision: 10, scale: 4 }).default('1.0'),
   groupTag: varchar('group_tag', { length: 50 }),
+  disabledGroups: jsonb('disabled_groups').$type<string[]>().notNull().default([]),
 
   // 供应商类型：扩展支持 7 种类型
   // - claude: Anthropic 提供商（标准认证）

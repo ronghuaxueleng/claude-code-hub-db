@@ -54,6 +54,7 @@ export interface Provider {
   priority: number;
   costMultiplier: number;
   groupTag: string | null;
+  disabledGroups?: string[];
 
   // 供应商类型：扩展支持 4 种类型
   providerType: ProviderType;
@@ -165,6 +166,7 @@ export interface ProviderDisplay {
   priority: number;
   costMultiplier: number;
   groupTag: string | null;
+  disabledGroups?: string[];
   // 供应商类型
   providerType: ProviderType;
   // 是否透传客户端 IP

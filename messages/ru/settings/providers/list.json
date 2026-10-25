@@ -35,5 +35,9 @@
   "urlCopied": "URL скопирован в буфер обмена",
   "viewFullKey": "Просмотр полного API-ключа",
   "viewFullKeyDesc": "Пожалуйста, храните его в безопасности и не делитесь с другими",
-  "weight": "Вес"
+  "weight": "Вес",
+  "groupStatus": "Группа {group}: {status}",
+  "globalStatus": "Общий переключатель",
+  "groupSwitch": "Переключатель группы {group}",
+  "globalDisabled": "Сначала включите провайдера общим переключателем"
 }

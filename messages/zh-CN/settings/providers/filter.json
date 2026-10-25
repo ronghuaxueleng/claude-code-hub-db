@@ -7,7 +7,8 @@
   "groups": {
     "label": "分组:",
     "all": "全部",
-    "default": "default"
+    "default": "default",
+    "statusHint": "选择分组后，开关和批量启停仅影响所选分组；全部视图中的全局开关影响所有分组。"
   },
   "circuitBroken": "熔断"
 }

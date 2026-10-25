@@ -539,6 +539,8 @@ export const CreateProviderSchema = z.object({
 /**
  * 服务商更新数据验证schema
  */
+export const ProviderStatusGroupsSchema = z.array(z.string().trim().min(1).max(50));
+
 export const UpdateProviderSchema = z
   .object({
     name: z.string().min(1).max(64).optional(),

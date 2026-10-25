@@ -9,6 +9,7 @@ import { ProviderRichListItem } from "./provider-rich-list-item";
 
 interface ProviderListProps {
   providers: ProviderDisplay[];
+  selectedGroups?: string[];
   currentUser?: User;
   healthStatus: Record<
     number,
@@ -31,6 +32,7 @@ interface ProviderListProps {
 
 export function ProviderList({
   providers,
+  selectedGroups = [],
   currentUser,
   healthStatus,
   statistics = {},
@@ -83,6 +85,7 @@ export function ProviderList({
         <ProviderRichListItem
           key={provider.id}
           provider={provider}
+          selectedGroups={selectedGroups}
           currentUser={currentUser}
           healthStatus={healthStatus[provider.id]}
           statistics={statistics[provider.id]}

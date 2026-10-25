@@ -470,6 +470,13 @@
       "when": 1773907200000,
       "tag": "0066_add_claude_code_json_user_id_format",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792907487752,
+      "tag": "0067_tearful_morlocks",
+      "breakpoints": true
     }
   ]
 }

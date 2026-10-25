@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { request as undiciRequest } from "undici";
 import { logger } from "@/lib/logger";
 import { createProxyAgentForProvider } from "@/lib/proxy-agent";
+import { isProviderEnabledForGroups } from "@/lib/utils/provider-group-state";
 import { validateApiKeyAndGetUser } from "@/repository/key";
 import { findAllProviders } from "@/repository/provider";
 import type {
@@ -400,7 +401,7 @@ async function getOpenAIPoolClaudeModels(
 
   const joinOpenAIProviders = candidates.filter(
     (p) =>
-      p.isEnabled &&
+      isProviderEnabledForGroups(p, effectiveGroupPick, routePrefix) &&
       p.joinOpenAIPool &&
       (p.providerType === "claude" || p.providerType === "claude-auth")
   );

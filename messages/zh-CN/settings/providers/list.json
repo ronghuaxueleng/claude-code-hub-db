@@ -36,5 +36,9 @@
   "toggleSuccessDesc": "供应商 \"{name}\" 状态已更新",
   "toggleFailed": "状态切换失败",
   "statusEnabled": "启用",
-  "statusDisabled": "禁用"
+  "statusDisabled": "禁用",
+  "groupStatus": "{group} 分组已{status}",
+  "globalStatus": "全局开关",
+  "groupSwitch": "{group} 分组开关",
+  "globalDisabled": "请先启用供应商全局开关"
 }

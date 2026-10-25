@@ -32,9 +32,14 @@ import {
   saveProviderCircuitConfig,
 } from "@/lib/redis/circuit-breaker-config";
 import type { Context1mPreference } from "@/lib/special-attributes";
+import { isProviderEnabledForGroups } from "@/lib/utils/provider-group-state";
 import { maskKey } from "@/lib/utils/validation";
 import { validateProviderUrlForConnectivity } from "@/lib/validation/provider-url";
-import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
+import {
+  CreateProviderSchema,
+  ProviderStatusGroupsSchema,
+  UpdateProviderSchema,
+} from "@/lib/validation/schemas";
 import {
   batchDeleteProviders as batchDeleteProvidersRepo,
   batchUpdateProvidersCircuitBreakerDisabled,
@@ -241,6 +246,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         priority: provider.priority,
         costMultiplier: provider.costMultiplier,
         groupTag: provider.groupTag,
+        disabledGroups: provider.disabledGroups ?? [],
         providerType: provider.providerType,
         preserveClientIp: provider.preserveClientIp,
         modelRedirects: provider.modelRedirects,
@@ -3364,21 +3370,6 @@ function parseGroupString(groupString: string): string[] {
 }
 
 /**
- * 检查供应商分组是否匹配用户分组
- */
-function checkProviderGroupMatch(providerGroupTag: string | null, userGroups: string[]): boolean {
-  if (userGroups.includes(PROVIDER_GROUP.ALL)) {
-    return true;
-  }
-
-  const providerTags = providerGroupTag
-    ? parseGroupString(providerGroupTag)
-    : [PROVIDER_GROUP.DEFAULT];
-
-  return providerTags.some((tag) => userGroups.includes(tag));
-}
-
-/**
  * 根据供应商分组获取模型建议列表
  *
  * 用于用户/密钥编辑时的模型限制下拉建议。
@@ -3398,16 +3389,14 @@ export async function getModelSuggestionsByProviderGroup(
 
     // 获取所有启用的供应商
     const providers = await findAllProviders();
-    const enabledProviders = providers.filter((p) => p.isEnabled);
-
     // 解析用户分组
     const userGroups = providerGroup ? parseGroupString(providerGroup) : [PROVIDER_GROUP.DEFAULT];
 
     // 过滤匹配分组的供应商并收集 allowedModels
     const modelSet = new Set<string>();
 
-    for (const provider of enabledProviders) {
-      if (checkProviderGroupMatch(provider.groupTag, userGroups)) {
+    for (const provider of providers) {
+      if (isProviderEnabledForGroups(provider, userGroups.join(","))) {
         const models = provider.allowedModels;
         if (models && Array.isArray(models)) {
           for (const model of models) {
@@ -3436,7 +3425,8 @@ export async function getModelSuggestionsByProviderGroup(
  * @returns 更新的记录数
  */
 export async function batchEnableProviders(
-  providerIds: number[]
+  providerIds: number[],
+  groups: string[] = []
 ): Promise<ActionResult<{ updatedCount: number }>> {
   try {
     const session = await getSession();
@@ -3448,7 +3438,11 @@ export async function batchEnableProviders(
       return { ok: false, error: "请选择至少一个供应商" };
     }
 
-    const updatedCount = await batchUpdateProvidersEnabled(providerIds, true);
+    const updatedCount = await batchUpdateProvidersEnabled(
+      providerIds,
+      true,
+      ProviderStatusGroupsSchema.parse(groups)
+    );
 
     // 广播缓存更新（跨实例即时生效）
     await publishProviderCacheInvalidation();
@@ -3475,7 +3469,8 @@ export async function batchEnableProviders(
  * @returns 更新的记录数
  */
 export async function batchDisableProviders(
-  providerIds: number[]
+  providerIds: number[],
+  groups: string[] = []
 ): Promise<ActionResult<{ updatedCount: number }>> {
   try {
     const session = await getSession();
@@ -3487,7 +3482,11 @@ export async function batchDisableProviders(
       return { ok: false, error: "请选择至少一个供应商" };
     }
 
-    const updatedCount = await batchUpdateProvidersEnabled(providerIds, false);
+    const updatedCount = await batchUpdateProvidersEnabled(
+      providerIds,
+      false,
+      ProviderStatusGroupsSchema.parse(groups)
+    );
 
     // 广播缓存更新（跨实例即时生效）
     await publishProviderCacheInvalidation();

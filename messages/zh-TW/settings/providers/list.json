@@ -36,5 +36,9 @@
   "urlCopied": "URL 已複製到剪貼簿",
   "viewFullKey": "查看完整 API 金鑰",
   "viewFullKeyDesc": "請妥善保管，不要洩露給他人",
-  "weight": "權重"
+  "weight": "權重",
+  "groupStatus": "{group} 群組已{status}",
+  "globalStatus": "全域開關",
+  "groupSwitch": "{group} 群組開關",
+  "globalDisabled": "請先啟用供應商全域開關"
 }

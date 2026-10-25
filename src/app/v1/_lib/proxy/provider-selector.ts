@@ -3,6 +3,7 @@ import { PROVIDER_GROUP } from "@/lib/constants/provider.constants";
 import { logger } from "@/lib/logger";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
+import { isProviderEnabledForGroups } from "@/lib/utils/provider-group-state";
 import { findAllProviders } from "@/repository/provider";
 import { getSystemSettings } from "@/repository/system-config";
 import type { ProviderChainItem } from "@/types/message";
@@ -540,7 +541,14 @@ export class ProxyProviderResolver {
     const fixedProviderId = await SessionManager.getSessionFixedProvider(session.sessionId);
     if (fixedProviderId) {
       const provider = await session.getProviderById(fixedProviderId);
-      if (provider?.isEnabled) {
+      if (
+        provider &&
+        isProviderEnabledForGroups(
+          provider,
+          getEffectiveProviderGroup(session),
+          session.getRoutePrefix()
+        )
+      ) {
         // 检查健康状态（熔断、限额等）
         const healthCheck = await ProxyProviderResolver.checkProviderHealth(session, provider);
         if (healthCheck.healthy) {
@@ -617,6 +625,16 @@ export class ProxyProviderResolver {
     session: ProxySession,
     provider: Provider
   ): Promise<{ healthy: boolean; reason?: string }> {
+    if (
+      !isProviderEnabledForGroups(
+        provider,
+        getEffectiveProviderGroup(session),
+        session.getRoutePrefix()
+      )
+    ) {
+      return { healthy: false, reason: "disabled" };
+    }
+
     // 检查模型支持（配置限制，始终检查）
     const requestedModel = session.getCurrentModel();
     if (requestedModel && !providerSupportsModel(provider, requestedModel)) {
@@ -826,7 +844,10 @@ export class ProxyProviderResolver {
     // Step 2: 基础过滤 + 格式/模型匹配（使用 visibleProviders）
     const enabledProviders = visibleProviders.filter((provider) => {
       // 2a. 基础过滤
-      if (!provider.isEnabled || excludeIds.includes(provider.id)) {
+      if (
+        !isProviderEnabledForGroups(provider, effectiveGroupPick, routePrefix) ||
+        excludeIds.includes(provider.id)
+      ) {
         return false;
       }
 
@@ -870,7 +891,7 @@ export class ProxyProviderResolver {
           | "disabled" = "disabled";
         let details = "";
 
-        if (!p.isEnabled) {
+        if (!isProviderEnabledForGroups(p, effectiveGroupPick, routePrefix)) {
           reason = "disabled";
           details = "供应商已禁用";
         } else if (excludeIds.includes(p.id)) {
@@ -1198,7 +1219,9 @@ export class ProxyProviderResolver {
 
     // 按 providerType 精确过滤
     const typeFiltered = visibleProviders.filter(
-      (p) => p.isEnabled && p.providerType === providerType
+      (p) =>
+        isProviderEnabledForGroups(p, effectiveGroupPick, routePrefix) &&
+        p.providerType === providerType
     );
 
     // 将 providerType 映射为 decisionContext 允许的 targetType

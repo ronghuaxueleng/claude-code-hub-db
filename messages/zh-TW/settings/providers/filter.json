@@ -3,7 +3,8 @@
   "groups": {
     "all": "所有",
     "default": "default",
-    "label": "分組:"
+    "label": "分組:",
+    "statusHint": "選擇群組後，開關與批次啟停僅影響所選群組；全部檢視中的全域開關影響所有群組。"
   },
   "status": {
     "active": "已啟用",

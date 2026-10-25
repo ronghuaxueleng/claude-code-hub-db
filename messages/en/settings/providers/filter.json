@@ -3,7 +3,8 @@
   "groups": {
     "all": "All",
     "default": "default",
-    "label": "Groups:"
+    "label": "Groups:",
+    "statusHint": "Group switches and batch enable/disable affect the selected groups only. The global switch in All affects every group."
   },
   "status": {
     "active": "Active",

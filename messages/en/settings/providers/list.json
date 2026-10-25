@@ -36,5 +36,9 @@
   "urlCopied": "URL copied to clipboard",
   "viewFullKey": "View Complete API Key",
   "viewFullKeyDesc": "Please keep it safe and don't share it with others",
-  "weight": "Weight"
+  "weight": "Weight",
+  "groupStatus": "{group} group {status}",
+  "globalStatus": "Global switch",
+  "groupSwitch": "Switch for group {group}",
+  "globalDisabled": "Enable the provider globally first"
 }

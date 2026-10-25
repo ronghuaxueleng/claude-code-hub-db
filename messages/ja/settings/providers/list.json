@@ -35,5 +35,9 @@
   "urlCopied": "URL がクリップボードにコピーされました",
   "viewFullKey": "完全な API キーを表示",
   "viewFullKeyDesc": "安全に保管し、他人と共有しないでください",
-  "weight": "重み"
+  "weight": "重み",
+  "groupStatus": "{group} グループを{status}",
+  "globalStatus": "全体スイッチ",
+  "groupSwitch": "{group} グループのスイッチ",
+  "globalDisabled": "先にプロバイダー全体を有効にしてください"
 }
