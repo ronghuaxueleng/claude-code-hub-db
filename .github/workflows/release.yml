@@ -247,6 +247,9 @@ jobs:
           file: ./deploy/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          # Aliyun Personal Registry rejects OCI attestation manifests.
+          provenance: false
+          sbom: false
           build-args: |
             APP_VERSION=${{ steps.next_version.outputs.new_version }}
           tags: |
