@@ -50,6 +50,7 @@ function makeLog(overrides: Partial<UsageLogRow>): UsageLogRow {
     userName: "u",
     keyName: "k",
     providerName: "p",
+    providerWebsiteUrl: null,
     model: "m",
     originalModel: null,
     endpoint: "/v1/messages",
